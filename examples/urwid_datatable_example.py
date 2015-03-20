@@ -80,6 +80,8 @@ def main():
 
     class DataTableTest(DataTable):
 
+        columns = COLUMN_DEFS
+        
         def query(self, **kwargs):
             for r in l:
                 yield r
@@ -93,7 +95,6 @@ def main():
 
     tables.append(
         DataTableTest(
-            COLUMN_DEFS,
             sort_field="foo",
             attr_map = {None: "normal"},
             focus_map = BASE_FOCUS_MAP,
@@ -102,7 +103,6 @@ def main():
 
     tables.append(
         DataTableTest(
-            COLUMN_DEFS,
             sort_field="bar",
             attr_map = {None: "normal"},
             focus_map = BASE_FOCUS_MAP,
@@ -112,7 +112,6 @@ def main():
 
     tables.append(
         DataTableTest(
-            COLUMN_DEFS,
             sort_field="baz",
             border_char = u"\u007c",
             attr_map = {None: "normal"},

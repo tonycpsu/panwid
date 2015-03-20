@@ -348,11 +348,16 @@ class DataTable(urwid.WidgetWrap):
 
     query_presorted = False
 
-    def __init__(self, columns, data=[],
+    def __init__(self, columns=None, data=[],
                  sort_field=None, wrap=False, padding=0,
                  border_char=" ", attr_map={}, focus_map={}, border_map = {},
                  *args, **kwargs):
-        self.columns = columns
+        if columns:
+            self.columns = columns
+            
+        if not self.columns:
+            raise Exception("must define columns in class or constructor")
+        
         self.sort_field = sort_field
         self.wrap = wrap
         self.border_char = border_char
