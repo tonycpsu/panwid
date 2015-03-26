@@ -449,8 +449,7 @@ class DataTable(urwid.WidgetWrap):
 
 
     def query(self, **kwargs):
-        for r in []:
-            yield r
+        raise Exception("Must override datatable query method")
 
     def refresh(self, **kwargs):
         self.clear()
@@ -459,8 +458,8 @@ class DataTable(urwid.WidgetWrap):
             self.add_row(r)
         if not self.query_presorted:
             self.sort_by(self.sort_field)
-            if len(self.data):
-                self.listbox.set_focus(0)
+        # if self.data and len(self.data):
+        #     self.listbox.set_focus(0)
 
 
     def column_clicked(self, header, index, *args):
