@@ -456,7 +456,7 @@ class DataTable(urwid.WidgetWrap):
         for r in self.query(**kwargs):
             self.data.append(r)
             self.add_row(r)
-        if not self.query_presorted:
+        if self.sort_field and not self.query_presorted:
             self.sort_by(self.sort_field)
         # if self.data and len(self.data):
         #     self.listbox.set_focus(0)
