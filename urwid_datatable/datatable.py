@@ -39,46 +39,88 @@ class SimpleButton(urwid.WidgetWrap):
     def selectable(self):
         return True
 
-class DataTableColumnDef(
-        namedtuple('DataTableColumnDef',
-                   ['label', 'width', 'padding', 'sizing', 'align',
-                    'sort_key', 'sort_fn', 'format_fn',
-                    'attr_map', 'focus_map', ])):
-    def __new__(cls, label, width=1, padding=1, sizing="given", align='left',
-                sort_key=None, sort_fn=None, format_fn=None,
-                attr_map = None, focus_map = None):
-        return super(DataTableColumnDef, cls).__new__(
-            cls, label, width, padding, sizing, align,
-            sort_key, sort_fn, format_fn,
-            attr_map, focus_map)
+class DataTableColumnDef(object):
 
-    def format(self, t):
-        textattr = "normal"
-        if isinstance(t, tuple):
-            textattr, t = t
-        if self.format_fn:
-            s = self.format_fn(t)
-        elif isinstance(t, int):
-            s = "%d" %(t)
-        elif t == None:
-            s = ""
+    def __init__(self, label, width=1, padding=1, sizing="given", align='left',
+                 sort_key=None, sort_fn=None, format_fn=None,
+                 attr_map = None, focus_map = None):
+
+        self.label = label
+        self.width = width
+        self.padding = padding
+        self.sizing = sizing
+        self.align = align
+        self.sort_key = sort_key
+        self.sort_fn = sort_fn
+        if format_fn:
+            self.format_fn = format_fn
         else:
-            s = str(t)
+            self.format_fn = self.default_format
+        self.attr_map = attr_map
+        self.focus_map = focus_map
 
+    def default_format(self, v):
+        if isinstance(v, int):
+            v = "%d" %(v)
+        if isinstance(v, float):
+            v = "%.03f" %(v)
+        elif v is None:
+            v = ""
+        return urwid.Text(v, align=self.align)
+        
 
-        text = urwid.Text( (textattr, s), align=self.align)
-        text.val = t
-        cell = urwid.Padding(text, left=self.padding, right=self.padding)
-        text.sort_key = self.sort_key
-        text.sort_fn = self.sort_fn
-        l = list()
-        cell = urwid.AttrMap(cell, self.attr_map, self.focus_map)
-        if self.sizing == None or self.sizing == "given":
-            l.append(self.width)
-        else:
-            l += ['weight', self.width]
-        l.append(cell)
-        return tuple(l)
+# class DataTableColumnDef(
+#         namedtuple('DataTableColumnDef',
+#                    ['label', 'width', 'padding', 'sizing', 'align',
+#                     'sort_key', 'sort_fn', 'format_fn',
+#                     'attr_map', 'focus_map', ])):
+
+#     def __new__(cls, label, width=1, padding=1, sizing="given", align='left',
+#                 sort_key=None, sort_fn=None, format_fn=None,
+#                 attr_map = None, focus_map = None):
+        
+#         if not format_fn:
+#             format_fn = cls.format
+            
+#         return super(DataTableColumnDef, cls).__new__(
+#             cls, label, width, padding, sizing, align,
+#             sort_key, sort_fn, format_fn,
+#             attr_map, focus_map)
+
+#     def format(self, v):
+#         if isinstance(v, int):
+#             v = "%d" %(v)
+#         elif v is None:
+#             v = ""
+#         return v    
+    
+
+#     def default_format(self, t):
+#         textattr = "normal"
+#         # if isinstance(t, tuple):
+#         #     textattr, t = t
+#         if self.format_fn:
+#             s = self.format_fn(t)
+#         elif isinstance(t, int):
+#             s = "%d" %(t)
+#         elif t == None:
+#             s = ""
+#         else:
+#             s = unicode(t)
+            
+#         text = urwid.Text( (textattr, s), align=self.align)
+#         text.val = t
+#         cell = urwid.Padding(text, left=self.padding, right=self.padding)
+#         text.sort_key = self.sort_key
+#         text.sort_fn = self.sort_fn
+#         l = list()
+#         cell = urwid.AttrMap(cell, self.attr_map, self.focus_map)
+#         if self.sizing == None or self.sizing == "given":
+#             l.append(self.width)
+#         else:
+#             l += ['weight', self.width]
+#         l.append(cell)
+#         return tuple(l)
 
 
 class ScrollingListBox(urwid.ListBox):
@@ -187,15 +229,19 @@ class DataTableCell(urwid.WidgetWrap):
     def __init__(self, column, value,
                  attr_map={}, focus_map={}):
 
+        def value_format(v):
+            if isinstance(v, int):
+                v = "%d" %(v)
+            elif v is None:
+                v = ""
+            return v    
+        
         self.column = column
         self._value = value
-        if column.format_fn:
-            value = column.format_fn(value)
-        else:
-            value = str(value)
-        self.text = urwid.Text(value, align=column.align)
-        padding = urwid.Padding(self.text,
+        value = column.format_fn(value)
+        padding = urwid.Padding(value,
                                 left=column.padding, right=column.padding)
+
         self.attr_map = urwid.AttrMap(
             padding,
             attr_map = attr_map,
@@ -206,8 +252,10 @@ class DataTableCell(urwid.WidgetWrap):
     def value(self):
         return self._value
 
+    
 class DataTableRow(urwid.WidgetWrap):
-    def __init__(self, *args, **kwargs):
+    
+    def __init__(self, data, **kwargs):
         self.border_char = kwargs.get('border_char', " ")
         attr_map = kwargs.get('attr_map', {})
         focus_map = {None: 'focused'}
@@ -221,10 +269,9 @@ class DataTableRow(urwid.WidgetWrap):
                 l.append(c.width)
             else:
                 l += ['weight', c.width]
-            cell = DataTableCell(c, args[i])
+            cell = DataTableCell(c, data[i], attr_map = attr_map, focus_map = focus_map)
             l.append(cell)
             cols.append(tuple(l))
-
 
         self.columns = urwid.Columns(cols)
 
@@ -242,6 +289,7 @@ class DataTableRow(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         return key
+        # super(DataTableRow, self).keypress(size, key)
 
     def set_attr_map(self, attr_map):
         self._w.set_attr_map(attr_map)
@@ -304,8 +352,8 @@ class DataTableHeaderRow(urwid.WidgetWrap):
         self.columns = urwid.Columns([])
         am = urwid.AttrMap(self.columns, "header")
 
-        self._pile = urwid.Pile([('flow', am)])
-        super(DataTableHeaderRow, self).__init__(self._pile)
+        self.padding = urwid.Padding(am)
+        super(DataTableHeaderRow, self).__init__(self.padding)
         for i, item in enumerate(cols):
             width = item.width
             sizing = item.sizing
@@ -348,9 +396,10 @@ class DataTable(urwid.WidgetWrap):
 
     query_presorted = False
 
-    def __init__(self, columns=None, data=[],
-                 sort_field=None, wrap=False, padding=0,
-                 border_char=" ", attr_map={}, focus_map={}, border_map = {},
+    def __init__(self, columns=None, data=[], 
+                 sort_field=None, search_key=None, wrap=False, padding=0,
+                 border_char=" ",
+                 attr_map={}, focus_map={}, border_map = {},
                  *args, **kwargs):
         if columns:
             self.columns = columns
@@ -359,6 +408,7 @@ class DataTable(urwid.WidgetWrap):
             raise Exception("must define columns in class or constructor")
         
         self.sort_field = sort_field
+        self.search_key = search_key
         self.wrap = wrap
         self.border_char = border_char
         self.attr_map = attr_map
@@ -366,6 +416,7 @@ class DataTable(urwid.WidgetWrap):
         self.border_map = border_map
         self.selected_index = 0
         self.sort_reverse = False
+        self.data = list()
         header_attr_map = attr_map.copy()
         header_focus_map = focus_map.copy()
         header_attr_map.update({None: "header"})
@@ -388,13 +439,13 @@ class DataTable(urwid.WidgetWrap):
         self._pile.focus_position = 1
         super(DataTable,self).__init__(self._pile)
         for r in data:
-            self.add_row(*r)
+            self.add_row(r)
         if self.sort_field:
             self.sort_by(self.sort_field)
 
         if not len(self.columns):
             self._w.selectable = lambda: False
-        self.refresh()
+        # self.refresh()
 
 
     def query(self, **kwargs):
@@ -404,9 +455,13 @@ class DataTable(urwid.WidgetWrap):
     def refresh(self, **kwargs):
         self.clear()
         for r in self.query(**kwargs):
-            self.add_row(*r)
+            self.data.append(r)
+            self.add_row(r)
         if not self.query_presorted:
             self.sort_by(self.sort_field)
+            if len(self.data):
+                self.listbox.set_focus(0)
+
 
     def column_clicked(self, header, index, *args):
         label = self.header.label_for_column(index)
@@ -466,14 +521,41 @@ class DataTable(urwid.WidgetWrap):
         self.selected_index = index
         self.highlight_column(self.selected_index)
 
-    def add_row(self, *args):
+        
+    def add_row(self, data):
+                
         self.listbox.body.append(DataTableRow(
-            *args,
+            data,
             columns = self.columns,
             border_char = self.border_char,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
             border_map = self.border_map))
 
-    def clear(self):
+    def apply_filter(self, filter_fn):
+
+        matches = filter(filter_fn, self.data)
+        
         del self.listbox.body[:]
+        for m in matches:
+            self.add_row(m)
+        
+        
+    def apply_text_filter(self, filter_text):
+        
+        if not self.search_key:
+            return False
+        
+        matches = filter(
+            lambda x:
+            filter_text.lower() in self.search_key(x).lower(),
+            self.data)
+        
+        del self.listbox.body[:]
+        for m in matches:
+            self.add_row(m)
+
+    def clear(self):
+        del self.data[:]
+        del self.listbox.body[:]
+

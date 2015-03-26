@@ -60,14 +60,37 @@ def main():
     screen = urwid.raw_display.Screen()
     screen.set_terminal_properties(256)
 
-    def format_bar(val):
-        return "%.03f" %(val)
+    # def format_bar(val):
+    #     return "%.03f" %(val)
+
+    class MyDataTableColumnDef(DataTableColumnDef):
+
+        def default_format(self, v):
+            textattr = "normal"
+            if not isinstance(v, tuple):
+                return super(MyDataTableColumnDef, self).default_format(v)
+            
+            textattr, t = v
+            text = urwid.Text( (textattr, s), align=self.align)
+            text.val = t
+            cell = urwid.Padding(text, left=self.padding, right=self.padding)
+            text.sort_key = self.sort_key
+            text.sort_fn = self.sort_fn
+            l = list()
+            cell = urwid.AttrMap(cell, self.attr_map, self.focus_map)
+            if self.sizing == None or self.sizing == "given":
+                l.append(self.width)
+            else:
+                l += ['weight', self.width]
+            l.append(cell)
+            return tuple(l)
+            
 
 
     COLUMN_DEFS =  [
-        DataTableColumnDef("foo", width=12, sort_fn=lambda a, b: cmp(b,a)),
-        DataTableColumnDef("bar", width=15, align="right", format_fn=format_bar),
-        DataTableColumnDef("baz", width=8),
+        MyDataTableColumnDef("foo", width=12, sort_fn=lambda a, b: cmp(b,a)),
+        MyDataTableColumnDef("bar", width=15, align="right"),
+        MyDataTableColumnDef("baz", width=8),
     ]
 
     l = [ (1, 2.12314, "c"),
