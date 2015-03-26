@@ -445,7 +445,7 @@ class DataTable(urwid.WidgetWrap):
 
         if not len(self.columns):
             self._w.selectable = lambda: False
-        # self.refresh()
+        self.refresh()
 
 
     def query(self, **kwargs):
