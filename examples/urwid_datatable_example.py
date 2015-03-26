@@ -146,7 +146,14 @@ def main():
         [ ('weight', 1, urwid.LineBox(t)) for t in tables ]
     )
 
-    loop = urwid.MainLoop(main, palette, screen=screen)
+    def global_input(key):
+        if key in ('q', 'Q'):
+            raise urwid.ExitMainLoop()
+    
+    loop = urwid.MainLoop(main,
+                          palette,
+                          screen=screen,
+                          unhandled_input=global_input)
     loop.run()
 
 
