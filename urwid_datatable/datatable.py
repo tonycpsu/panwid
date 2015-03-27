@@ -397,8 +397,9 @@ class DataTable(urwid.WidgetWrap):
     query_presorted = False
 
     def __init__(self, columns=None, data=[], 
-                 sort_field=None, search_key=None, wrap=False, padding=0,
-                 border_char=" ",
+                 sort_field=None, sort_disabled=False, search_key=None, 
+                 wrap=False,
+                 padding=0, border_char=" ",
                  attr_map={}, focus_map={}, border_map = {},
                  *args, **kwargs):
         if columns:
@@ -408,6 +409,7 @@ class DataTable(urwid.WidgetWrap):
             raise Exception("must define columns in class or constructor")
         
         self.sort_field = sort_field
+        self.sort_disabled = sort_disabled
         self.search_key = search_key
         self.wrap = wrap
         self.border_char = border_char
@@ -464,6 +466,10 @@ class DataTable(urwid.WidgetWrap):
 
 
     def column_clicked(self, header, index, *args):
+        
+        if self.sort_disabled:
+            return
+        
         label = self.header.label_for_column(index)
         if index != self.selected_index:
             self.sort_reverse = False
