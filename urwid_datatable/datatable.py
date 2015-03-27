@@ -469,7 +469,8 @@ class DataTable(urwid.WidgetWrap):
         else:
             self.sort_reverse = not self.sort_reverse
 
-        self.sort_by(label, reverse=self.sort_reverse)
+        if self.sort_field:
+            self.sort_by(label, reverse=self.sort_reverse)
 
     def highlight_column(self, index):
         for i, col in enumerate(self.columns):
