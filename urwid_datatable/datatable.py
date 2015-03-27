@@ -458,8 +458,9 @@ class DataTable(urwid.WidgetWrap):
             self.add_row(r)
         if self.sort_field and not self.query_presorted:
             self.sort_by(self.sort_field)
-        # if self.data and len(self.data):
-        #     self.listbox.set_focus(0)
+            
+        if self.body and len(self.body):
+            self.listbox.set_focus(0)
 
 
     def column_clicked(self, header, index, *args):
