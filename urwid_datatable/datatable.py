@@ -545,21 +545,29 @@ class DataTable(urwid.WidgetWrap):
         del self.listbox.body[:]
         for m in matches:
             self.add_row(m)
+
+        if self.sort_field:
+            self.sort_by(self.sort_field)
+
+
+    def focus(self, idx):
+
+        if len(self.listbox.body):
+            self.listbox.set_focus(0)
         
+    # def apply_text_filter(self, filter_text):
         
-    def apply_text_filter(self, filter_text):
+    #     if not self.search_key:
+    #         return False
         
-        if not self.search_key:
-            return False
+    #     matches = filter(
+    #         lambda x:
+    #         filter_text.lower() in self.search_key(x).lower(),
+    #         self.data)
         
-        matches = filter(
-            lambda x:
-            filter_text.lower() in self.search_key(x).lower(),
-            self.data)
-        
-        del self.listbox.body[:]
-        for m in matches:
-            self.add_row(m)
+    #     del self.listbox.body[:]
+    #     for m in matches:
+    #         self.add_row(m)
 
     def clear(self):
         del self.data[:]
