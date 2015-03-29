@@ -207,7 +207,8 @@ class ScrollingListBox(urwid.ListBox):
             self.focus_position = len(self.body)-1
         elif key == 'page down' and self.focus_position == len(self.body)-1:
             self.requery = True
-        return super(ScrollingListBox, self).keypress(size, key)
+        else:
+            return super(ScrollingListBox, self).keypress(size, key)
 
     def update(self):
         pass
