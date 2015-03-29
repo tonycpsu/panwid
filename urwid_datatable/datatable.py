@@ -72,7 +72,7 @@ class DataTableColumnDef(object):
         elif v is None:
             v = ""
         return urwid.Text(v, align=self.align)
-        
+
 
 # class DataTableColumnDef(
 #         namedtuple('DataTableColumnDef',
@@ -83,10 +83,10 @@ class DataTableColumnDef(object):
 #     def __new__(cls, label, width=1, padding=1, sizing="given", align='left',
 #                 sort_key=None, sort_fn=None, format_fn=None,
 #                 attr_map = None, focus_map = None):
-        
+
 #         if not format_fn:
 #             format_fn = cls.format
-            
+
 #         return super(DataTableColumnDef, cls).__new__(
 #             cls, label, width, padding, sizing, align,
 #             sort_key, sort_fn, format_fn,
@@ -97,8 +97,8 @@ class DataTableColumnDef(object):
 #             v = "%d" %(v)
 #         elif v is None:
 #             v = ""
-#         return v    
-    
+#         return v
+
 
 #     def default_format(self, t):
 #         textattr = "normal"
@@ -112,7 +112,7 @@ class DataTableColumnDef(object):
 #             s = ""
 #         else:
 #             s = unicode(t)
-            
+
 #         text = urwid.Text( (textattr, s), align=self.align)
 #         text.val = t
 #         cell = urwid.Padding(text, left=self.padding, right=self.padding)
@@ -239,8 +239,8 @@ class DataTableCell(urwid.WidgetWrap):
                 v = "%d" %(v)
             elif v is None:
                 v = ""
-            return v    
-        
+            return v
+
         self.column = column
         self._value = value
         value = column.format_fn(value)
@@ -257,9 +257,9 @@ class DataTableCell(urwid.WidgetWrap):
     def value(self):
         return self._value
 
-    
+
 class DataTableRow(urwid.WidgetWrap):
-    
+
     def __init__(self, data, **kwargs):
         self.border_char = kwargs.get('border_char', " ")
         attr_map = kwargs.get('attr_map', {})
@@ -309,7 +309,12 @@ class DataTableRow(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         return key
-        # super(DataTableRow, self).keypress(size, key)
+
+    def disable(self):
+        self.selectable = lambda: False
+
+    def enable(self):
+        self.selectable = lambda: True
 
     def set_attr_map(self, attr_map):
         self._w.set_attr_map(attr_map)
@@ -416,18 +421,18 @@ class DataTable(urwid.WidgetWrap):
 
     query_presorted = False
 
-    def __init__(self, columns=None, data=[], 
-                 sort_field=None, sort_disabled=False, search_key=None, 
+    def __init__(self, columns=None, data=[],
+                 sort_field=None, sort_disabled=False, search_key=None,
                  wrap=False,
                  padding=0, border_char=" ",
                  attr_map={}, focus_map={}, border_map = {},
                  *args, **kwargs):
         if columns:
             self.columns = columns
-            
+
         if not self.columns:
             raise Exception("must define columns in class or constructor")
-        
+
         self.sort_field = sort_field
         self.sort_disabled = sort_disabled
         self.search_key = search_key
@@ -480,16 +485,16 @@ class DataTable(urwid.WidgetWrap):
             self.add_row(r)
         if self.sort_field and not self.query_presorted:
             self.sort_by(self.sort_field)
-            
+
         if self.body and len(self.body):
             self.listbox.set_focus(0)
 
 
     def column_clicked(self, header, index, *args):
-        
+
         if self.sort_disabled:
             return
-        
+
         label = self.header.label_for_column(index)
         if index != self.selected_index:
             self.sort_reverse = False
@@ -548,9 +553,9 @@ class DataTable(urwid.WidgetWrap):
         self.selected_index = index
         self.highlight_column(self.selected_index)
 
-        
+
     def add_row(self, data):
-                
+
         self.listbox.body.append(DataTableRow(
             data,
             columns = self.columns,
@@ -562,7 +567,7 @@ class DataTable(urwid.WidgetWrap):
     def apply_filter(self, filter_fn):
 
         matches = filter(filter_fn, self.data)
-        
+
         del self.listbox.body[:]
         for m in matches:
             self.add_row(m)
@@ -570,7 +575,7 @@ class DataTable(urwid.WidgetWrap):
         if self.sort_field:
             self.sort_by(self.sort_field)
 
-            
+
     @property
     def focus_position(self):
 
@@ -582,22 +587,22 @@ class DataTable(urwid.WidgetWrap):
 
         return self.body[self.listbox.focus_position]
 
-            
+
     def focus(self, idx):
 
         if len(self.listbox.body):
             self.listbox.set_focus(0)
-        
+
     # def apply_text_filter(self, filter_text):
-        
+
     #     if not self.search_key:
     #         return False
-        
+
     #     matches = filter(
     #         lambda x:
     #         filter_text.lower() in self.search_key(x).lower(),
     #         self.data)
-        
+
     #     del self.listbox.body[:]
     #     for m in matches:
     #         self.add_row(m)
@@ -605,4 +610,3 @@ class DataTable(urwid.WidgetWrap):
     def clear(self):
         del self.data[:]
         del self.listbox.body[:]
-
