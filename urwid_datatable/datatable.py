@@ -41,11 +41,16 @@ class SimpleButton(urwid.WidgetWrap):
 
 class DataTableColumnDef(object):
 
-    def __init__(self, label, width=1, padding=1, sizing="given", align='left',
+    def __init__(self, label, attr=None, width=1, padding=1,
+                 sizing="given", align='left',
                  sort_key=None, sort_fn=None, format_fn=None,
                  attr_map = None, focus_map = None):
 
         self.label = label
+        if attr:
+            self.attr = attr
+        else:
+            self.attr = label
         self.width = width
         self.padding = padding
         self.sizing = sizing
@@ -263,13 +268,28 @@ class DataTableRow(urwid.WidgetWrap):
         focus_map.update(kwargs.get('focus_map', {}))
         self.highlighted = False
         cols = list()
+        # FIXME: dangerous
+        if isinstance(data, dict):
+            for k, v in data.items():
+                setattr(self, k, v)
+
         for i, c in enumerate(kwargs['columns']):
             l = list()
             if c.sizing == None or c.sizing == "given":
                 l.append(c.width)
             else:
                 l += ['weight', c.width]
-            cell = DataTableCell(c, data[i], attr_map = attr_map, focus_map = focus_map)
+
+            if isinstance(data, (list, tuple)):
+                val = data[i]
+            elif isinstance(data, dict):
+                val = data.get(c.attr, None)
+            else:
+                raise Exception(data)
+
+            cell = DataTableCell(c, val,
+                                 attr_map = attr_map,
+                                 focus_map = focus_map)
             l.append(cell)
             cols.append(tuple(l))
 
@@ -397,8 +417,9 @@ class DataTable(urwid.WidgetWrap):
     query_presorted = False
 
     def __init__(self, columns=None, data=[], 
-                 sort_field=None, search_key=None, wrap=False, padding=0,
-                 border_char=" ",
+                 sort_field=None, sort_disabled=False, search_key=None, 
+                 wrap=False,
+                 padding=0, border_char=" ",
                  attr_map={}, focus_map={}, border_map = {},
                  *args, **kwargs):
         if columns:
@@ -408,6 +429,7 @@ class DataTable(urwid.WidgetWrap):
             raise Exception("must define columns in class or constructor")
         
         self.sort_field = sort_field
+        self.sort_disabled = sort_disabled
         self.search_key = search_key
         self.wrap = wrap
         self.border_char = border_char
@@ -458,11 +480,16 @@ class DataTable(urwid.WidgetWrap):
             self.add_row(r)
         if self.sort_field and not self.query_presorted:
             self.sort_by(self.sort_field)
-        # if self.data and len(self.data):
-        #     self.listbox.set_focus(0)
+            
+        if self.body and len(self.body):
+            self.listbox.set_focus(0)
 
 
     def column_clicked(self, header, index, *args):
+        
+        if self.sort_disabled:
+            return
+        
         label = self.header.label_for_column(index)
         if index != self.selected_index:
             self.sort_reverse = False
@@ -539,21 +566,41 @@ class DataTable(urwid.WidgetWrap):
         del self.listbox.body[:]
         for m in matches:
             self.add_row(m)
+
+        if self.sort_field:
+            self.sort_by(self.sort_field)
+
+            
+    @property
+    def focus_position(self):
+
+        return self.listbox.focus_position
+
+
+    @property
+    def selection(self):
+
+        return self.body[self.listbox.focus_position]
+
+            
+    def focus(self, idx):
+
+        if len(self.listbox.body):
+            self.listbox.set_focus(0)
         
+    # def apply_text_filter(self, filter_text):
         
-    def apply_text_filter(self, filter_text):
+    #     if not self.search_key:
+    #         return False
         
-        if not self.search_key:
-            return False
+    #     matches = filter(
+    #         lambda x:
+    #         filter_text.lower() in self.search_key(x).lower(),
+    #         self.data)
         
-        matches = filter(
-            lambda x:
-            filter_text.lower() in self.search_key(x).lower(),
-            self.data)
-        
-        del self.listbox.body[:]
-        for m in matches:
-            self.add_row(m)
+    #     del self.listbox.body[:]
+    #     for m in matches:
+    #         self.add_row(m)
 
     def clear(self):
         del self.data[:]
