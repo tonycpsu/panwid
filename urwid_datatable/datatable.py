@@ -41,11 +41,16 @@ class SimpleButton(urwid.WidgetWrap):
 
 class DataTableColumnDef(object):
 
-    def __init__(self, label, width=1, padding=1, sizing="given", align='left',
+    def __init__(self, label, attr=None, width=1, padding=1,
+                 sizing="given", align='left',
                  sort_key=None, sort_fn=None, format_fn=None,
                  attr_map = None, focus_map = None):
 
         self.label = label
+        if attr:
+            self.attr = attr
+        else:
+            self.attr = label
         self.width = width
         self.padding = padding
         self.sizing = sizing
@@ -263,13 +268,28 @@ class DataTableRow(urwid.WidgetWrap):
         focus_map.update(kwargs.get('focus_map', {}))
         self.highlighted = False
         cols = list()
+        # FIXME: dangerous
+        if isinstance(data, dict):
+            for k, v in data.items():
+                setattr(self, k, v)
+
         for i, c in enumerate(kwargs['columns']):
             l = list()
             if c.sizing == None or c.sizing == "given":
                 l.append(c.width)
             else:
                 l += ['weight', c.width]
-            cell = DataTableCell(c, data[i], attr_map = attr_map, focus_map = focus_map)
+
+            if isinstance(data, (list, tuple)):
+                val = data[i]
+            elif isinstance(data, dict):
+                val = data.get(c.attr, None)
+            else:
+                raise Exception(data)
+
+            cell = DataTableCell(c, val,
+                                 attr_map = attr_map,
+                                 focus_map = focus_map)
             l.append(cell)
             cols.append(tuple(l))
 
@@ -549,7 +569,19 @@ class DataTable(urwid.WidgetWrap):
         if self.sort_field:
             self.sort_by(self.sort_field)
 
+            
+    @property
+    def focus_position(self):
 
+        return self.listbox.focus_position
+
+
+    @property
+    def selection(self):
+
+        return self.body[self.listbox.focus_position]
+
+            
     def focus(self, idx):
 
         if len(self.listbox.body):
