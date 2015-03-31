@@ -1,6 +1,7 @@
 import urwid
 from collections import namedtuple
 from collections import MutableSequence
+import threading
 
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
@@ -65,7 +66,9 @@ class DataTableColumnDef(object):
         self.focus_map = focus_map
 
     def default_format(self, v):
-        if isinstance(v, int):
+        if v is None:
+            v = ""
+        elif isinstance(v, int):
             v = "%d" %(v)
         if isinstance(v, float):
             v = "%.03f" %(v)
@@ -192,21 +195,24 @@ class ScrollingListBox(urwid.ListBox):
 
         Implements vim-like scrolling.
         """
-        if key == 'j':
-            self.keypress(size, 'down')
-        elif key == 'k':
-            self.keypress(size, 'up')
-        elif key == 'g':
-            self.set_focus(0)
-        elif key == 'G':
-            self.set_focus(len(self.body) - 1)
-            self.set_focus_valign('bottom')
-        elif key == 'home':
-            self.focus_position = 0
-        elif key == 'end':
-            self.focus_position = len(self.body)-1
-        elif key == 'page down' and self.focus_position == len(self.body)-1:
-            self.requery = True
+        if len(self.body):
+            if key == 'j':
+                self.keypress(size, 'down')
+            elif key == 'k':
+                self.keypress(size, 'up')
+            elif key == 'g':
+                self.set_focus(0)
+            elif key == 'G':
+                self.set_focus(len(self.body) - 1)
+                self.set_focus_valign('bottom')
+            elif key == 'home':
+                self.focus_position = 0
+            elif key == 'end':
+                self.focus_position = len(self.body)-1
+            elif key == 'page down' and self.focus_position == len(self.body)-1:
+                self.requery = True
+            else:
+                return super(ScrollingListBox, self).keypress(size, key)
         else:
             return super(ScrollingListBox, self).keypress(size, key)
 
@@ -428,6 +434,8 @@ class DataTable(urwid.WidgetWrap):
                  padding=0, border_char=" ",
                  attr_map={}, focus_map={}, border_map = {},
                  *args, **kwargs):
+        self.lock = threading.Lock()
+
         if columns:
             self.columns = columns
 
@@ -445,6 +453,7 @@ class DataTable(urwid.WidgetWrap):
         self.selected_index = 0
         self.sort_reverse = False
         self.data = list()
+
         header_attr_map = attr_map.copy()
         header_focus_map = focus_map.copy()
         header_attr_map.update({None: "header"})
@@ -480,15 +489,16 @@ class DataTable(urwid.WidgetWrap):
         raise Exception("Must override datatable query method")
 
     def refresh(self, **kwargs):
-        self.clear()
-        for r in self.query(**kwargs):
-            self.data.append(r)
-            self.add_row(r)
-        if self.sort_field and not self.query_presorted:
-            self.sort_by(self.sort_field)
+        with self.lock:
+            self.clear()
+            for r in self.query(**kwargs):
+                self.data.append(r)
+                self.add_row(r)
+            if self.sort_field and not self.query_presorted:
+                self.sort_by(self.sort_field)
 
-        if self.body and len(self.body):
-            self.listbox.set_focus(0)
+            if self.body and len(self.body):
+                self.listbox.set_focus(0)
 
 
     def column_clicked(self, header, index, *args):
@@ -567,14 +577,15 @@ class DataTable(urwid.WidgetWrap):
 
     def apply_filter(self, filter_fn):
 
-        matches = filter(filter_fn, self.data)
+        with self.lock:
+            matches = filter(filter_fn, self.data)
 
-        del self.listbox.body[:]
-        for m in matches:
-            self.add_row(m)
+            del self.listbox.body[:]
+            for m in matches:
+                self.add_row(m)
 
-        if self.sort_field:
-            self.sort_by(self.sort_field)
+        # if self.sort_field:
+        #     self.sort_by(self.sort_field)
 
 
     @property
