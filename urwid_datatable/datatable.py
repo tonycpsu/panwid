@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import urwid
 from collections import namedtuple
 from collections import MutableSequence
@@ -40,22 +43,29 @@ class SimpleButton(urwid.WidgetWrap):
     def selectable(self):
         return True
 
+
 class DataTableColumnDef(object):
 
-    def __init__(self, label, attr=None, width=1, padding=1,
-                 sizing="given", align='left',
+    def __init__(self, label, field=None, attr=None, more=None,
+                 width=1, padding=1,
+                 sizing="given", align='left', wrap = "space",
                  sort_key=None, sort_fn=None, format_fn=None,
                  attr_map = None, focus_map = None):
 
         self.label = label
-        if attr:
-            self.attr = attr
+        if field:
+            self.field = field
         else:
-            self.attr = label
+            self.field = label
+
+        self.attr = attr
+        self.more = more
+
         self.width = width
         self.padding = padding
         self.sizing = sizing
         self.align = align
+        self.wrap = wrap
         self.sort_key = sort_key
         self.sort_fn = sort_fn
         if format_fn:
@@ -72,66 +82,13 @@ class DataTableColumnDef(object):
             v = "%d" %(v)
         if isinstance(v, float):
             v = "%.03f" %(v)
-        elif v is None:
-            v = ""
-        return urwid.Text(v, align=self.align)
+        return urwid.Text(v, align=self.align, wrap=self.wrap)
 
-
-# class DataTableColumnDef(
-#         namedtuple('DataTableColumnDef',
-#                    ['label', 'width', 'padding', 'sizing', 'align',
-#                     'sort_key', 'sort_fn', 'format_fn',
-#                     'attr_map', 'focus_map', ])):
-
-#     def __new__(cls, label, width=1, padding=1, sizing="given", align='left',
-#                 sort_key=None, sort_fn=None, format_fn=None,
-#                 attr_map = None, focus_map = None):
-
-#         if not format_fn:
-#             format_fn = cls.format
-
-#         return super(DataTableColumnDef, cls).__new__(
-#             cls, label, width, padding, sizing, align,
-#             sort_key, sort_fn, format_fn,
-#             attr_map, focus_map)
-
-#     def format(self, v):
-#         if isinstance(v, int):
-#             v = "%d" %(v)
-#         elif v is None:
-#             v = ""
-#         return v
-
-
-#     def default_format(self, t):
-#         textattr = "normal"
-#         # if isinstance(t, tuple):
-#         #     textattr, t = t
-#         if self.format_fn:
-#             s = self.format_fn(t)
-#         elif isinstance(t, int):
-#             s = "%d" %(t)
-#         elif t == None:
-#             s = ""
-#         else:
-#             s = unicode(t)
-
-#         text = urwid.Text( (textattr, s), align=self.align)
-#         text.val = t
-#         cell = urwid.Padding(text, left=self.padding, right=self.padding)
-#         text.sort_key = self.sort_key
-#         text.sort_fn = self.sort_fn
-#         l = list()
-#         cell = urwid.AttrMap(cell, self.attr_map, self.focus_map)
-#         if self.sizing == None or self.sizing == "given":
-#             l.append(self.width)
-#         else:
-#             l += ['weight', self.width]
-#         l.append(cell)
-#         return tuple(l)
 
 
 class ScrollingListBox(urwid.ListBox):
+
+    signals = ["select", "drag_start", "drag_continue", "drag_stop"]
 
     def __init__(self, body, paginate=False):
         super(ScrollingListBox, self).__init__(body)
@@ -141,6 +98,7 @@ class ScrollingListBox(urwid.ListBox):
         self.drag_to = None
         self.requery = False
         self.paginate = paginate
+
 
     def mouse_event(self, size, event, button, col, row, focus):
         """Overrides ListBox.mouse_event method.
@@ -162,33 +120,33 @@ class ScrollingListBox(urwid.ListBox):
                     self.keypress(size, 'down')
                 return True
         elif event == 'mouse drag':
-            if not self.drag_from:
+            if self.drag_from is None:
                 return
             if button == 1:
                 self.drag_to = (col, row)
                 if self.mouse_state == 1:
                     self.mouse_state = 2
-                    self.on_drag_start(self.drag_from)
+                    urwid.signals.emit_signal(
+                        self, "drag_start",self, self.drag_from
+                    )
+                    # self.on_drag_start(self.drag_from)
                 else:
-                    self.on_drag(self.drag_last, self.drag_to)
+                    urwid.signals.emit_signal(
+                        self, "drag_continue",self,
+                        self.drag_last, self.drag_to
+                    )
 
             self.drag_last = (col, row)
 
         elif event == 'mouse release':
             if self.mouse_state == 2:
                 self.drag_to = (col, row)
-                self.on_drop(self.drag_from, self.drag_to)
+                urwid.signals.emit_signal(
+                    self, "drag_stop",self, self.drag_from, self.drag_to
+                )
             self.mouse_state = 0
         return self.__super.mouse_event(size, event, button, col, row, focus)
 
-    def on_drag_start(self, drag_from):
-        pass
-
-    def on_drag(self, drag_from, drag_to):
-        pass
-
-    def on_drop(self, drag_from, drop_to):
-        pass
 
     def keypress(self, size, key):
         """Overrides ListBox.keypress method.
@@ -211,10 +169,18 @@ class ScrollingListBox(urwid.ListBox):
                 self.focus_position = len(self.body)-1
             elif key == 'page down' and self.focus_position == len(self.body)-1:
                 self.requery = True
+            elif key == "enter":
+                urwid.signals.emit_signal(self, "select", self.selection)
             else:
                 return super(ScrollingListBox, self).keypress(size, key)
         else:
             return super(ScrollingListBox, self).keypress(size, key)
+
+    @property
+    def selection(self):
+
+        return self.body[self.focus_position]
+
 
     def update(self):
         pass
@@ -250,8 +216,38 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.column = column
         self._value = value
-        value = column.format_fn(value)
-        padding = urwid.Padding(value,
+
+        # if value:
+        #     try:
+        #         self.contents = column.format_fn(value)
+        #     except Exception, e:
+        #         raise Exception("can't format value in column %s: %s" %(
+        #             self.column.label,
+        #             e))
+        # else:
+        #     self.contents = ""
+        if value is not None:
+
+            try:
+                self.contents = column.format_fn(value)
+            except Exception, e:
+                logger.warn("format function raised exception: %s" %e)
+                self.contents = ""
+                # raise Exception("can't format value in column %s: %s" %(
+                #     self.column.label,
+                #     e))
+        else:
+            self.contents = urwid.Text("")
+
+
+        if not isinstance(self.contents, urwid.Widget):
+            if not isinstance(self.contents, basestring):
+                self.contents = str(self.contents)
+            self.contents = urwid.Text(self.contents,
+                                  align=self.column.align,
+                                  wrap=self.column.wrap)
+
+        padding = urwid.Padding(self.contents,
                                 left=column.padding, right=column.padding)
 
         self.attr_map = urwid.AttrMap(
@@ -267,20 +263,25 @@ class DataTableCell(urwid.WidgetWrap):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    def __init__(self, data, **kwargs):
+    signals = ["focus", "unfocus"]
+
+    def __init__(self, data, columns = [], **kwargs):
+        self.columns = columns
         self.border_char = kwargs.get('border_char', " ")
         attr_map = kwargs.get('attr_map', {})
         focus_map = {None: 'focused'}
         border_map = kwargs.get('border_map', {})
+        self._values = dict()
         focus_map.update(kwargs.get('focus_map', {}))
         self.highlighted = False
+        self.focused = False
         cols = list()
-        # FIXME: dangerous
+
         if isinstance(data, dict):
             for k, v in data.items():
-                setattr(self, k, v)
+                self._values[k] = v
 
-        for i, c in enumerate(kwargs['columns']):
+        for i, c in enumerate(self.columns):
             l = list()
             if c.sizing == None or c.sizing == "given":
                 l.append(c.width)
@@ -290,26 +291,34 @@ class DataTableRow(urwid.WidgetWrap):
             if isinstance(data, (list, tuple)):
                 val = data[i]
             elif isinstance(data, dict):
-                val = data.get(c.attr, None)
+                val = data.get(c.field, None)
             else:
                 raise Exception(data)
 
+            cell_attr_map = attr_map
+            if c.attr:
+                cell_attr_map = data.get(c.attr, attr_map)
+
             cell = DataTableCell(c, val,
-                                 attr_map = attr_map,
+                                 attr_map = cell_attr_map,
                                  focus_map = focus_map)
             l.append(cell)
             cols.append(tuple(l))
 
-        self.columns = urwid.Columns(cols)
+        self._columns = urwid.Columns(cols)
 
-        self.columns.contents = intersperse(
+        self._columns.contents = intersperse(
             (urwid.AttrMap(urwid.Divider(self.border_char),
                           attr_map=border_map,
                           focus_map=focus_map), ('given', 1, False)),
-            self.columns.contents)
+            self._columns.contents)
         super(DataTableRow, self).__init__(
-            urwid.AttrMap(self.columns, attr_map, focus_map)
+            urwid.AttrMap(self._columns, attr_map, focus_map)
         )
+
+    @property
+    def values(self):
+        return self._values
 
     def selectable(self):
         return True
@@ -329,13 +338,32 @@ class DataTableRow(urwid.WidgetWrap):
     def set_focus_map(self, focus_map):
         self._w.set_focus_map(focus_map)
 
-    def __len__(self): return len(self.columns)
+    def cell_by_column_label(self, label):
 
-    def __getitem__(self, i): return self.columns[i*2]
+        for i, col in enumerate(self.columns):
+            if col.label == label:
+                return self[i]
+        return None
 
-    def __delitem__(self, i): del self.columns[i*2]
+    def __len__(self): return len(self._columns.contents)
 
-    def __setitem__(self, i, v): self.columns[i*2] = v
+    def __getitem__(self, i): return self._columns[i*2]
+
+    def __delitem__(self, i): del self._columns[i*2]
+
+    def __setitem__(self, i, v): self._columns[i*2] = v
+
+    def render(self, size, focus=False):
+
+        canvas = super(DataTableRow, self).render(size, focus)
+
+        if not self.focused and focus:
+            urwid.emit_signal(self, 'focus', self)
+        elif self.focused and not focus:
+            urwid.emit_signal(self, 'unfocus', self)
+        self.focused = focus
+        return canvas
+
 
 
 class DataTableColumnHeader(urwid.WidgetWrap):
@@ -369,12 +397,16 @@ class DataTableHeaderRow(urwid.WidgetWrap):
     signals = ['click']
 
     def __init__(self, cols, border_char=" ",
-                 attr_map={}, focus_map={}, border_map={}):
+                 attr_map={}, focus_map={}, border_map=None):
 
         self.border_char = border_char
         self.attr_map = attr_map
         self.focus_map = focus_map
-        self.border_map = border_map
+        if border_map:
+            self.border_map = border_map
+        else:
+            self.border_map = attr_map
+
 
         self.column_defs = cols
         self.button_group = list()
@@ -426,6 +458,9 @@ class DataTableHeaderRow(urwid.WidgetWrap):
 
 class DataTable(urwid.WidgetWrap):
 
+    signals = ["select", "focus", "unfocus", "row_focus", "row_unfocus",
+               "drag_start", "drag_continue", "drag_stop"]
+
     query_presorted = False
 
     def __init__(self, columns=None, data=[],
@@ -449,9 +484,13 @@ class DataTable(urwid.WidgetWrap):
         self.border_char = border_char
         self.attr_map = attr_map
         self.focus_map = focus_map
-        self.border_map = border_map
+        if border_map:
+            self.border_map = border_map
+        else:
+            self.border_map = attr_map
         self.selected_index = 0
         self.sort_reverse = False
+        self.focused = False
         self.data = list()
 
         header_attr_map = attr_map.copy()
@@ -467,8 +506,31 @@ class DataTable(urwid.WidgetWrap):
             border_map=self.border_map,
             **kwargs)
         urwid.connect_signal(self.header, 'click', self.column_clicked, None)
+        self.walker = urwid.SimpleFocusListWalker([])
+        self.listbox = ScrollingListBox(self.walker)
 
-        self.listbox = ScrollingListBox(urwid.SimpleFocusListWalker([]))
+
+        urwid.connect_signal(
+            self.listbox, "select",
+            lambda source, selection: urwid.signals.emit_signal(
+                self, "select", self, selection)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_start",
+            lambda source, drag_from: urwid.signals.emit_signal(
+                self, "drag_start", self, drag_from)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_continue",
+            lambda source, drag_from, drag_to: urwid.signals.emit_signal(
+                self, "drag_continue", self, drag_from, drag_to)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_stop",
+            lambda source, drag_from ,drag_to: urwid.signals.emit_signal(
+                self, "drag_stop", self, drag_from, drag_to)
+        )
+
 
         self._pile = urwid.Pile([('pack', self.header),
                                  ('weight', 1, self.listbox)
@@ -500,6 +562,18 @@ class DataTable(urwid.WidgetWrap):
             if self.body and len(self.body):
                 self.listbox.set_focus(0)
 
+
+    # def render(self, size, focus=False):
+
+    #     canvas = super(DataTable, self).render(size, focus)
+
+    #     if not self.focused and focus:
+    #         urwid.emit_signal(self, 'focus', self)
+    #     elif self.focused and not focus:
+    #         urwid.emit_signal(self, 'unfocus', self)
+
+    #     self.focused = focus
+    #     return canvas
 
     def column_clicked(self, header, index, *args):
 
@@ -548,18 +622,16 @@ class DataTable(urwid.WidgetWrap):
                 index = i
                 break
 
-        try:
-            sort_key = self.columns[index].sort_key
-        except:
-            return
+        sort_key = self.columns[index].sort_key
 
-        if self.columns[index].sort_key:
-            kwargs['key'] = lambda x: self.columns[index].sort_key(x[index].value)
+        if sort_key:
+            kwargs['key'] = lambda x: sort_key(x[index].value)
         else:
             kwargs['key'] = lambda x: x[index].value
 
         if self.columns[index].sort_fn:
             kwargs['cmp'] = self.columns[index].sort_fn
+        # print kwargs
         self.listbox.body.sort(**kwargs)
         self.selected_index = index
         self.highlight_column(self.selected_index)
@@ -567,13 +639,27 @@ class DataTable(urwid.WidgetWrap):
 
     def add_row(self, data):
 
-        self.listbox.body.append(DataTableRow(
+        row = DataTableRow(
             data,
             columns = self.columns,
             border_char = self.border_char,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
-            border_map = self.border_map))
+            border_map = self.border_map)
+
+        urwid.connect_signal(
+            row, "focus",
+            lambda source: urwid.signals.emit_signal(self, "row_focus", self, row)
+        )
+
+        urwid.connect_signal(
+            row, "unfocus",
+            lambda source: urwid.signals.emit_signal(self, "row_unfocus", self, row)
+        )
+
+        self.listbox.body.append(row)
+
+
 
     def apply_filter(self, filter_fn):
 
@@ -597,13 +683,13 @@ class DataTable(urwid.WidgetWrap):
     @property
     def selection(self):
 
-        return self.body[self.listbox.focus_position]
+        return self.listbox.selection
 
 
     def focus(self, idx):
 
         if len(self.listbox.body):
-            self.listbox.set_focus(0)
+            self.listbox.set_focus(idx)
 
     # def apply_text_filter(self, filter_text):
 

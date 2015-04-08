@@ -69,7 +69,7 @@ def main():
             textattr = "normal"
             if not isinstance(v, tuple):
                 return super(MyDataTableColumnDef, self).default_format(v)
-            
+
             textattr, t = v
             text = urwid.Text( (textattr, s), align=self.align)
             text.val = t
@@ -84,7 +84,7 @@ def main():
                 l += ['weight', self.width]
             l.append(cell)
             return tuple(l)
-            
+
 
 
     COLUMN_DEFS =  [
@@ -104,7 +104,7 @@ def main():
     class DataTableTest(DataTable):
 
         columns = COLUMN_DEFS
-        
+
         def query(self, **kwargs):
             for r in l:
                 yield r
@@ -149,7 +149,7 @@ def main():
     def global_input(key):
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()
-    
+
     loop = urwid.MainLoop(main,
                           palette,
                           screen=screen,
