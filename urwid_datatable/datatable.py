@@ -101,6 +101,10 @@ class ScrollingListBox(urwid.ListBox):
         self.requery = False
 
 
+    # @property
+    # def contents(self):
+    #     return super(ScrollingListBox, self).contents()
+
     def mouse_event(self, size, event, button, col, row, focus):
         """Overrides ListBox.mouse_event method.
 
@@ -285,10 +289,10 @@ class DataTableCell(urwid.WidgetWrap):
 
         if not self.details or len(self.pile.contents) > 1:
             return
-        self.pile.contents.insert(
-            0,
-            (urwid.Divider(u"\u2500"), self.pile.options("pack"))
-        )
+        # self.pile.contents.insert(
+        #     0,
+        #     (urwid.Divider(u"\u2500"), self.pile.options("pack"))
+        # )
 
 
         self.pile.contents += [
@@ -301,7 +305,7 @@ class DataTableCell(urwid.WidgetWrap):
 
         if not self.details or len(self.pile.contents) == 1:
             return
-        del self.pile.contents[0]
+        # del self.pile.contents[0]
         del self.pile.contents[1:]
 
 
@@ -544,9 +548,9 @@ class DataTableHeaderRow(urwid.WidgetWrap):
     def contents(self):
         return self.columns.contents
 
-    @property
-    def focus(self):
-        return self.columns.focus
+    # @property
+    # def focus(self):
+    #     return self.columns.focus
 
 
 class DataTable(urwid.WidgetWrap):
@@ -646,7 +650,8 @@ class DataTable(urwid.WidgetWrap):
         super(DataTable,self).__init__(self._pile)
         for r in data:
             self.add_row(r)
-        if self.sort_field:
+
+        if self.sort_field and not self.query_presorted:
             self.sort_by(self.sort_field)
 
         if not len(self.columns):
@@ -682,21 +687,6 @@ class DataTable(urwid.WidgetWrap):
             #     self.listbox.set_focus(0)
         urwid.emit_signal(self, "refresh", self)
 
-            # self.listbox._invalidate()
-            # self._invalidate()
-
-
-    # def render(self, size, focus=False):
-
-    #     canvas = super(DataTable, self).render(size, focus)
-
-    #     if not self.focused and focus:
-    #         urwid.emit_signal(self, 'focus', self)
-    #     elif self.focused and not focus:
-    #         urwid.emit_signal(self, 'unfocus', self)
-
-    #     self.focused = focus
-    #     return canvas
 
     def column_clicked(self, header, index, *args):
 
@@ -794,8 +784,6 @@ class DataTable(urwid.WidgetWrap):
             for m in matches:
                 self.add_row(m)
 
-        # if self.sort_field:
-        #     self.sort_by(self.sort_field)
 
 
     @property
@@ -808,26 +796,6 @@ class DataTable(urwid.WidgetWrap):
     def selection(self):
 
         return self.listbox.selection
-
-
-    def focus(self, idx):
-
-        if len(self.listbox.body):
-            self.listbox.set_focus(idx)
-
-    # def apply_text_filter(self, filter_text):
-
-    #     if not self.search_key:
-    #         return False
-
-    #     matches = filter(
-    #         lambda x:
-    #         filter_text.lower() in self.search_key(x).lower(),
-    #         self.data)
-
-    #     del self.listbox.body[:]
-    #     for m in matches:
-    #         self.add_row(m)
 
     def clear(self):
         del self.data[:]
