@@ -338,8 +338,8 @@ class DataTableRow(urwid.WidgetWrap):
     # attr_map = {}
     # focus_map = {}
 
-    border_attr_map = { None: "table_border" }
-    border_focus_map = { None: "table_border focused" }
+    # border_attr_map = { None: "table_border" }
+    # border_focus_map = { None: "table_border focused" }
 
     decorate = True
 
@@ -530,6 +530,9 @@ class DataTableHeaderRow(DataTableRow):
 
     column_class = HeaderColumns
 
+    border_attr_map = { None: "table_border" }
+    border_focus_map = { None: "table_border focused" }
+
 
     def __init__(self, table, *args, **kwargs):
 
@@ -549,6 +552,8 @@ class DataTableHeaderRow(DataTableRow):
         super(DataTableHeaderRow, self).__init__(
             self.table,
             self.contents,
+            border_attr_map = self.border_attr_map,
+            border_focus_map = self.border_focus_map,
             cell_click = self.header_clicked,
             cell_select = self.header_clicked,
             *args, **kwargs)
@@ -602,7 +607,7 @@ class DataTable(urwid.WidgetWrap):
                 self.sort_field = initial_sort
 
         self.sort_field = self.column_label_to_field(self.sort_field)
-        # logger.error("sort: %s, %s" %(self.sort_field, self.sort_reverse))
+        # logger.warning("init sort: %s, %s" %(self.sort_field, self.sort_reverse))
 
         if query_sort: self.query_sort = query_sort
         if ui_sort: self.ui_sort = ui_sort
@@ -700,6 +705,7 @@ class DataTable(urwid.WidgetWrap):
         if not isinstance(index, int):
             raise Exception("invalid column index: %s" %(index))
 
+        # logger.warning("sort: %s, %s" %(self.sort_field, self.sort_reverse))
         # raise Exception("%s, %s" %(index/2, self.selected_column))
         # print "%s, %s" %(index/2, self.selected_column)
         if sort_field != self.sort_field:
