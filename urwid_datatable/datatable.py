@@ -602,9 +602,33 @@ class DataTable(urwid.WidgetWrap):
 
         self.walker = urwid.SimpleFocusListWalker([])
         self.listbox = ScrollingListBox(self.walker)
+
+        urwid.connect_signal(
+            self.listbox, "select",
+            lambda source, selection: urwid.signals.emit_signal(
+                self, "select", self, selection)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_start",
+            lambda source, drag_from: urwid.signals.emit_signal(
+                self, "drag_start", self, drag_from)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_continue",
+            lambda source, drag_from, drag_to: urwid.signals.emit_signal(
+                self, "drag_continue", self, drag_from, drag_to)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_stop",
+            lambda source, drag_from ,drag_to: urwid.signals.emit_signal(
+                self, "drag_stop", self, drag_from, drag_to)
+        )
+
+
         if self.limit:
             urwid.connect_signal(self.listbox, "load_more", self.load_more)
             self.offset = 0
+
 
         self.header = DataTableHeaderRow(self)
 
