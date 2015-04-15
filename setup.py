@@ -19,7 +19,6 @@ setup(name=name,
           'Intended Audience :: Developers'],
       packages=['urwid_datatable'],
       data_files=[('share/doc/%s' % name, ['LICENSE','README.md']),
-                  ('share/examples', ["examples/urwid_datatable_example.py"])
               ],
       install_requires = ['urwid']
      )

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import logging
+logger = logging.getLogger(__name__)
+
 import urwid
 import urwid.raw_display
 import random
@@ -6,8 +9,16 @@ import string
 from datetime import datetime, timedelta, date
 from operator import itemgetter
 
+
+DEFAULT_BORDER_WIDTH = 1
+DEFAULT_BORDER_CHAR = " "
+DEFAULT_BORDER_ATTR = "table_border"
+DEFAULT_CELL_PADDING = 1
+
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
+class DataTableHeaderLabel(str):
+    pass
 
 class ScrollingListBox(urwid.ListBox):
 
@@ -140,11 +151,6 @@ class ScrollingListBox(urwid.ListBox):
 
 
 
-DEFAULT_BORDER_WIDTH = 1
-DEFAULT_BORDER_CHAR = " "
-DEFAULT_BORDER_ATTR = "table_border"
-DEFAULT_CELL_PADDING = 1
-
 
 class DataTableColumn(object):
 
@@ -167,6 +173,40 @@ class DataTableColumn(object):
         self.attr_map = attr_map if attr_map else {}
         self.focus_map = focus_map if focus_map else {}
 
+    def _format(self, v):
+
+        if isinstance(v, DataTableHeaderLabel):
+            return urwid.Text(v, align=self.align, wrap=self.wrap)
+        else:
+            # First, call the format function for the column, if there is one
+            if self.format_fn:
+                try:
+                    v = self.format_fn(v)
+                except TypeError, e:
+                    logger.warn("format function raised exception: %s" %e)
+                    return urwid.Text("", align=self.align, wrap=self.wrap)
+                except:
+                    raise
+            return self.format(v)
+
+
+    def format(self, v):
+
+        # Do our best to make the value into something presentable
+        if v is None:
+            v = ""
+        elif isinstance(v, int):
+            v = "%d" %(v)
+        elif isinstance(v, float):
+            v = "%.03f" %(v)
+        elif isinstance(v, datetime):
+            v = v.strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(v, date):
+            v = v.strftime("%Y-%m-%d")
+
+        if not isinstance(v, urwid.Widget):
+            v = urwid.Text(v, align=self.align, wrap=self.wrap)
+        return v
 
 class DataTableCell(urwid.WidgetWrap):
 
@@ -183,7 +223,7 @@ class DataTableCell(urwid.WidgetWrap):
         self.column = column
         self.row = row
         self.value = value
-        self.contents = self.format(self.value)
+        self.contents = self.column._format(self.value)
 
         self.attr_map = {}
         self.focus_map = {}
@@ -203,8 +243,8 @@ class DataTableCell(urwid.WidgetWrap):
         if attr_map:
             self.attr_map.update(attr_map)
 
-        if table.focus_map:
-            self.attr_map.update(table.focus_map)
+        # if table.focus_map:
+        #     self.attr_map.update(table.focus_map)
         if column.focus_map:
             self.focus_map.update(column.focus_map)
         if row.focus_map:
@@ -232,52 +272,18 @@ class DataTableCell(urwid.WidgetWrap):
         self.highlight_attr_map = self.attr.get_attr_map()
         for k in self.highlight_attr_map.keys():
             self.highlight_attr_map[k] = self.highlight_attr_map[k] + " column_focused"
-        # if self.row.decorate:
-            # self.highlight_attr_map.update({None: "table_row column_focused"})
-        # print self.highlight_attr_map
 
         self.highlight_focus_map = self.attr.get_attr_map()
         for k in self.highlight_focus_map.keys():
             self.highlight_focus_map[k] = self.highlight_focus_map[k] + " column_focused focused"
 
-        # if self.row.decorate:
-            # self.highlight_focus_map.update({None: "table_row column_focused focused"})
         super(DataTableCell, self).__init__(self.attr)
 
-
-    def format(self, v):
-
-        # First, call the format function for the column, if there is one
-        if self.column.format_fn:
-            v = self.column.format_fn(v)
-
-        # If format function made a valid widget, we're done.
-        if isinstance(v, urwid.Widget):
-            return v
-
-        # If not, do our best to make the value into something presentable
-        if v is None:
-            v = ""
-        elif isinstance(v, int):
-            v = "%d" %(v)
-        elif isinstance(v, float):
-            v = "%.03f" %(v)
-        elif isinstance(v, datetime):
-            v = v.strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(v, date):
-            v = v.strftime("%Y-%m-%d")
-
-        return urwid.Text(v, align=self.column.align, wrap=self.column.wrap)
 
     def selectable(self):
         return True
 
     def highlight(self):
-        #attr = self.orig_attr_map[None] + " column_focused"
-        #self.attr.set_attr_map({None: attr})
-        # attr = self.orig_attr_map["table_row"] + " column_focused"
-        # self.attr.attr_map[None] = "table_row column_focused"
-        # self.attr.focus_map[None] = "table_row column_focused focused"
         self.attr.set_attr_map(self.highlight_attr_map)
         self.attr.set_focus_map(self.highlight_focus_map)
 
@@ -431,6 +437,13 @@ class DataTableRow(urwid.WidgetWrap):
 
         super(DataTableRow, self).__init__(self.attr)
 
+
+    def set_attr_map(self, attr_map):
+        self.attr.set_attr_map(attr_map)
+
+    def set_focus_map(self, focus_map):
+        self.attr.set_focus_map(focus_map)
+
     def __len__(self): return len(self.contents)
 
     def __getitem__(self, i): return self.row.contents[i*2][0]
@@ -521,7 +534,10 @@ class DataTableHeaderRow(DataTableRow):
         self.decorate = False
 
         self.table = table
-        self.contents = [ x.name for x in self.table.columns ]
+        self.contents = [ DataTableHeaderLabel(x.label) for x in self.table.columns ]
+        if not self.table.ui_sort:
+            self.selectable = lambda: False
+
         super(DataTableHeaderRow, self).__init__(
             self.table,
             self.contents,
@@ -551,24 +567,37 @@ class DataTable(urwid.WidgetWrap):
                "focus", "unfocus", "row_focus", "row_unfocus",
                "drag_start", "drag_continue", "drag_stop"]
 
+    columns = []
     attr_map = {}
     focus_map = {}
     # attr_map = { None: "table" }
     # focus_map = { None: "table focused" }
     border = (DEFAULT_BORDER_WIDTH, DEFAULT_BORDER_CHAR, DEFAULT_BORDER_ATTR)
     padding = DEFAULT_CELL_PADDING
+    sort_field = None
     initial_sort = None
+    sort_reverse = False
     query_sort = False
+    ui_sort = False
     limit = None
 
     def __init__(self, border=None, padding=None,
-                 initial_sort = None, query_sort = None,
+                 initial_sort = None, query_sort = None, ui_sort = False,
                  limit = None):
 
         if border: self.border = border
         if padding: self.padding = padding
-        if initial_sort: self.initial_sort = initial_sort
+        if initial_sort:
+            if isinstance(initial_sort, tuple):
+                self.sort_field, self.sort_reverse = initial_sort
+            else:
+                self.sort_field = initial_sort
+
+        self.sort_field = self.column_label_to_field(self.sort_field)
+        # logger.error("sort: %s, %s" %(self.sort_field, self.sort_reverse))
+
         if query_sort: self.query_sort = query_sort
+        if ui_sort: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
         self.walker = urwid.SimpleFocusListWalker([])
@@ -578,10 +607,9 @@ class DataTable(urwid.WidgetWrap):
             self.offset = 0
 
         self.header = DataTableHeaderRow(self)
-        self.sort_field = None
-        self.sort_reverse = False
 
-        urwid.connect_signal(self.header, "column_click", self.sort_by_column)
+        if self.ui_sort:
+            urwid.connect_signal(self.header, "column_click", self.sort_by_column)
 
         self.pile = urwid.Pile([
             ('pack', self.header),
@@ -593,26 +621,43 @@ class DataTable(urwid.WidgetWrap):
         )
         super(DataTable, self).__init__(self.attr)
         self.refresh()
-        if self.initial_sort:
-            self.sort_by_column(self.initial_sort)
+        if not self.query_sort and self.sort_field:
+            self.sort_by_column(self.sort_field)
 
 
     @property
     def selected_column(self):
         return self.header.focus_position
 
+    @property
+    def focus_position(self):
+        return self.listbox.focus_position
+
+    @property
+    def body(self):
+        return self.listbox.body
+
+    @property
+    def selection(self):
+        return self.body[self.focus_position]
 
     def highlight_column(self, index):
         self.header.highlight_column(index)
         for row in self.listbox.body:
             row.highlight_column(index)
 
+    def column_label_to_field(self, label):
+        for i, col in enumerate(self.columns):
+            if col.label == label:
+                return col.name
+
+
     def sort_by_column(self, index):
 
         if isinstance(index, basestring):
             sort_field = index
             for i, col in enumerate(self.columns):
-                if col.label == sort_field:
+                if col.name == sort_field:
                     index = i*2
                     break
         else:
@@ -667,7 +712,7 @@ class DataTable(urwid.WidgetWrap):
 
     def keypress(self, size, key):
 
-        if key in [ "<", ">" ]:
+        if self.ui_sort and key in [ "<", ">" ]:
 
             self.header.cycle_columns( -1 if key == "<" else 1 )
             self.sort_by_column(self.header.row.focus_position)
@@ -686,6 +731,7 @@ class DataTable(urwid.WidgetWrap):
         kwargs = {"sort": (self.sort_field, self.sort_reverse)}
         if self.limit:
             kwargs["offset"] = offset
+        # logger.error("sort: %s, %s" %(self.sort_field, self.sort_reverse))
         # print kwargs
         for r in self.query(**kwargs):
             row = DataTableBodyRow(self, r, header = self.header.row)
@@ -813,7 +859,7 @@ def main():
         def selectable(self):
             return True
 
-        def query(self, sort=None, offset=None):
+        def query(self, sort=(None, None), offset=None):
 
             sort_field, sort_reverse = sort
 
