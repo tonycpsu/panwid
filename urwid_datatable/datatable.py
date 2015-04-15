@@ -305,7 +305,11 @@ class DataTableCell(urwid.WidgetWrap):
 
 
 class HeaderColumns(urwid.Columns):
-    pass
+
+    def __init__(self, contents, header = None):
+
+        self.selected_column = 0
+        super(HeaderColumns, self).__init__(contents)
 
 
 class BodyColumns(urwid.Columns):
@@ -317,13 +321,13 @@ class BodyColumns(urwid.Columns):
 
 
     @property
-    def focus_position(self):
+    def selected_column(self):
 
         # print "get focus_position"
-        return self.header.focus_position
+        return self.header.selected_column
 
-    @focus_position.setter
-    def focus_position(self, value):
+    @selected_column.setter
+    def selected_column(self, value):
         return
 
 
@@ -350,6 +354,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.header = header
         self.cell_click = cell_click
         self.cell_select = cell_select
+        self.selected_column = None
         self.contents = []
         self._values = dict()
 
@@ -472,19 +477,21 @@ class DataTableRow(urwid.WidgetWrap):
         self.row.focus_position = value
 
 
-    def cycle_focus(self, step):
+    # def cycle_focus(self, step):
 
-        index = (self.focus_position + 2*step)
-        if index < 0:
-            index = len(self.row.contents)-1
-        if index > len(self.row.contents)-1:
-            index = 0
+    #     if not self.selected_column:
+    #         self.selected_column = -1
+    #     index = (self.selected_column + 2*step)
+    #     if index < 0:
+    #         index = len(self.row.contents)-1
+    #     if index > len(self.row.contents)-1:
+    #         index = 0
 
-        self.focus_position = index
+    #     self.focus_position = index
 
 
     def highlight_column(self, index):
-        self.row.focus_position = index
+        self.row.selected_column = index
         for i in range(0, len(self.row.contents), 2):
             if i == index:
                 self.row[i].highlight()
@@ -493,12 +500,13 @@ class DataTableRow(urwid.WidgetWrap):
 
     def cycle_columns(self, step):
 
-        index = (self.row.focus_position + 2*step)
+        index = (self.row.selected_column + 2*step)
         if index < 0:
             index = len(self.row.contents)-1
         if index > len(self.row.contents)-1:
             index = 0
 
+        # print "index: %s" %(index)
         self.highlight_column(index)
 
 
@@ -603,6 +611,8 @@ class DataTable(urwid.WidgetWrap):
         self.walker = urwid.SimpleFocusListWalker([])
         self.listbox = ScrollingListBox(self.walker)
 
+        self.selected_column = None
+
         urwid.connect_signal(
             self.listbox, "select",
             lambda source, selection: urwid.signals.emit_signal(
@@ -649,9 +659,9 @@ class DataTable(urwid.WidgetWrap):
             self.sort_by_column(self.sort_field)
 
 
-    @property
-    def selected_column(self):
-        return self.header.focus_position
+    # @property
+    # def selected_column(self):
+    #     return self.header.focus_position
 
     @property
     def focus_position(self):
@@ -699,7 +709,7 @@ class DataTable(urwid.WidgetWrap):
         self.sort_field = sort_field
         # print self.sort_reverse
         if self.query_sort:
-            self.header.focus_position = index
+            self.header.selected_column = index
             self.refresh()
         else:
             self.sort_by(index/2, reverse=self.sort_reverse)
@@ -739,7 +749,7 @@ class DataTable(urwid.WidgetWrap):
         if self.ui_sort and key in [ "<", ">" ]:
 
             self.header.cycle_columns( -1 if key == "<" else 1 )
-            self.sort_by_column(self.header.row.focus_position)
+            self.sort_by_column(self.header.row.selected_column)
         else:
             return super(DataTable, self).keypress(size, key)
             # return key
@@ -829,7 +839,7 @@ def main():
     # raise Exception(FOCUS_MAP)
     header_foreground_map = {
         None: ["black,bold", "g7,bold"],
-        "focused": ["yellow,bold", "yellow,bold"],
+        "focused": ["white,bold", "white,bold"],
         "column_focused": ["yellow,bold", "yellow,bold"],
     "column_focused focused": ["yellow,bold", "yellow,bold"],
 
@@ -865,6 +875,7 @@ def main():
         focus_map = FOCUS_MAP
         query_sort = True
         initial_sort = "bar"
+        ui_sort = True
         limit = 20
 
         columns = [
