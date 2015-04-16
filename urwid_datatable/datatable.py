@@ -931,13 +931,13 @@ def main():
                 attr = ' '.join([prefix, suffix])
             else:
                 attr = prefix
-                entries[attr] = PaletteEntry(
-                    mono = "white",
-                    foreground = header_foreground_map[suffix][0],
-                    background = header_background_map[suffix][0],
-                    foreground_high = header_foreground_map[suffix][1],
-                    background_high = header_background_map[suffix][1],
-                )
+            entries[attr] = PaletteEntry(
+                mono = "white",
+                foreground = header_foreground_map[suffix][0],
+                background = header_background_map[suffix][0],
+                foreground_high = header_foreground_map[suffix][1],
+                background_high = header_background_map[suffix][1],
+            )
 
     palette = Palette("default", **entries)
 
