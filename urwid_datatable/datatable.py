@@ -308,7 +308,7 @@ class HeaderColumns(urwid.Columns):
 
     def __init__(self, contents, header = None):
 
-        self.selected_column = 0
+        self.selected_column = None
         super(HeaderColumns, self).__init__(contents)
 
 
@@ -354,7 +354,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.header = header
         self.cell_click = cell_click
         self.cell_select = cell_select
-        self.selected_column = None
+        # self.selected_column = None
         self.contents = []
         self._values = dict()
 
@@ -476,6 +476,14 @@ class DataTableRow(urwid.WidgetWrap):
     def focus_position(self, value):
         self.row.focus_position = value
 
+    @property
+    def selected_column(self):
+        return self.row.selected_column
+
+    @selected_column.setter
+    def selected_column(self, value):
+        self.row.selected_column = value
+
 
     # def cycle_focus(self, step):
 
@@ -491,7 +499,7 @@ class DataTableRow(urwid.WidgetWrap):
 
 
     def highlight_column(self, index):
-        self.row.selected_column = index
+        self.selected_column = index
         for i in range(0, len(self.row.contents), 2):
             if i == index:
                 self.row[i].highlight()
@@ -500,11 +508,14 @@ class DataTableRow(urwid.WidgetWrap):
 
     def cycle_columns(self, step):
 
-        index = (self.row.selected_column + 2*step)
-        if index < 0:
-            index = len(self.row.contents)-1
-        if index > len(self.row.contents)-1:
+        if self.selected_column is None:
             index = 0
+        else:
+            index = (self.row.selected_column + 2*step)
+            if index < 0:
+                index = len(self.row.contents)-1
+            if index > len(self.row.contents)-1:
+                index = 0
 
         # print "index: %s" %(index)
         self.highlight_column(index)
@@ -714,8 +725,8 @@ class DataTable(urwid.WidgetWrap):
             self.sort_reverse = not self.sort_reverse
         self.sort_field = sort_field
         # print self.sort_reverse
+        self.selected_column = index
         if self.query_sort:
-            self.header.selected_column = index
             self.refresh()
         else:
             self.sort_by(index/2, reverse=self.sort_reverse)
@@ -760,6 +771,11 @@ class DataTable(urwid.WidgetWrap):
             return super(DataTable, self).keypress(size, key)
             # return key
 
+    def add_row(self, data):
+        row = DataTableBodyRow(self, data, header = self.header.row)
+        self.listbox.body.append(row)
+
+
     def query(self, sort=None, offset=None):
         pass
 
@@ -774,8 +790,9 @@ class DataTable(urwid.WidgetWrap):
         # logger.error("sort: %s, %s" %(self.sort_field, self.sort_reverse))
         # print kwargs
         for r in self.query(**kwargs):
-            row = DataTableBodyRow(self, r, header = self.header.row)
-            self.listbox.body.append(row)
+            # row = DataTableBodyRow(self, r, header = self.header.row)
+            self.add_row(r)
+            # self.listbox.body.append(row)
 
         if offset:
             self.listbox.set_focus(orig_offset)
@@ -785,7 +802,9 @@ class DataTable(urwid.WidgetWrap):
     def load_more(self, offset):
 
         self.refresh(offset)
-        self.highlight_column(self.selected_column)
+        # print self.selected_column
+        if self.selected_column is not None:
+            self.highlight_column(self.selected_column)
 
 
     def clear(self):
