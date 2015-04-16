@@ -569,19 +569,36 @@ class DataTableHeaderRow(DataTableRow):
             cell_select = self.header_clicked,
             *args, **kwargs)
 
-    # def selectable(self):
-    #     return True
-
-    # def keypress(self, size, key):
-    #     return key
-
-    # def focus_position(self):
-    #     return self.table.header.focus_position
-
     def header_clicked(self, index):
         # print "click: %d" %(index)
         # index = [x[0] for x in self.contents].index(self.focus) / 2
         urwid.emit_signal(self, "column_click", index)
+
+
+class DataTableFooterRow(DataTableRow):
+
+    column_class = HeaderColumns
+
+    border_attr_map = { None: "table_border" }
+    border_focus_map = { None: "table_border focused" }
+
+    def __init__(self, table, *args, **kwargs):
+
+        self.attr_map = {}
+        self.focus_map = {}
+
+        self.attr_map = { None: "table_footer" }
+        self.focus_map = { None: "table_footer focused" }
+
+        self.table = table
+        self.contents = [ "foo" for x in self.table.columns ]
+
+        super(DataTableFooterRow, self).__init__(
+            self.table,
+            self.contents,
+            border_attr_map = self.border_attr_map,
+            border_focus_map = self.border_focus_map,
+            *args, **kwargs)
 
 
 
@@ -598,6 +615,8 @@ class DataTable(urwid.WidgetWrap):
     # focus_map = { None: "table focused" }
     border = (DEFAULT_BORDER_WIDTH, DEFAULT_BORDER_CHAR, DEFAULT_BORDER_ATTR)
     padding = DEFAULT_CELL_PADDING
+    with_header = True
+    with_footer = False
     sort_field = None
     initial_sort = None
     sort_reverse = False
@@ -606,11 +625,14 @@ class DataTable(urwid.WidgetWrap):
     limit = None
 
     def __init__(self, border=None, padding=None,
+                 with_header=True, with_footer=False,
                  initial_sort = None, query_sort = None, ui_sort = False,
                  limit = None):
 
         if border: self.border = border
         if padding: self.padding = padding
+        if with_header: self.with_header = with_header
+        if with_footer: self.with_footer = with_footer
         if initial_sort:
             if isinstance(initial_sort, tuple):
                 self.sort_field, self.sort_reverse = initial_sort
@@ -656,15 +678,34 @@ class DataTable(urwid.WidgetWrap):
             self.offset = 0
 
 
+        self.pile = urwid.Pile([])
+
         self.header = DataTableHeaderRow(self)
+        if self.with_header:
+            self.pile.contents.append(
+                (self.header, self.pile.options('pack'))
+             )
+            if self.ui_sort:
+                urwid.connect_signal(
+                    self.header, "column_click", self.sort_by_column
+                )
 
-        if self.ui_sort:
-            urwid.connect_signal(self.header, "column_click", self.sort_by_column)
+        self.pile.contents.append(
+            (self.listbox, self.pile.options('weight', 1))
+         )
 
-        self.pile = urwid.Pile([
-            ('pack', self.header),
-            ('weight', 1, self.listbox)
-        ])
+        # self.pile = urwid.Pile([
+        #     ('pack', self.header),
+        #     ('weight', 1, self.listbox)
+        # ])
+
+        if self.with_footer:
+            self.footer = DataTableFooterRow(self)
+            self.pile.contents.append(
+                (self.footer, self.pile.options('pack'))
+             )
+
+
         self.attr = urwid.AttrMap(
             self.pile,
             attr_map = self.attr_map
@@ -771,9 +812,16 @@ class DataTable(urwid.WidgetWrap):
             return super(DataTable, self).keypress(size, key)
             # return key
 
-    def add_row(self, data):
+    def add_row(self, data, position=None):
         row = DataTableBodyRow(self, data, header = self.header.row)
-        self.listbox.body.append(row)
+        if position is None:
+            self.listbox.body.append(row)
+            position = len(self.listbox.body)-1
+        else:
+            self.listbox.body.insert(position, row)
+
+        item = self.listbox.body[position]
+        return item
 
 
     def query(self, sort=None, offset=None):
@@ -866,9 +914,9 @@ def main():
         None: ["black,bold", "g7,bold"],
         "focused": ["white,bold", "white,bold"],
         "column_focused": ["yellow,bold", "yellow,bold"],
-    "column_focused focused": ["yellow,bold", "yellow,bold"],
+        "column_focused focused": ["yellow,bold", "yellow,bold"],
 
-}
+    }
 
     header_background_map = {
         None: ["light gray", "g40"],
@@ -877,19 +925,19 @@ def main():
         "column_focused focused": ["light gray", "g40"],
     }
 
-    prefix = "table_header"
-    for suffix in [None, "focused", "column_focused", "column_focused focused"]:
-        if suffix:
-            attr = ' '.join([prefix, suffix])
-        else:
-            attr = prefix
-        entries[attr] = PaletteEntry(
-            mono = "white",
-            foreground = header_foreground_map[suffix][0],
-            background = header_background_map[suffix][0],
-            foreground_high = header_foreground_map[suffix][1],
-            background_high = header_background_map[suffix][1],
-        )
+    for prefix in ["table_header", "table_footer"]:
+        for suffix in [None, "focused", "column_focused", "column_focused focused"]:
+            if suffix:
+                attr = ' '.join([prefix, suffix])
+            else:
+                attr = prefix
+                entries[attr] = PaletteEntry(
+                    mono = "white",
+                    foreground = header_foreground_map[suffix][0],
+                    background = header_background_map[suffix][0],
+                    foreground_high = header_foreground_map[suffix][1],
+                    background_high = header_background_map[suffix][1],
+                )
 
     palette = Palette("default", **entries)
 
@@ -900,6 +948,7 @@ def main():
         focus_map = FOCUS_MAP
         query_sort = True
         initial_sort = "bar"
+        with_footer = True
         ui_sort = True
         limit = 20
 
