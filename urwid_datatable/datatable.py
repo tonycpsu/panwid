@@ -625,12 +625,13 @@ class DataTableFooterRow(DataTableRow):
             if not col.footer_fn:
                 continue
             try:
-                col_data = [ r.data.get(col.name, None)
-                             for r in self.table.body ]
-                val = col._format(col.footer_fn(col_data))
+                # col_data = [ r.data.get(col.name, None)
+                #              for r in self.table.body ]
+                data = [ r.data for r in self.table.body ]
+                val = col._format(col.footer_fn(data, col.name))
                 self[i] = val
             except Exception, e:
-                raise e
+                logger.exception(e)
 
 
 class DataTable(urwid.WidgetWrap):
@@ -979,8 +980,9 @@ def main():
 
 
 
-    def avg(l):
-        return sum(l)/len(l)
+    def avg(data, attr):
+        values = [ d[attr] for d in data ]
+        return sum(values)/len(values)
 
     class ExampleDataTable(DataTable):
 
