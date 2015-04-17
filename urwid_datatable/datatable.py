@@ -105,9 +105,9 @@ class ScrollingListBox(urwid.ListBox):
             elif key == 'k':
                 self.keypress(size, 'up')
             elif key == 'g':
-                self.set_focus(0)
+                self.focus_position = 0
             elif key == 'G':
-                self.set_focus(len(self.body) - 1)
+                self.focus_position = len(self.body) - 1
                 self.set_focus_valign('bottom')
             elif key == 'home':
                 self.focus_position = 0
@@ -755,6 +755,10 @@ class DataTable(urwid.WidgetWrap):
     @property
     def focus_position(self):
         return self.listbox.focus_position
+
+    @focus_position.setter
+    def focus_position(self, value):
+        self.listbox.focus_position = value
 
     @property
     def body(self):
