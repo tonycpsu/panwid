@@ -628,8 +628,10 @@ class DataTableFooterRow(DataTableRow):
                 # col_data = [ r.data.get(col.name, None)
                 #              for r in self.table.body ]
                 data = [ r.data for r in self.table.body ]
-                val = col._format(col.footer_fn(data, col.name))
-                self[i] = val
+                footer_content = col.footer_fn(data, col.name)
+                if not isinstance(footer_content, urwid.Widget):
+                    footer_content = col._format(footer_content)
+                self[i] = footer_content
             except Exception, e:
                 logger.exception(e)
 
@@ -880,7 +882,7 @@ class DataTable(urwid.WidgetWrap):
             self.add_row(r)
             # self.listbox.body.append(row)
 
-        if offset:
+        if offset and orig_offset < len(self.body):
             self.listbox.set_focus(orig_offset)
 
         if self.with_footer:
