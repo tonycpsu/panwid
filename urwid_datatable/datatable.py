@@ -27,13 +27,14 @@ class ScrollingListBox(urwid.ListBox):
                "drag_start", "drag_continue", "drag_stop",
                "load_more"]
 
-    def __init__(self, body):
-        super(ScrollingListBox, self).__init__(body)
+    def __init__(self, body, infinite = False):
         self.mouse_state = 0
         self.drag_from = None
         self.drag_last = None
         self.drag_to = None
         self.requery = False
+        self.infinite = infinite
+        super(ScrollingListBox, self).__init__(body)
 
 
     # @property
@@ -115,7 +116,9 @@ class ScrollingListBox(urwid.ListBox):
             elif key == 'end':
                 self.focus_position = len(self.body)-1
                 self._invalidate()
-            elif key in ['page down', "down"] and self.focus_position == len(self.body)-1:
+            elif (self.infinite
+                  and key in ['page down', "down"]
+                  and self.focus_position == len(self.body)-1):
                 self.requery = True
                 self._invalidate()
             elif key == "enter":
@@ -295,6 +298,9 @@ class DataTableCell(urwid.WidgetWrap):
     def selectable(self):
         return True
 
+    def keypress(self, size, key):
+        return super(DataTableCell, self).keypress(size, key)
+
     def highlight(self):
         self.attr.set_attr_map(self.highlight_attr_map)
         self.attr.set_focus_map(self.highlight_focus_map)
@@ -473,8 +479,8 @@ class DataTableRow(urwid.WidgetWrap):
     def selectable(self):
         return True
 
-    # def keypress(self, size, key):
-    #     return key
+    def keypress(self, size, key):
+        return super(DataTableRow, self).keypress(size, key)
 
     # def focus_position(self):
     #     return self.table.header.focus_position
@@ -674,14 +680,14 @@ class DataTable(urwid.WidgetWrap):
                 self.sort_field = initial_sort
 
         self.sort_field = self.column_label_to_field(self.sort_field)
-        # logger.warning("init sort: %s, %s" %(self.sort_field, self.sort_reverse))
+        # print "init sort: %s, %s" %(self.sort_field, self.sort_reverse)
 
         if query_sort: self.query_sort = query_sort
         if ui_sort: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
         self.walker = urwid.SimpleFocusListWalker([])
-        self.listbox = ScrollingListBox(self.walker)
+        self.listbox = ScrollingListBox(self.walker, infinite=self.limit)
 
         self.selected_column = None
 
@@ -994,16 +1000,12 @@ def main():
 
         focus_map = FOCUS_MAP
         query_sort = True
-        initial_sort = "bar"
         with_footer = True
         ui_sort = True
-        limit = 20
 
         columns = [
             DataTableColumn(
                 "foo", width=5,
-                # attr_map = {None: "green", "table_row": "yellow"},
-                # focus_map = {None: "green focused", "table_row": "green focused"}
             ),
             DataTableColumn("bar", width=12, align="right", footer_fn = avg),
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
@@ -1025,7 +1027,7 @@ def main():
                        baz =''.join(random.choice(
                            string.ascii_uppercase
                            + string.lowercase
-                           + string.digits + ' ' * 10
+                           + string.digits + ' ' * 20
                        ) for _ in range(32))) for i in range(1000)]
 
             if sort_field:
@@ -1050,17 +1052,38 @@ def main():
 
         def __init__(self):
 
-            self.data_table = ExampleDataTable()
-            urwid.connect_signal(
-                self.data_table, "refresh", lambda source: loop.draw_screen()
+            self.tables = list()
+
+            self.tables.append(
+                ExampleDataTable(initial_sort="foo", limit=10)
             )
 
+            self.tables.append(
+                ExampleDataTable(initial_sort="bar", limit=20)
+            )
+
+            self.tables.append(
+                ExampleDataTable(initial_sort="baz", ui_sort=False)
+            )
+
+            for t in self.tables:
+                urwid.connect_signal(
+                    t, "refresh", lambda source: loop.draw_screen()
+                )
+
+            self.grid_flow = urwid.GridFlow(
+                [urwid.BoxAdapter(t, 30) for t in self.tables], 60, 1, 1, "left"
+            )
+            #     [ ('weight', 1, urwid.LineBox(t)) for t in self.tables ]
+            # )
+
+
             self.pile = urwid.Pile([
-                ('weight', 1, self.data_table)
+                ('weight', 1, urwid.Filler(self.grid_flow))
 
             ])
-            w = urwid.WidgetPlaceholder(self.pile)
-            super(MainView,self).__init__(w)
+            # w = urwid.WidgetPlaceholder(self.pile)
+            super(MainView,self).__init__(self.pile)
 
 
     def parse_list(option, opt, value, parser):
