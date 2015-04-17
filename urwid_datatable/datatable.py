@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 import logging
 logger = logging.getLogger(__name__)
 
@@ -158,6 +159,7 @@ class DataTableColumn(object):
                  align="left", wrap="space", padding = None,
                  format_fn=None, attr = None,
                  sort_key = None, sort_fn = None,
+                 footer_fn = None,
                  attr_map = None, focus_map = None):
 
         self.name = name
@@ -170,8 +172,18 @@ class DataTableColumn(object):
         self.attr = attr
         self.sort_key = sort_key
         self.sort_fn = sort_fn
+        self.footer_fn = footer_fn
         self.attr_map = attr_map if attr_map else {}
         self.focus_map = focus_map if focus_map else {}
+        if isinstance(self.width, tuple):
+            if self.width[0] != "weight":
+                raise Exception(
+                    "Column width %s not supported" %(col.width[0])
+                )
+            self.sizing, self.width = self.width
+        else:
+            self.sizing = "given"
+
 
     def _format(self, v):
 
@@ -183,7 +195,7 @@ class DataTableColumn(object):
                 try:
                     v = self.format_fn(v)
                 except TypeError, e:
-                    logger.warn("format function raised exception: %s" %e)
+                    logger.info("format function raised exception: %s" %e)
                     return urwid.Text("", align=self.align, wrap=self.wrap)
                 except:
                     raise
@@ -377,12 +389,8 @@ class DataTableRow(urwid.WidgetWrap):
 
         for i, col in enumerate(self.table.columns):
             l = list()
-            if isinstance(col.width, tuple):
-                if col.width[0] != "weight":
-                    raise Exception(
-                        "Column width %s not supported" %(col.width[0])
-                    )
-                l += ['weight', col.width[1]]
+            if col.sizing == "weight":
+                l += [col.sizing, col.width]
             else:
                 l.append(col.width)
 
@@ -413,7 +421,7 @@ class DataTableRow(urwid.WidgetWrap):
                 border_width, border_char, border_attr = table.border
             except IndexError:
                 try:
-                    border_width, border_char = ta0ble.border
+                    border_width, border_char = table.border
                 except Indexerror:
                     border_width = table.border
 
@@ -453,10 +461,14 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __getitem__(self, i): return self.row.contents[i*2][0]
 
-    def __delitem__(self, i): del self.row.contents[i*2][0]
+    def __delitem__(self, i): del self.row.contents[i*2]
 
-    def __setitem__(self, i, v): self.row.contents[i*2][0] = v
+    def __setitem__(self, i, v):
 
+        self.row.contents[i*2] = (
+            v, self.row.options(self.table.columns[i].sizing,
+                                self.table.columns[i].width)
+        )
 
     def selectable(self):
         return True
@@ -577,7 +589,7 @@ class DataTableHeaderRow(DataTableRow):
 
 class DataTableFooterRow(DataTableRow):
 
-    column_class = HeaderColumns
+    # column_class = HeaderColumns
 
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
@@ -591,7 +603,9 @@ class DataTableFooterRow(DataTableRow):
         self.focus_map = { None: "table_footer focused" }
 
         self.table = table
-        self.contents = [ "foo" for x in self.table.columns ]
+        self.contents = [ DataTableHeaderLabel("")
+                          for i in range(len(self.table.columns)) ]
+
 
         super(DataTableFooterRow, self).__init__(
             self.table,
@@ -600,6 +614,23 @@ class DataTableFooterRow(DataTableRow):
             border_focus_map = self.border_focus_map,
             *args, **kwargs)
 
+    def selectable(self):
+        return False
+
+    def update(self):
+
+        columns = self.table.columns
+
+        for i, col in enumerate(columns):
+            if not col.footer_fn:
+                continue
+            try:
+                col_data = [ r.data.get(col.name, None)
+                             for r in self.table.body ]
+                val = col._format(col.footer_fn(col_data))
+                self[i] = val
+            except Exception, e:
+                raise e
 
 
 class DataTable(urwid.WidgetWrap):
@@ -752,14 +783,14 @@ class DataTable(urwid.WidgetWrap):
                     index = i*2
                     break
         else:
-            sort_field = self.columns[index/2].name
+            sort_field = self.columns[index//2].name
 
         if not isinstance(index, int):
             raise Exception("invalid column index: %s" %(index))
 
         # logger.warning("sort: %s, %s" %(self.sort_field, self.sort_reverse))
-        # raise Exception("%s, %s" %(index/2, self.selected_column))
-        # print "%s, %s" %(index/2, self.selected_column)
+        # raise Exception("%s, %s" %(index//2, self.selected_column))
+        # print "%s, %s" %(index//2, self.selected_column)
         if sort_field != self.sort_field:
             self.sort_reverse = False
         else:
@@ -770,7 +801,7 @@ class DataTable(urwid.WidgetWrap):
         if self.query_sort:
             self.refresh()
         else:
-            self.sort_by(index/2, reverse=self.sort_reverse)
+            self.sort_by(index//2, reverse=self.sort_reverse)
 
         self.highlight_column(index)
         if len(self.listbox.body):
@@ -839,11 +870,16 @@ class DataTable(urwid.WidgetWrap):
         # print kwargs
         for r in self.query(**kwargs):
             # row = DataTableBodyRow(self, r, header = self.header.row)
+            if isinstance(r, (tuple, list)):
+                r = dict(zip( [c.name for c in self.columns], r))
             self.add_row(r)
             # self.listbox.body.append(row)
 
         if offset:
             self.listbox.set_focus(orig_offset)
+
+        if self.with_footer:
+            self.footer.update()
 
         urwid.emit_signal(self, "refresh", self)
 
@@ -943,6 +979,9 @@ def main():
 
 
 
+    def avg(l):
+        return sum(l)/len(l)
+
     class ExampleDataTable(DataTable):
 
         focus_map = FOCUS_MAP
@@ -958,7 +997,7 @@ def main():
                 # attr_map = {None: "green", "table_row": "yellow"},
                 # focus_map = {None: "green focused", "table_row": "green focused"}
             ),
-            DataTableColumn("bar", width=12, align="right"),
+            DataTableColumn("bar", width=12, align="right", footer_fn = avg),
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
         ]
 
