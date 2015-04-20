@@ -21,21 +21,72 @@ intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 class DataTableHeaderLabel(str):
     pass
 
-class ScrollingListBox(urwid.ListBox):
+
+class ListBoxScrollBar(urwid.WidgetWrap):
+
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.pile = urwid.Pile([])
+        super(ListBoxScrollBar, self).__init__(self.pile)
+
+    def update(self, size):
+
+        width, height = size
+        del self.pile.contents[:]
+        scroll_position = int(
+            (self.parent.focus_position) / len(self.parent.body) * height
+        )
+
+        pos_marker = urwid.AttrMap(urwid.Text(u"\N{FULL BLOCK}"),
+                                   {None: "scroll_pos"}
+        )
+        bg_marker = urwid.AttrMap(urwid.Text(" "),
+                                   {None: "scroll_bg"}
+        )
+
+        for i in range(height):
+            if i == scroll_position:
+                marker = pos_marker
+            else:
+                marker = bg_marker
+            self.pile.contents.append(
+                (marker, self.pile.options("pack"))
+            )
+        self._invalidate()
+
+
+class ScrollingListBox(urwid.WidgetWrap):
 
     signals = ["select",
                "drag_start", "drag_continue", "drag_stop",
                "load_more"]
 
-    def __init__(self, body, infinite = False):
+    def __init__(self, body, infinite = False, with_scrollbar=False):
+
+        self.infinite = infinite
+        self.with_scrollbar = with_scrollbar
+
         self.mouse_state = 0
         self.drag_from = None
         self.drag_last = None
         self.drag_to = None
         self.requery = False
-        self.infinite = infinite
-        super(ScrollingListBox, self).__init__(body)
 
+        self.listbox = urwid.ListBox(body)
+        if self.with_scrollbar:
+            self.scroll_bar = ListBoxScrollBar(self)
+            self.columns = urwid.Columns([
+                ('weight', 3, self.listbox),
+                (1, self.scroll_bar),
+            ])
+            self.pile = urwid.Pile([
+                ('weight', 1, self.columns)
+             ])
+            super(ScrollingListBox, self).__init__(self.pile)
+
+        else:
+            super(ScrollingListBox, self).__init__(self.listbox)
 
     # @property
     # def contents(self):
@@ -142,7 +193,10 @@ class ScrollingListBox(urwid.ListBox):
             self.requery = False
             urwid.signals.emit_signal(
                 self, "load_more", len(self.body))
-
+        # (offset, inset) = self.listbox.get_focus_offset_inset(size)
+        # (middle, top, bottom) = self.listbox.calculate_visible(size, focus)
+        if self.with_scrollbar:
+            self.scroll_bar.update(size)
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
 
 
@@ -152,69 +206,6 @@ class ScrollingListBox(urwid.ListBox):
     def enable(self):
         self.selectable = lambda: True
 
-
-class ListBoxScrollBar(urwid.WidgetWrap):
-
-
-    def __init__(self, parent):
-        self.parent = parent
-        self.pile = urwid.Pile([])
-        self.pile.contents.append(
-            (urwid.Text("."), self.pile.options("pack"))
-        )
-        super(ListBoxScrollBar, self).__init__(self.pile)
-
-    def update(self, size, offset, inset, middle, top, bottom):
-
-        width, height = size
-        del self.pile.contents[:]
-        # raise Exception(bottom)
-        # limit = len(self.parent.body) if len(self.parent.body) > height else
-        scroll_position = int(
-            (self.parent.focus_position) / len(self.parent.body) * height
-        )
-        for i in range(height):
-            if i == scroll_position:
-                # marker = "* %d,%d,%d,%d,%s" %(i, self.parent.focus_position, offset, scroll_position, middle[0])
-                marker = u"\N{LIGHT SHADE}"
-            else:
-                marker = " "
-                # marker = "  %d,%d,%d,%d,%s" %(i, self.parent.focus_position, offset, scroll_position, middle[0])
-            # marker = "%d, %d" %(self.parent.listbox.get_focus_offset_inset(size))
-            self.pile.contents.append(
-                (urwid.Text(marker), self.pile.options("pack"))
-            )
-        self._invalidate()
-
-
-class ScrollingListBoxWithScrollbar(urwid.WidgetWrap):
-
-    signals = ScrollingListBox.signals
-
-    def __init__(self, *args, **kwargs):
-        self.listbox = ScrollingListBox(*args, **kwargs)
-        self.scroll_bar = ListBoxScrollBar(self)
-        self.columns = urwid.Columns([
-            (1, self.scroll_bar),
-            ('weight', 3, self.listbox),
-        ])
-        # self.filler = urwid.Filler(self.columns)
-
-        self.pile = urwid.Pile([
-            ('weight', 1, self.columns)
-         ])
-        super(ScrollingListBoxWithScrollbar, self).__init__(self.pile)
-
-    def render(self, size, focus=False):
-        (offset, inset) = self.listbox.get_focus_offset_inset(size)
-        (middle, top, bottom) = self.listbox.calculate_visible(size, focus)
-        self.scroll_bar.update(size, offset, inset, middle, top, bottom)
-        return super(ScrollingListBoxWithScrollbar, self).render(size, focus)
-
-    @property
-    def body(self):
-        return self.listbox.body
-
     @property
     def focus_position(self):
         return self.listbox.focus_position
@@ -222,6 +213,19 @@ class ScrollingListBoxWithScrollbar(urwid.WidgetWrap):
     @focus_position.setter
     def focus_position(self, value):
         self.listbox.focus_position = value
+
+    def __getattr__(self, attr):
+
+        return object.__getattribute__(self.listbox, attr)
+
+    # @focus_position.setter
+    # def focus_position(self, value):
+    #     self.listbox.focus_position = value
+
+    # @focus_position.setter
+    # def set_focus(self, value):
+    #     self.listbox.focus_position = value
+
 
 
 class DataTableColumn(object):
@@ -725,6 +729,7 @@ class DataTable(urwid.WidgetWrap):
     padding = DEFAULT_CELL_PADDING
     with_header = True
     with_footer = False
+    with_scrollbar = False
     sort_field = None
     initial_sort = None
     sort_reverse = False
@@ -733,7 +738,7 @@ class DataTable(urwid.WidgetWrap):
     limit = None
 
     def __init__(self, border=None, padding=None,
-                 with_header=True, with_footer=False,
+                 with_header=True, with_footer=False, with_scrollbar=False,
                  initial_sort = None, query_sort = None, ui_sort = False,
                  limit = None):
 
@@ -741,6 +746,7 @@ class DataTable(urwid.WidgetWrap):
         if padding: self.padding = padding
         if with_header: self.with_header = with_header
         if with_footer: self.with_footer = with_footer
+        if with_scrollbar: self.with_scrollbar = with_scrollbar
         if initial_sort:
             if isinstance(initial_sort, tuple):
                 self.sort_field, self.sort_reverse = initial_sort
@@ -755,7 +761,8 @@ class DataTable(urwid.WidgetWrap):
         if limit: self.limit = limit
 
         self.walker = urwid.SimpleFocusListWalker([])
-        self.listbox = ScrollingListBoxWithScrollbar(self.walker, infinite=self.limit)
+        self.listbox = ScrollingListBox(self.walker, infinite=self.limit,
+                                        with_scrollbar = self.with_scrollbar)
 
         self.selected_column = None
 
@@ -1058,6 +1065,26 @@ def main():
                 background_high = header_background_map[suffix][1],
             )
 
+    entries.update({
+
+        "scroll_pos": PaletteEntry(
+            mono = "white",
+            foreground = "white",
+            background = "white",
+            foreground_high = "white",
+            background_high = "white"
+        ),
+        "scroll_bg": PaletteEntry(
+            mono = "white,bold",
+            foreground = "black",
+            background = "dark gray",
+            foreground_high = "black",
+            background_high = "dark gray"
+        ),
+
+    })
+
+
     palette = Palette("default", **entries)
 
 
@@ -1140,7 +1167,7 @@ def main():
             self.tables = list()
 
             self.tables.append(
-                ExampleDataTable(initial_sort="foo", limit=10)
+                ExampleDataTable(initial_sort="foo", limit=10, with_scrollbar=True)
             )
 
             self.tables.append(
