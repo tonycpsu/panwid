@@ -153,7 +153,75 @@ class ScrollingListBox(urwid.ListBox):
         self.selectable = lambda: True
 
 
+class ListBoxScrollBar(urwid.WidgetWrap):
 
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.pile = urwid.Pile([])
+        self.pile.contents.append(
+            (urwid.Text("."), self.pile.options("pack"))
+        )
+        super(ListBoxScrollBar, self).__init__(self.pile)
+
+    def update(self, size, offset, inset, middle, top, bottom):
+
+        width, height = size
+        del self.pile.contents[:]
+        # raise Exception(bottom)
+        # limit = len(self.parent.body) if len(self.parent.body) > height else
+        scroll_position = int(
+            (self.parent.focus_position) / len(self.parent.body) * height
+        )
+        for i in range(height):
+            if i == scroll_position:
+                # marker = "* %d,%d,%d,%d,%s" %(i, self.parent.focus_position, offset, scroll_position, middle[0])
+                marker = u"\N{LIGHT SHADE}"
+            else:
+                marker = " "
+                # marker = "  %d,%d,%d,%d,%s" %(i, self.parent.focus_position, offset, scroll_position, middle[0])
+            # marker = "%d, %d" %(self.parent.listbox.get_focus_offset_inset(size))
+            self.pile.contents.append(
+                (urwid.Text(marker), self.pile.options("pack"))
+            )
+        self._invalidate()
+
+
+class ScrollingListBoxWithScrollbar(urwid.WidgetWrap):
+
+    signals = ScrollingListBox.signals
+
+    def __init__(self, *args, **kwargs):
+        self.listbox = ScrollingListBox(*args, **kwargs)
+        self.scroll_bar = ListBoxScrollBar(self)
+        self.columns = urwid.Columns([
+            (1, self.scroll_bar),
+            ('weight', 3, self.listbox),
+        ])
+        # self.filler = urwid.Filler(self.columns)
+
+        self.pile = urwid.Pile([
+            ('weight', 1, self.columns)
+         ])
+        super(ScrollingListBoxWithScrollbar, self).__init__(self.pile)
+
+    def render(self, size, focus=False):
+        (offset, inset) = self.listbox.get_focus_offset_inset(size)
+        (middle, top, bottom) = self.listbox.calculate_visible(size, focus)
+        self.scroll_bar.update(size, offset, inset, middle, top, bottom)
+        return super(ScrollingListBoxWithScrollbar, self).render(size, focus)
+
+    @property
+    def body(self):
+        return self.listbox.body
+
+    @property
+    def focus_position(self):
+        return self.listbox.focus_position
+
+    @focus_position.setter
+    def focus_position(self, value):
+        self.listbox.focus_position = value
 
 
 class DataTableColumn(object):
@@ -687,7 +755,7 @@ class DataTable(urwid.WidgetWrap):
         if limit: self.limit = limit
 
         self.walker = urwid.SimpleFocusListWalker([])
-        self.listbox = ScrollingListBox(self.walker, infinite=self.limit)
+        self.listbox = ScrollingListBoxWithScrollbar(self.walker, infinite=self.limit)
 
         self.selected_column = None
 
@@ -845,6 +913,8 @@ class DataTable(urwid.WidgetWrap):
         # print kwargs
         self.listbox.body.sort(**kwargs)
 
+    def selectable(self):
+        return True
 
     def keypress(self, size, key):
 
@@ -1047,6 +1117,21 @@ def main():
                 yield d
 
 
+    # class MainView(urwid.WidgetWrap):
+
+    #     def __init__(self):
+    #         self.walker = urwid.SimpleFocusListWalker([])
+    #         self.listbox = ScrollingListBoxWithScrollbar(self.walker)
+    #         self.filler = urwid.Filler(self.listbox)
+    #         for i in range(0, 10):
+
+    #             self.listbox.body.append(DataTableRow("a"))
+
+    #         self.pile = urwid.Pile([
+    #             ('weight', 1, self.listbox)
+
+    #         ])
+    #         super(MainView,self).__init__(self.pile)
 
     class MainView(urwid.WidgetWrap):
 
@@ -1072,7 +1157,7 @@ def main():
                 )
 
             self.grid_flow = urwid.GridFlow(
-                [urwid.BoxAdapter(t, 30) for t in self.tables], 60, 1, 1, "left"
+                [urwid.BoxAdapter(t, 40) for t in self.tables], 55, 1, 1, "left"
             )
             #     [ ('weight', 1, urwid.LineBox(t)) for t in self.tables ]
             # )
