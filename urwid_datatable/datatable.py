@@ -35,7 +35,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         width, height = size
         del self.pile.contents[:]
         scroll_position = int(
-            (self.parent.focus_position) / len(self.parent.body) * height
+            self.parent.focus_position / self.parent.row_count * height
         )
 
         pos_marker = urwid.AttrMap(urwid.Text(u"\N{FULL BLOCK}"),
@@ -62,10 +62,14 @@ class ScrollingListBox(urwid.WidgetWrap):
                "drag_start", "drag_continue", "drag_stop",
                "load_more"]
 
-    def __init__(self, body, infinite = False, with_scrollbar=False):
+    def __init__(self, body,
+                 infinite = False,
+                 with_scrollbar=False,
+                 row_count_fn = None):
 
         self.infinite = infinite
         self.with_scrollbar = with_scrollbar
+        self.row_count_fn = row_count_fn
 
         self.mouse_state = 0
         self.drag_from = None
@@ -217,6 +221,12 @@ class ScrollingListBox(urwid.WidgetWrap):
     def __getattr__(self, attr):
 
         return object.__getattribute__(self.listbox, attr)
+
+    @property
+    def row_count(self):
+        if self.row_count_fn:
+            return self.row_count_fn()
+        return len(self.body)
 
     # @focus_position.setter
     # def focus_position(self, value):
@@ -761,8 +771,13 @@ class DataTable(urwid.WidgetWrap):
         if limit: self.limit = limit
 
         self.walker = urwid.SimpleFocusListWalker([])
-        self.listbox = ScrollingListBox(self.walker, infinite=self.limit,
-                                        with_scrollbar = self.with_scrollbar)
+        self.listbox = ScrollingListBox(
+            self.walker, infinite=self.limit,
+            with_scrollbar = self.with_scrollbar,
+            row_count_fn = (self.query_result_count
+                            if self.with_scrollbar
+                            else None)
+            )
 
         self.selected_column = None
 
@@ -948,6 +963,9 @@ class DataTable(urwid.WidgetWrap):
     def query(self, sort=None, offset=None):
         pass
 
+    def query_result_count(self):
+        raise Exception("query_result_count method must be defined")
+
     def refresh(self, offset=0, **kwargs):
         orig_offset = offset
         if not offset:
@@ -1100,6 +1118,8 @@ def main():
         with_footer = True
         ui_sort = True
 
+        EXAMPLE_ROWS = 1000
+
         columns = [
             DataTableColumn(
                 "foo", width=5,
@@ -1125,7 +1145,7 @@ def main():
                            string.ascii_uppercase
                            + string.lowercase
                            + string.digits + ' ' * 20
-                       ) for _ in range(32))) for i in range(1000)]
+                       ) for _ in range(32))) for i in range(self.EXAMPLE_ROWS)]
 
             if sort_field:
                 kwargs = {}
@@ -1143,22 +1163,9 @@ def main():
             for d in r:
                 yield d
 
+        def query_result_count(self):
+            return self.EXAMPLE_ROWS
 
-    # class MainView(urwid.WidgetWrap):
-
-    #     def __init__(self):
-    #         self.walker = urwid.SimpleFocusListWalker([])
-    #         self.listbox = ScrollingListBoxWithScrollbar(self.walker)
-    #         self.filler = urwid.Filler(self.listbox)
-    #         for i in range(0, 10):
-
-    #             self.listbox.body.append(DataTableRow("a"))
-
-    #         self.pile = urwid.Pile([
-    #             ('weight', 1, self.listbox)
-
-    #         ])
-    #         super(MainView,self).__init__(self.pile)
 
     class MainView(urwid.WidgetWrap):
 
