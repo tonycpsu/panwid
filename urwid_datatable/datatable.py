@@ -34,9 +34,12 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
         width, height = size
         del self.pile.contents[:]
-        scroll_position = int(
-            self.parent.focus_position / self.parent.row_count * height
-        )
+        if self.parent.row_count:
+            scroll_position = int(
+                self.parent.focus_position / self.parent.row_count * height
+            )
+        else:
+            scroll_position = 0
 
         pos_marker = urwid.AttrMap(urwid.Text(u"\N{FULL BLOCK}"),
                                    {None: "scroll_pos"}
@@ -212,7 +215,9 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     @property
     def focus_position(self):
-        return self.listbox.focus_position
+        if len(self.body):
+            return self.listbox.focus_position
+        return None
 
     @focus_position.setter
     def focus_position(self, value):
@@ -758,10 +763,13 @@ class DataTable(urwid.WidgetWrap):
         if with_footer: self.with_footer = with_footer
         if with_scrollbar: self.with_scrollbar = with_scrollbar
         if initial_sort:
-            if isinstance(initial_sort, tuple):
-                self.sort_field, self.sort_reverse = initial_sort
+            self.initial_sort = initial_sort
+
+        if self.initial_sort:
+            if isinstance(self.initial_sort, tuple):
+                self.sort_field, self.sort_reverse = self.initial_sort
             else:
-                self.sort_field = initial_sort
+                self.sort_field = self.initial_sort
 
         self.sort_field = self.column_label_to_field(self.sort_field)
         # print "init sort: %s, %s" %(self.sort_field, self.sort_reverse)
@@ -842,7 +850,7 @@ class DataTable(urwid.WidgetWrap):
         )
         super(DataTable, self).__init__(self.attr)
         self.refresh()
-        if not self.query_sort and self.sort_field:
+        if self.sort_field:
             self.sort_by_column(self.sort_field)
 
 
