@@ -170,10 +170,9 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self.set_focus_valign('bottom')
             elif key == 'home':
                 self.focus_position = 0
-                self._invalidate()
+                return key
             elif key == 'end':
                 self.focus_position = len(self.body)-1
-                self._invalidate()
             elif (self.infinite
                   and key in ['page down', "down"]
                   and self.focus_position == len(self.body)-1):
@@ -222,6 +221,7 @@ class ScrollingListBox(urwid.WidgetWrap):
     @focus_position.setter
     def focus_position(self, value):
         self.listbox.focus_position = value
+        self.listbox._invalidate()
 
     def __getattr__(self, attr):
 
