@@ -173,6 +173,7 @@ class ScrollingListBox(urwid.WidgetWrap):
                 return key
             elif key == 'end':
                 self.focus_position = len(self.body)-1
+                return key
             elif (self.infinite
                   and key in ['page down', "down"]
                   and self.focus_position == len(self.body)-1):
@@ -248,7 +249,7 @@ class DataTableColumn(object):
     def __init__(self, name, label=None, width=('weight', 1),
                  align="left", wrap="space", padding = None,
                  format_fn=None, attr = None,
-                 sort_key = None, sort_fn = None,
+                 sort_key = None, sort_fn = None, sort_reverse=False,
                  footer_fn = None,
                  attr_map = None, focus_map = None):
 
@@ -262,6 +263,7 @@ class DataTableColumn(object):
         self.attr = attr
         self.sort_key = sort_key
         self.sort_fn = sort_fn
+        self.sort_reverse = sort_reverse
         self.footer_fn = footer_fn
         self.attr_map = attr_map if attr_map else {}
         self.focus_map = focus_map if focus_map else {}
@@ -747,7 +749,6 @@ class DataTable(urwid.WidgetWrap):
     with_scrollbar = False
     sort_field = None
     initial_sort = None
-    sort_reverse = False
     query_sort = False
     ui_sort = False
     limit = None
@@ -765,14 +766,12 @@ class DataTable(urwid.WidgetWrap):
         if initial_sort:
             self.initial_sort = initial_sort
 
-        if self.initial_sort:
-            if isinstance(self.initial_sort, tuple):
-                self.sort_field, self.sort_reverse = self.initial_sort
-            else:
-                self.sort_field = self.initial_sort
+        if initial_sort: self.initial_sort = initial_sort
+        #     self.sort_field = initial_sort
+        # else:
+        #     self.sort_field = self.initial_sort
 
-        self.sort_field = self.column_label_to_field(self.sort_field)
-        # print "init sort: %s, %s" %(self.sort_field, self.sort_reverse)
+        # self.sort_field = self.column_label_to_field(self.sort_field)
 
         if query_sort: self.query_sort = query_sort
         if ui_sort: self.ui_sort = ui_sort
@@ -788,6 +787,7 @@ class DataTable(urwid.WidgetWrap):
             )
 
         self.selected_column = None
+        self.sort_reverse = False
 
         urwid.connect_signal(
             self.listbox, "select",
@@ -850,8 +850,8 @@ class DataTable(urwid.WidgetWrap):
         )
         super(DataTable, self).__init__(self.attr)
         self.refresh()
-        if self.sort_field:
-            self.sort_by_column(self.sort_field)
+        if self.initial_sort:
+            self.sort_by_column(self.initial_sort)
 
 
     # @property
@@ -902,17 +902,19 @@ class DataTable(urwid.WidgetWrap):
         # logger.warning("sort: %s, %s" %(self.sort_field, self.sort_reverse))
         # raise Exception("%s, %s" %(index//2, self.selected_column))
         # print "%s, %s" %(index//2, self.selected_column)
+        # print "%s, %s" %(sort_field, self.sort_field)
         if sort_field != self.sort_field:
-            self.sort_reverse = False
+            self.sort_reverse = self.columns[index//2].sort_reverse
         else:
             self.sort_reverse = not self.sort_reverse
+        # print "sort: %s, %s" %(self.sort_field, self.sort_reverse)
         self.sort_field = sort_field
         # print self.sort_reverse
         self.selected_column = index
         if self.query_sort:
             self.refresh()
         else:
-            self.sort_by(index//2, reverse=self.sort_reverse)
+            self.sort_by(index//2, reverse = self.sort_reverse)
 
         self.highlight_column(index)
         if len(self.listbox.body):
@@ -1132,7 +1134,8 @@ def main():
             DataTableColumn(
                 "foo", width=5,
             ),
-            DataTableColumn("bar", width=12, align="right", footer_fn = avg),
+            DataTableColumn("bar", width=12, align="right",
+                            footer_fn = avg, sort_reverse=True),
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
         ]
 
