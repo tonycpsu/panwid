@@ -34,23 +34,38 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
         width, height = size
         del self.pile.contents[:]
-        if self.parent.row_count:
+        if self.parent.row_count > height:
             scroll_position = int(
                 self.parent.focus_position / self.parent.row_count * height
             )
         else:
-            scroll_position = 0
+            scroll_position = -1
 
         pos_marker = urwid.AttrMap(urwid.Text(u"\N{FULL BLOCK}"),
                                    {None: "scroll_pos"}
         )
+
+        down_marker = urwid.AttrMap(urwid.Text(u"\N{DOWNWARDS ARROW}"),
+                                   {None: "scroll_marker"}
+        )
+
+        end_marker = urwid.AttrMap(urwid.Text(u"\N{CIRCLED DOT OPERATOR}"),
+                                   {None: "scroll_marker"}
+        )
+
         bg_marker = urwid.AttrMap(urwid.Text(" "),
                                    {None: "scroll_bg"}
         )
 
         for i in range(height):
             if i == scroll_position:
-                marker = pos_marker
+                if self.parent.row_count == self.parent.focus_position + 1:
+                    marker = end_marker
+                else:
+                    marker = pos_marker
+            elif (i == scroll_position + 1
+            and len(self.parent.body) == self.parent.focus_position + 1):
+                marker = down_marker
             else:
                 marker = bg_marker
             self.pile.contents.append(
@@ -226,7 +241,7 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     def __getattr__(self, attr):
 
-        return object.__getattribute__(self.listbox, attr)
+        return getattr(self.listbox, attr)
 
     @property
     def row_count(self):
@@ -1102,6 +1117,13 @@ def main():
             foreground_high = "white",
             background_high = "white"
         ),
+        "scroll_marker": PaletteEntry(
+            mono = "white",
+            foreground = "black",
+            background = "white",
+            foreground_high = "black",
+            background_high = "white"
+        ),
         "scroll_bg": PaletteEntry(
             mono = "white,bold",
             foreground = "black",
@@ -1127,8 +1149,7 @@ def main():
         query_sort = True
         with_footer = True
         ui_sort = True
-
-        EXAMPLE_ROWS = 1000
+        num_rows = None
 
         columns = [
             DataTableColumn(
@@ -1139,7 +1160,8 @@ def main():
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
         ]
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, num_rows = 1000, *args, **kwargs):
+            self.num_rows = num_rows
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def selectable(self):
@@ -1156,7 +1178,7 @@ def main():
                            string.ascii_uppercase
                            + string.lowercase
                            + string.digits + ' ' * 20
-                       ) for _ in range(32))) for i in range(self.EXAMPLE_ROWS)]
+                       ) for _ in range(32))) for i in range(self.num_rows)]
 
             if sort_field:
                 kwargs = {}
@@ -1175,7 +1197,7 @@ def main():
                 yield d
 
         def query_result_count(self):
-            return self.EXAMPLE_ROWS
+            return self.num_rows
 
 
     class MainView(urwid.WidgetWrap):
@@ -1185,15 +1207,18 @@ def main():
             self.tables = list()
 
             self.tables.append(
-                ExampleDataTable(initial_sort="foo", limit=10, with_scrollbar=True)
+                ExampleDataTable(initial_sort="foo", num_rows=10,
+                                 with_scrollbar=True)
             )
 
             self.tables.append(
-                ExampleDataTable(initial_sort="bar", limit=20)
+                ExampleDataTable(initial_sort="bar", limit=20, num_rows=100,
+                                 with_scrollbar=True)
             )
 
             self.tables.append(
-                ExampleDataTable(initial_sort="baz", ui_sort=False)
+                ExampleDataTable(initial_sort="baz", ui_sort=False,
+                                 num_rows=1000)
             )
 
             for t in self.tables:
