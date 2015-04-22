@@ -64,7 +64,9 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                 else:
                     marker = pos_marker
             elif (i == scroll_position + 1
-            and len(self.parent.body) == self.parent.focus_position + 1):
+            and self.parent.focus_position
+            and len(self.parent.body) == self.parent.focus_position + 1
+            and len(self.parent.body) != self.parent.row_count):
                 marker = down_marker
             else:
                 marker = bg_marker
@@ -399,8 +401,8 @@ class DataTableCell(urwid.WidgetWrap):
         super(DataTableCell, self).__init__(self.attr)
 
 
-    def selectable(self):
-        return True
+    # def selectable(self):
+    #     return True
 
     def keypress(self, size, key):
         return super(DataTableCell, self).keypress(size, key)
