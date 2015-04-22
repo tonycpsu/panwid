@@ -401,8 +401,10 @@ class DataTableCell(urwid.WidgetWrap):
         super(DataTableCell, self).__init__(self.attr)
 
 
-    # def selectable(self):
-    #     return True
+    def selectable(self):
+        if isinstance(self.value, DataTableHeaderLabel):
+            return True
+        return False
 
     def keypress(self, size, key):
         return super(DataTableCell, self).keypress(size, key)
