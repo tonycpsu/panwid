@@ -844,7 +844,8 @@ class DataTable(urwid.WidgetWrap):
              )
             if self.ui_sort:
                 urwid.connect_signal(
-                    self.header, "column_click", self.sort_by_column
+                    self.header, "column_click",
+                    lambda index: self.sort_by_column(index, toggle=True)
                 )
 
         self.pile.contents.append(
@@ -870,7 +871,7 @@ class DataTable(urwid.WidgetWrap):
         super(DataTable, self).__init__(self.attr)
         self.refresh()
         if self.initial_sort:
-            self.sort_by_column(self.initial_sort)
+            self.sort_by_column(self.initial_sort, toggle=False)
 
 
     # @property
@@ -904,7 +905,7 @@ class DataTable(urwid.WidgetWrap):
                 return col.name
 
 
-    def sort_by_column(self, index):
+    def sort_by_column(self, index, toggle = False):
 
         if isinstance(index, basestring):
             sort_field = index
@@ -922,7 +923,7 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception("%s, %s" %(index//2, self.selected_column))
         # print "%s, %s" %(index//2, self.selected_column)
         # print "%s, %s" %(sort_field, self.sort_field)
-        if sort_field != self.sort_field:
+        if not toggle or sort_field != self.sort_field:
             self.sort_reverse = self.columns[index//2].sort_reverse
         else:
             self.sort_reverse = not self.sort_reverse
@@ -967,15 +968,20 @@ class DataTable(urwid.WidgetWrap):
     def selectable(self):
         return True
 
-    def keypress(self, size, key):
 
-        if self.ui_sort and key in [ "<", ">" ]:
+    def cycle_index(self, step=1):
+        self.header.cycle_columns(step)
+        self.sort_by_column(self.header.row.selected_column)
 
-            self.header.cycle_columns( -1 if key == "<" else 1 )
-            self.sort_by_column(self.header.row.selected_column)
-        else:
-            return super(DataTable, self).keypress(size, key)
-            # return key
+    # def keypress(self, size, key):
+
+    #     if self.ui_sort and key in [ "<", ">" ]:
+
+    #         self.header.cycle_columns( -1 if key == "<" else 1 )
+    #         self.sort_by_column(self.header.row.selected_column)
+    #     else:
+    #         return super(DataTable, self).keypress(size, key)
+    #         # return key
 
     def add_row(self, data, position=None):
         row = DataTableBodyRow(self, data, header = self.header.row)
@@ -1018,6 +1024,8 @@ class DataTable(urwid.WidgetWrap):
         if self.with_footer:
             self.footer.update()
 
+        # if self.sort_field:
+        #     self.sort_by_column(self.initial_sort, toggle = False)
         urwid.emit_signal(self, "refresh", self)
 
     def load_more(self, offset):
