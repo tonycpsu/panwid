@@ -796,6 +796,8 @@ class DataTable(urwid.WidgetWrap):
         if ui_sort: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
+        self.data = list()
+
         self.walker = urwid.SimpleFocusListWalker([])
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
@@ -869,7 +871,7 @@ class DataTable(urwid.WidgetWrap):
             attr_map = self.attr_map
         )
         super(DataTable, self).__init__(self.attr)
-        self.refresh()
+        self.requery()
         if self.initial_sort:
             self.sort_by_column(self.initial_sort, toggle=False)
 
@@ -905,7 +907,10 @@ class DataTable(urwid.WidgetWrap):
                 return col.name
 
 
-    def sort_by_column(self, index, toggle = False):
+    def sort_by_column(self, index=None, reverse=None, toggle = False):
+
+        if index is None:
+            index = self.sort_field
 
         if isinstance(index, basestring):
             sort_field = index
@@ -923,7 +928,10 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception("%s, %s" %(index//2, self.selected_column))
         # print "%s, %s" %(index//2, self.selected_column)
         # print "%s, %s" %(sort_field, self.sort_field)
-        if not toggle or sort_field != self.sort_field:
+
+        if reverse is not None:
+            self.sort_reverse = reverse ^ self.columns[index//2].sort_reverse
+        elif not toggle or sort_field != self.sort_field:
             self.sort_reverse = self.columns[index//2].sort_reverse
         else:
             self.sort_reverse = not self.sort_reverse
@@ -932,7 +940,7 @@ class DataTable(urwid.WidgetWrap):
         # print self.sort_reverse
         self.selected_column = index
         if self.query_sort:
-            self.refresh()
+            self.requery()
         else:
             self.sort_by(index//2, reverse = self.sort_reverse)
 
@@ -984,6 +992,7 @@ class DataTable(urwid.WidgetWrap):
     #         # return key
 
     def add_row(self, data, position=None):
+        self.data.append(data)
         row = DataTableBodyRow(self, data, header = self.header.row)
         if position is None:
             self.listbox.body.append(row)
@@ -1001,7 +1010,7 @@ class DataTable(urwid.WidgetWrap):
     def query_result_count(self):
         raise Exception("query_result_count method must be defined")
 
-    def refresh(self, offset=0, **kwargs):
+    def requery(self, offset=0, **kwargs):
         orig_offset = offset
         if not offset:
             self.clear()
@@ -1030,7 +1039,7 @@ class DataTable(urwid.WidgetWrap):
 
     def load_more(self, offset):
 
-        self.refresh(offset)
+        self.requery(offset)
         # print self.selected_column
         if self.selected_column is not None:
             self.highlight_column(self.selected_column)
@@ -1172,38 +1181,54 @@ def main():
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
         ]
 
+
         def __init__(self, num_rows = 1000, *args, **kwargs):
             self.num_rows = num_rows
+            self.query_data = [
+                dict(foo=random.randint(1, 10),
+                     bar =random.uniform(0, 100),
+                     baz =''.join(random.choice(
+                         string.ascii_uppercase
+                         + string.lowercase
+                         + string.digits + ' ' * 20
+                     ) for _ in range(32))) for i in range(self.num_rows)
+            ]
+
+
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
-        def selectable(self):
-            return True
+
+        def keypress(self, size, key):
+            if self.ui_sort and key in [ "shift left", "shift right" ]:
+                self.cycle_index( -1 if key == "shift left" else 1 )
+
+            elif self.ui_sort and key == "shift up":
+                self.sort_by_column(reverse=True)
+            elif self.ui_sort and key == "shift down":
+                self.sort_by_column(reverse=False)
+            elif self.ui_sort and key == "ctrl s":
+                self.sort_by_column(toggle=True)
+            else:
+                return super(ExampleDataTable, self).keypress(size, key)
 
         def query(self, sort=(None, None), offset=None):
 
             sort_field, sort_reverse = sort
 
             # print "%s, %s" %(sort_field, sort_reverse)
-            l = [ dict(foo=random.randint(1, 10),
-                       bar =random.uniform(0, 100),
-                       baz =''.join(random.choice(
-                           string.ascii_uppercase
-                           + string.lowercase
-                           + string.digits + ' ' * 20
-                       ) for _ in range(32))) for i in range(self.num_rows)]
 
             if sort_field:
                 kwargs = {}
                 kwargs["reverse"] = sort_reverse
                 kwargs["key"] = itemgetter(sort_field)
-                l.sort(**kwargs)
+                self.query_data.sort(**kwargs)
             # print l[0]
             if offset is not None:
                 start = offset
                 end = offset + self.limit
-                r = l[start:end]
+                r = self.query_data[start:end]
             else:
-                r = l
+                r = self.query_data
 
             for d in r:
                 yield d
@@ -1279,7 +1304,15 @@ def main():
                           pop_ups=True,
                           unhandled_input=global_input,
                           event_loop=urwid.TwistedEventLoop())
-    loop.run()
+
+    old_signal_keys = screen.tty_signal_keys(
+        'undefined','undefined', 'undefined','undefined','undefined'
+    )
+    try:
+        loop.run()
+    finally:
+        screen.tty_signal_keys(*old_signal_keys)
+
 
 if __name__ == "__main__":
     main()
