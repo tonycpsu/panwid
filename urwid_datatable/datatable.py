@@ -9,6 +9,8 @@ import random
 import string
 from datetime import datetime, timedelta, date
 from operator import itemgetter
+import sortedcontainers
+from functools import cmp_to_key
 
 
 DEFAULT_BORDER_WIDTH = 1
@@ -34,7 +36,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
         width, height = size
         del self.pile.contents[:]
-        if self.parent.row_count > height:
+        if len(self.parent.body) and self.parent.row_count > height:
             scroll_position = int(
                 self.parent.focus_position / self.parent.row_count * height
             )
@@ -74,6 +76,54 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                 (marker, self.pile.options("pack"))
             )
         self._invalidate()
+
+
+class CooperativeMeta(type):
+    def __new__(cls, name, bases, members):
+        #collect up the metaclasses
+        metas = [type(base) for base in bases]
+
+        # prune repeated or conflicting entries
+        metas = [meta for index, meta in enumerate(metas)
+            if not [later for later in metas[index+1:]
+                if issubclass(later, meta)]]
+
+        # whip up the actual combined meta class derive off all of these
+        meta = type(name, tuple(metas), dict(combined_metas = metas))
+
+        # make the actual object
+        return meta(name, bases, members)
+
+    def __init__(self, name, bases, members):
+        for meta in self.combined_metas:
+            meta.__init__(self, name, bases, members)
+
+
+
+class MonitoredSortedFocusList(
+        sortedcontainers.SortedListWithKey,
+        urwid.monitored_list.MonitoredFocusList):
+
+    __metaclass__ = CooperativeMeta
+
+    def __init__(self, *args, **kwargs):
+        key = kwargs.pop("key", sortedcontainers.sortedlistwithkey.identity)
+        sortedcontainers.SortedListWithKey.__init__(self, key=key, *args, **kwargs)
+        urwid.MonitoredFocusList.__init__(self, *args, **kwargs)
+
+
+class SimpleMonitoredSortedFocusListWalker(
+        MonitoredSortedFocusList,
+        urwid.listbox.SimpleFocusListWalker):
+
+    __metaclass__ = CooperativeMeta
+
+    def __init__(self, *args, **kwargs):
+        key = kwargs.pop("key", sortedcontainers.sortedlistwithkey.identity)
+        MonitoredSortedFocusList.__init__(self, key=key, *args, **kwargs)
+        urwid.SimpleFocusListWalker.__init__(self, *args, **kwargs)
+
+
 
 
 class ScrollingListBox(urwid.WidgetWrap):
@@ -192,8 +242,9 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self.focus_position = len(self.body)-1
                 return key
             elif (self.infinite
-                  and key in ['page down', "down"]
-                  and self.focus_position == len(self.body)-1):
+            and key in ['page down', "down"]
+            and len(self.body)
+            and self.focus_position == len(self.body)-1):
                 self.requery = True
                 self._invalidate()
             elif key == "enter":
@@ -232,7 +283,9 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     @property
     def focus_position(self):
-        if len(self.body):
+        if not len(self.listbox.body):
+            raise Eception
+        if len(self.listbox.body):
             return self.listbox.focus_position
         return None
 
@@ -806,9 +859,14 @@ class DataTable(urwid.WidgetWrap):
         if ui_sort: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
-        self.data = list()
+        # if not self.query_sort:
+        #     self.data = SortedListWithKey()
+        # else:
+        #     self.data = list()
 
-        self.walker = urwid.SimpleFocusListWalker([])
+        self.data = sortedcontainers.SortedListWithKey()
+
+        self.walker = SimpleMonitoredSortedFocusListWalker([])
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
@@ -881,6 +939,7 @@ class DataTable(urwid.WidgetWrap):
             attr_map = self.attr_map
         )
         super(DataTable, self).__init__(self.attr)
+
         if self.initial_sort:
             self.sort_by_column(self.initial_sort, toggle=False)
         self.requery()
@@ -889,6 +948,11 @@ class DataTable(urwid.WidgetWrap):
     # @property
     # def selected_column(self):
     #     return self.header.focus_position
+
+    # @property
+    # def data(self):
+
+    #     return self._data
 
     @property
     def focus_position(self):
@@ -958,6 +1022,7 @@ class DataTable(urwid.WidgetWrap):
         # if not self.query_sort:
         self.sort_by(index//2, reverse = self.sort_reverse)
 
+
         self.highlight_column(index)
         if len(self.listbox.body):
             self.listbox.focus_position = 0
@@ -985,7 +1050,19 @@ class DataTable(urwid.WidgetWrap):
         if self.columns[index].sort_fn:
             kwargs['cmp'] = self.columns[index].sort_fn
         # print kwargs
-        self.listbox.body.sort(**kwargs)
+        if not kwargs.get("reverse", None):
+            key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
+        else:
+            key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
+
+        # self.body.clear()
+        # body = SimpleMonitoredSortedFocusListWalker([], key=key)
+        l = self.body.as_list()
+        self.clear()
+        self.body._key=key
+        self.body.update(l)
+        # self.refresh()
+        # self.listbox.body.sort(**kwargs)
 
     def selectable(self):
         return True
@@ -1005,20 +1082,24 @@ class DataTable(urwid.WidgetWrap):
     #         return super(DataTable, self).keypress(size, key)
     #         # return key
 
-    def add_row(self, data, position=None, keep_sorted=True):
-        # self.data.append(data)
+    # def add_row(self, data, position=None, keep_sorted=True):
+    def add_row(self, data):
+        # index = self.data.bisect(data)
+
+        # self.data.insert(index, data)
         # print data
         row = DataTableBodyRow(self, data, header = self.header.row)
-        if position is None:
-            self.listbox.body.append(row)
-            position = len(self.listbox.body)-1
-        else:
-            self.listbox.body.insert(position, row)
+        # if position is None:
+        # self.body.add(row)
+        self.listbox.body.add(row)
+        #     position = len(self.listbox.body)-1
+        # else:
+        #     self.listbox.body.insert(position, row)
 
-        item = self.listbox.body[position]
+        # item = self.listbox.body[position]
         # if keep_sorted:
         #     self.sort_by_column()
-        return item
+        return row
 
 
     def query(self, sort=None, offset=None):
@@ -1028,39 +1109,45 @@ class DataTable(urwid.WidgetWrap):
         raise Exception("query_result_count method must be defined")
 
 
-    def refresh(self, offset=0):
+    # def refresh(self, offset=0):
 
-        if not offset:
-            self.clear()
+    #     if not offset:
+    #         self.clear()
 
-        for r in self.data[offset:]:
-            if isinstance(r, (tuple, list)):
-                r = dict(zip( [c.name for c in self.columns], r))
-            self.add_row(r)
+    #     for r in self.data[offset:]:
+    #         if isinstance(r, (tuple, list)):
+    #             r = dict(zip( [c.name for c in self.columns], r))
+    #         self.add_row(r)
 
-        if self.with_footer:
-            self.footer.update()
+    #     if self.with_footer:
+    #         self.footer.update()
 
-        # if self.sort_field:
-        #     self.sort_by_column(self.initial_sort, toggle = False)
-        urwid.emit_signal(self, "refresh", self)
+    #     # if self.sort_field:
+    #     #     self.sort_by_column(self.initial_sort, toggle = False)
+    #     urwid.emit_signal(self, "refresh", self)
 
 
     def requery(self, offset=0, **kwargs):
 
         orig_offset = offset
 
-
         kwargs = {"sort": (self.sort_field, self.sort_reverse)}
         if self.limit:
             kwargs["offset"] = offset
 
         if not offset:
-            del self.data[:]
-        self.data += self.query(**kwargs)
-        self.refresh(offset)
+            # print "clear"
+            self.clear()
+        for r in self.query(**kwargs):
+            if isinstance(r, (tuple, list)):
+                r = dict(zip( [c.name for c in self.columns], r))
+            # print "adding: %s" %(r)
+            self.add_row(r)
+
+        # self.refresh(offset)
         if offset and orig_offset < len(self.body):
             self.listbox.set_focus(orig_offset)
+        urwid.emit_signal(self, "refresh", self)
 
 
     def load_more(self, offset):
@@ -1073,7 +1160,12 @@ class DataTable(urwid.WidgetWrap):
 
     def clear(self):
         # del self.data[:]
-        del self.listbox.body[:]
+        # del self.listbox.body[:]
+        self.listbox.body.clear()
+        # while len(self.body):
+        #     self.body.pop()
+        # self.body.update([])
+        # pass
 
 
 
@@ -1239,11 +1331,9 @@ def main():
                 self.sort_by_column(toggle=True)
             elif key == "a":
                 self.add_row(self.random_row())
-            elif key == "A":
-                self.add_row(self.random_row(), keep_sorted=False)
+            # elif key == "A":
+            #     self.add_row(self.random_row(), keep_sorted=False)
             elif key == "r":
-                self.refresh()
-            elif key == "R":
                 self.requery()
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
@@ -1291,6 +1381,12 @@ def main():
 
             self.tables.append(
                 ExampleDataTable(initial_sort="baz", ui_sort=False,
+                                 num_rows=1000)
+            )
+
+            self.tables.append(
+                ExampleDataTable(initial_sort="foo", query_sort=False,
+                                 limit = 20,
                                  num_rows=1000)
             )
 
