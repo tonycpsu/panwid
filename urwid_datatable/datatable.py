@@ -881,9 +881,9 @@ class DataTable(urwid.WidgetWrap):
             attr_map = self.attr_map
         )
         super(DataTable, self).__init__(self.attr)
-        self.requery()
         if self.initial_sort:
             self.sort_by_column(self.initial_sort, toggle=False)
+        self.requery()
 
 
     # @property
@@ -955,6 +955,7 @@ class DataTable(urwid.WidgetWrap):
         # if self.query_sort:
         #     self.requery()
         # else:
+        # if not self.query_sort:
         self.sort_by(index//2, reverse = self.sort_reverse)
 
         self.highlight_column(index)
@@ -1005,7 +1006,8 @@ class DataTable(urwid.WidgetWrap):
     #         # return key
 
     def add_row(self, data, position=None, keep_sorted=True):
-        self.data.append(data)
+        # self.data.append(data)
+        # print data
         row = DataTableBodyRow(self, data, header = self.header.row)
         if position is None:
             self.listbox.body.append(row)
@@ -1014,8 +1016,8 @@ class DataTable(urwid.WidgetWrap):
             self.listbox.body.insert(position, row)
 
         item = self.listbox.body[position]
-        if keep_sorted:
-            self.sort_by_column()
+        # if keep_sorted:
+        #     self.sort_by_column()
         return item
 
 
@@ -1025,25 +1027,16 @@ class DataTable(urwid.WidgetWrap):
     def query_result_count(self):
         raise Exception("query_result_count method must be defined")
 
-    def requery(self, offset=0, **kwargs):
-        orig_offset = offset
+
+    def refresh(self, offset=0):
+
         if not offset:
             self.clear()
 
-        kwargs = {"sort": (self.sort_field, self.sort_reverse)}
-        if self.limit:
-            kwargs["offset"] = offset
-        # logger.error("sort: %s, %s" %(self.sort_field, self.sort_reverse))
-        # print kwargs
-        for r in self.query(**kwargs):
-            # row = DataTableBodyRow(self, r, header = self.header.row)
+        for r in self.data[offset:]:
             if isinstance(r, (tuple, list)):
                 r = dict(zip( [c.name for c in self.columns], r))
             self.add_row(r)
-            # self.listbox.body.append(row)
-
-        if offset and orig_offset < len(self.body):
-            self.listbox.set_focus(orig_offset)
 
         if self.with_footer:
             self.footer.update()
@@ -1052,12 +1045,30 @@ class DataTable(urwid.WidgetWrap):
         #     self.sort_by_column(self.initial_sort, toggle = False)
         urwid.emit_signal(self, "refresh", self)
 
+
+    def requery(self, offset=0, **kwargs):
+
+        orig_offset = offset
+
+
+        kwargs = {"sort": (self.sort_field, self.sort_reverse)}
+        if self.limit:
+            kwargs["offset"] = offset
+
+        if not offset:
+            del self.data[:]
+        self.data += self.query(**kwargs)
+        self.refresh(offset)
+        if offset and orig_offset < len(self.body):
+            self.listbox.set_focus(orig_offset)
+
+
     def load_more(self, offset):
 
         self.requery(offset)
         # print self.selected_column
-        if self.selected_column is not None:
-            self.highlight_column(self.selected_column)
+        # if self.selected_column is not None:
+        #     self.highlight_column(self.selected_column)
 
 
     def clear(self):
@@ -1230,14 +1241,16 @@ def main():
                 self.add_row(self.random_row())
             elif key == "A":
                 self.add_row(self.random_row(), keep_sorted=False)
+            elif key == "r":
+                self.refresh()
+            elif key == "R":
+                self.requery()
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
         def query(self, sort=(None, None), offset=None):
 
             sort_field, sort_reverse = sort
-
-            # print "%s, %s" %(sort_field, sort_reverse)
 
             if sort_field:
                 kwargs = {}
@@ -1249,6 +1262,7 @@ def main():
                 start = offset
                 end = offset + self.limit
                 r = self.query_data[start:end]
+                # print "%s, %s, %d, %d" %(sort_field, sort_reverse, start, end)
             else:
                 r = self.query_data
 
