@@ -565,11 +565,21 @@ class DataTableRow(urwid.WidgetWrap):
         super(DataTableRow, self).__init__(self.attr)
 
 
-    def set_attr_map(self, attr_map):
-        self.attr.set_attr_map(attr_map)
+    # @property
+    # def attr_map(self):
+    #     return self.attr.attr_map
 
-    def set_focus_map(self, focus_map):
-        self.attr.set_focus_map(focus_map)
+    # @attr_map.setter
+    # def set_attr_map(self, attr_map):
+    #     self.attr.set_attr_map(attr_map)
+
+    # @property
+    # def focus_map(self):
+    #     return self.attr.focus_map
+
+    # @focus_map.setter
+    # def set_focus_map(self, focus_map):
+    #     self.attr.set_focus_map(focus_map)
 
     def __len__(self): return len(self.contents)
 
@@ -912,6 +922,9 @@ class DataTable(urwid.WidgetWrap):
         if index is None:
             index = self.sort_field
 
+        if index is None:
+            return
+
         if isinstance(index, basestring):
             sort_field = index
             for i, col in enumerate(self.columns):
@@ -939,10 +952,10 @@ class DataTable(urwid.WidgetWrap):
         self.sort_field = sort_field
         # print self.sort_reverse
         self.selected_column = index
-        if self.query_sort:
-            self.requery()
-        else:
-            self.sort_by(index//2, reverse = self.sort_reverse)
+        # if self.query_sort:
+        #     self.requery()
+        # else:
+        self.sort_by(index//2, reverse = self.sort_reverse)
 
         self.highlight_column(index)
         if len(self.listbox.body):
@@ -991,7 +1004,7 @@ class DataTable(urwid.WidgetWrap):
     #         return super(DataTable, self).keypress(size, key)
     #         # return key
 
-    def add_row(self, data, position=None):
+    def add_row(self, data, position=None, keep_sorted=True):
         self.data.append(data)
         row = DataTableBodyRow(self, data, header = self.header.row)
         if position is None:
@@ -1001,6 +1014,8 @@ class DataTable(urwid.WidgetWrap):
             self.listbox.body.insert(position, row)
 
         item = self.listbox.body[position]
+        if keep_sorted:
+            self.sort_by_column()
         return item
 
 
@@ -1185,18 +1200,21 @@ def main():
         def __init__(self, num_rows = 1000, *args, **kwargs):
             self.num_rows = num_rows
             self.query_data = [
-                dict(foo=random.randint(1, 10),
-                     bar =random.uniform(0, 100),
-                     baz =''.join(random.choice(
-                         string.ascii_uppercase
-                         + string.lowercase
-                         + string.digits + ' ' * 20
-                     ) for _ in range(32))) for i in range(self.num_rows)
+                self.random_row() for i in range(self.num_rows)
             ]
 
 
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
+        def random_row(self):
+            return dict(foo=random.randint(1, 10),
+                        bar =random.uniform(0, 100),
+                        baz =''.join(random.choice(
+                            string.ascii_uppercase
+                            + string.lowercase
+                            + string.digits + ' ' * 20
+                        ) for _ in range(32))
+            )
 
         def keypress(self, size, key):
             if self.ui_sort and key in [ "shift left", "shift right" ]:
@@ -1208,6 +1226,10 @@ def main():
                 self.sort_by_column(reverse=False)
             elif self.ui_sort and key == "ctrl s":
                 self.sort_by_column(toggle=True)
+            elif key == "a":
+                self.add_row(self.random_row())
+            elif key == "A":
+                self.add_row(self.random_row(), keep_sorted=False)
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
@@ -1305,9 +1327,15 @@ def main():
                           unhandled_input=global_input,
                           event_loop=urwid.TwistedEventLoop())
 
-    old_signal_keys = screen.tty_signal_keys(
-        'undefined','undefined', 'undefined','undefined','undefined'
-    )
+    old_signal_keys = screen.tty_signal_keys()
+    l = list(old_signal_keys)
+    l[0] = 'undefined'
+    l[1] = 'undefined'
+    l[2] = 'undefined'
+    l[3] = 'undefined'
+    l[4] = 'undefined'
+    screen.tty_signal_keys(*l)
+    print screen.tty_signal_keys()
     try:
         loop.run()
     finally:
