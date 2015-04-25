@@ -1083,6 +1083,7 @@ class DataTable(urwid.WidgetWrap):
         self.requery()
 
 
+
     # @property
     # def selected_column(self):
     #     return self.header.focus_position
@@ -1171,7 +1172,6 @@ class DataTable(urwid.WidgetWrap):
         # self.sort_by(index//2, reverse = self.sort_reverse)
         self.walker.set_sort_column(column, reverse = self.sort_reverse)
         self.requery()
-        self.highlight_column(index)
         # if len(self.listbox.body):
         #     self.listbox.focus_position = 0
 
@@ -1319,11 +1319,13 @@ class DataTable(urwid.WidgetWrap):
         # if offset and orig_offset < len(self.body):
         #     # self.listbox.set_focus(orig_offset)
         #     self.listbox.focus_position = orig_offset
-        self._invalidate()
-        self.listbox._invalidate()
-        if hasattr(self.listbox, "pile"):
-            self.listbox.pile._invalidate()
-        self.listbox.listbox._invalidate()
+        # self._invalidate()
+        # self.listbox._invalidate()
+        # if hasattr(self.listbox, "pile"):
+        #     self.listbox.pile._invalidate()
+        # self.listbox.listbox._invalidate()
+        if self.selected_column is not None:
+            self.highlight_column(self.selected_column)
         urwid.emit_signal(self, "refresh", self)
 
 
@@ -1333,8 +1335,6 @@ class DataTable(urwid.WidgetWrap):
         self._invalidate()
         self.listbox._invalidate()
         # print self.selected_column
-        if self.selected_column is not None:
-            self.highlight_column(self.selected_column)
 
 
     def clear(self):
