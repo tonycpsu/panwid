@@ -51,7 +51,9 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
         width, height = size
         del self.pile.contents[:]
-        if len(self.parent.body) and self.parent.row_count > height:
+        if (len(self.parent.body)
+            and self.parent.focus is not None
+            and self.parent.row_count > height):
             scroll_position = int(
                 self.parent.focus_position / self.parent.row_count * height
             )
@@ -81,7 +83,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                 else:
                     marker = pos_marker
             elif (i == scroll_position + 1
-            and self.parent.focus_position
+            and self.parent.focus is not None
             and len(self.parent.body) == self.parent.focus_position + 1
             and len(self.parent.body) != self.parent.row_count):
                 marker = down_marker
@@ -93,26 +95,27 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         self._invalidate()
 
 
-class SortedColumnsListWalker(urwid.listbox.ListWalker):
+class DataTableRowsListWalker(urwid.listbox.ListWalker):
 
     def __init__(self, table, key=None):
         self.table = table
         if not key:
-            key = lambda x: x
-        self.data = sortedcontainers.SortedListWithKey(key=key)
+            key = lambda x: 0
+        self.rows = sortedcontainers.SortedListWithKey(key=key)
         self.focus = 0
-        super(SortedColumnsListWalker, self).__init__()
+        super(DataTableRowsListWalker, self).__init__()
 
     def __getitem__(self, position):
         # raise Exception
         # logger.debug("position: %d" %(position))
-        # logger.debug("data: %s" %(self.data))
-        if position < 0 or position >= len(self.data):
-            # logger.debug("IndexError: %d, %d" %(position, len(self.data)))
+        # logger.debug("data: %s" %(self.rows))
+        if position < 0 or position >= len(self.rows):
+            # logger.debug("IndexError: %d, %d" %(position, len(self.rows)))
             raise IndexError
 
         try:
-            row = DataTableBodyRow(self.table, self.data[position])
+            #row = DataTableBodyRow(self.table, self.rows[position])
+            return self.rows[position]
         except Exception, e:
             logger.exception(e)
         # logger.debug("getitem: %s" %(row))
@@ -120,7 +123,7 @@ class SortedColumnsListWalker(urwid.listbox.ListWalker):
 
     def next_position(self, position):
         index = position + 1
-        if position >= len(self.data):
+        if position >= len(self.rows):
             raise IndexError
         focus = index
         return index
@@ -139,46 +142,53 @@ class SortedColumnsListWalker(urwid.listbox.ListWalker):
 
     def set_sort_column(self, column, **kwargs):
         # logger.debug("sort_by: %s" %(column))
-        # logger.debug("data: %s" %(self.data))
+        # logger.debug("data: %s" %(self.rows))
 
         field = column.name
         sort_key = column.sort_key
-
+        index = self.table.columns.index(column)
         if sort_key:
-            kwargs['key'] = lambda x: sort_key(x[field].value)
+            kwargs['key'] = lambda x: sort_key(x[index].value)
         else:
-            kwargs['key'] = lambda x: x[field].value
+            kwargs['key'] = lambda x: x[index].value
 
         if column.sort_fn:
             kwargs['cmp'] = column.sort_fn
         # print kwargs
         if not kwargs.get("reverse", None):
-            key = cmp_to_key(lambda a, b: cmp(a[field], b[field]))
+            key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
         else:
-            key = cmp_to_key(lambda a, b: cmp(b[field], a[field]))
+            key = cmp_to_key(lambda a, b: cmp(b[index], a[index]))
 
-        self.data = sortedcontainers.SortedListWithKey(key=key)
+        self.rows = sortedcontainers.SortedListWithKey(key=key)
         self._modified()
 
     def __len__(self):
-        return len(self.data)
+        return len(self.rows)
 
     # def get_focus(self):
 
     #     if self.focus:
-    #         return (self.data[focus], self.focus)
+    #         return (self.rows[focus], self.focus)
     #     return (None, None)
+
+    # def add(self, item):
+    #     if self.key:
+    #         self.rows.add(item)
+    #     else:
+    #         self.rows.append(item)
+    #     self._modified()
 
     def clear(self):
         self.focus = 0
         self._modified()
-        return self.data.clear()
+        return self.rows.clear()
 
     def __getattr__(self, attr):
         # logger.debug("getattr: %s" %(attr))
-        # logger.debug("len: %s" %(len(self.data)))
-        if attr in [ "add", "append", "insert", "as_list", "update"]:
-            rv = getattr(self.data, attr)
+        # logger.debug("len: %s" %(len(self.rows)))
+        if attr in [ "append", "add", "as_list", "index", "insert", "update"]:
+            rv = getattr(self.rows, attr)
             self._modified()
             return rv
         raise AttributeError(attr)
@@ -756,6 +766,11 @@ class DataTableRow(urwid.WidgetWrap):
     # @focus_map.setter
     # def set_focus_map(self, focus_map):
     #     self.attr.set_focus_map(focus_map)
+    def set_attr_map(self, attr_map):
+        self.attr.set_attr_map(attr_map)
+
+    def set_focus_map(self, focus_map):
+        self.attr.set_focus_map(focus_map)
 
     def __len__(self): return len(self.contents)
 
@@ -989,7 +1004,7 @@ class DataTable(urwid.WidgetWrap):
 
         self.data = sortedcontainers.SortedListWithKey()
 
-        self.walker = SortedColumnsListWalker(self)
+        self.walker = DataTableRowsListWalker(self)
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
@@ -1064,6 +1079,7 @@ class DataTable(urwid.WidgetWrap):
         super(DataTable, self).__init__(self.attr)
 
         if self.initial_sort:
+            logger.debug("initial sort: %s" %(self.initial_sort))
             self.sort_by_column(self.initial_sort, toggle=False)
         self.requery()
 
@@ -1222,16 +1238,20 @@ class DataTable(urwid.WidgetWrap):
     #         return super(DataTable, self).keypress(size, key)
     #         # return key
 
-    # def add_row(self, data, position=None, keep_sorted=True):
-    def add_row(self, data):
+    def add_row(self, data, position=None):
+    # def add_row(self, data):
         # index = self.data.bisect(data)
 
         # self.data.insert(index, data)
         # print data
-        # row = DataTableBodyRow(self, data, header = self.header.row)
+        row = DataTableBodyRow(self, data, header = self.header.row)
         # if position is None:
         # self.body.add(row)
-        self.listbox.body.add(data)
+        if not position:
+            self.listbox.body.add(row)
+        else:
+            self.listbox.body.insert(position, row)
+
         #     position = len(self.listbox.body)-1
         # else:
         #     self.listbox.body.insert(position, row)
@@ -1239,7 +1259,7 @@ class DataTable(urwid.WidgetWrap):
         # item = self.listbox.body[position]
         # if keep_sorted:
         #     self.sort_by_column()
-        # return row
+        return row
 
 
     def query(self, sort=None, offset=None):
@@ -1266,12 +1286,12 @@ class DataTable(urwid.WidgetWrap):
     #     #     self.sort_by_column(self.initial_sort, toggle = False)
     #     urwid.emit_signal(self, "refresh", self)
 
-    def keypress(self, size, key):
+    # def keypress(self, size, key):
 
-        if key == "enter":
-            logger.debug("%d, %d" %(len(self.listbox.body), self.listbox.focus_position))
-        else:
-            return super(DataTable, self).keypress(size, key)
+    #     if key == "enter":
+    #         logger.debug("%d, %d" %(len(self.listbox.body), self.listbox.focus_position))
+    #     else:
+    #         return super(DataTable, self).keypress(size, key)
 
 
     def requery(self, offset=0, **kwargs):
@@ -1547,7 +1567,7 @@ def main():
             )
 
             self.tables.append(
-                ExampleDataTable(initial_sort="foo", query_sort=False,
+                ExampleDataTable(initial_sort=None, query_sort=False,
                                  limit = 20,
                                  num_rows=1000)
             )
