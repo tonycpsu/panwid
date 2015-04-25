@@ -35,6 +35,25 @@ DEFAULT_CELL_PADDING = 1
 
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
+def sort_natural_none_last(a, b):
+    if a is None:
+        return 1
+    elif b is None:
+        return -1
+    else:
+        return cmp(a, b)
+
+def sort_reverse_none_last(a, b):
+    if a is None:
+        return 1
+    elif b is None:
+        return -1
+    else:
+        return cmp(b, a)
+
+sort_key_natural_none_last = cmp_to_key(sort_natural_none_last)
+sort_key_reverse_none_last = cmp_to_key(sort_reverse_none_last)
+
 class DataTableHeaderLabel(str):
     pass
 
@@ -141,23 +160,43 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         self._modified()
 
     def set_sort_column(self, column, **kwargs):
+
+
+        def sort_natural(a, b):
+            if a[index].value is None:
+                return 1
+            elif b[index].value is None:
+                return -1
+            else:
+                return cmp(a[index].value, b[index].value)
+
+        def sort_reverse(a, b):
+            if a[index].value is None:
+                return 1
+            elif b[index].value is None:
+                return -1
+            else:
+                return cmp(b[index].value, a[index].value)
+
         # logger.debug("data: %s" %(self.rows))
         field = column.name
         sort_key = column.sort_key
         index = self.table.columns.index(column)
-        logger.debug("sort_by: %s, %d, %s" %(column.name, index, kwargs))
-        if sort_key:
-            kwargs['key'] = lambda x: sort_key(x[index].value)
-        else:
-            kwargs['key'] = lambda x: x[index].value
+        # logger.info("set_sort_column: %s, %d, %s" %(column.name, index, kwargs))
+        # if sort_key:
+        #     kwargs['key'] = lambda x: sort_key(x[index].value)
+        # else:
+        #     kwargs['key'] = lambda x: x[index].value
 
         # if column.sort_fn:
         #     kwargs['cmp'] = column.sort_fn
         # print kwargs
         if not kwargs.get("reverse", None):
-            key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
+            #key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
+            key = cmp_to_key(sort_natural)
         else:
-            key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
+            # key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
+            key = cmp_to_key(sort_reverse)
 
         self.rows = sortedcontainers.SortedListWithKey(key=key)
         self._modified()
@@ -186,50 +225,13 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
     def __getattr__(self, attr):
         # logger.debug("getattr: %s" %(attr))
         # logger.debug("len: %s" %(len(self.rows)))
-        if attr in [ "append", "add", "as_list", "index", "insert", "update"]:
+        if attr in [ "append", "add", "as_list", "index",
+                     "insert", "remove", "update"]:
             rv = getattr(self.rows, attr)
             self._modified()
             return rv
         raise AttributeError(attr)
 
-
-
-
-class MyListBox(urwid.ListBox):
-
-    def keypress(self, size, key):
-        if len(self.body):
-            if key == 'home':
-                self.focus_position = 0
-                self._invalidate()
-            elif key == 'end':
-                self.focus_position = len(self.body)-1
-                self._invalidate()
-            elif key == 'r':
-                self.requery()
-            elif key == 'a':
-                self.append()
-            else:
-                return super(MyListBox, self).keypress(size, key)
-        else:
-            return super(MyListBox, self).keypress(size, key)
-
-    def requery(self):
-        self.body.clear()
-        for i in range(100):
-            row = Row(random.randint(1, 1000))
-            self.body.add(row)
-        # self.focus_position = 0
-        self._invalidate()
-        loop.draw_screen()
-
-    def append(self):
-        for i in range(100):
-            row = Row(random.randint(1, 1000))
-            self.body.add(row)
-        self.focus_position = 0
-        self._invalidate()
-        loop.draw_screen()
 
 
 class ScrollingListBox(urwid.WidgetWrap):
@@ -489,7 +491,7 @@ class DataTableColumn(object):
                 try:
                     v = self.format_fn(v)
                 except TypeError, e:
-                    logger.info("format function raised exception: %s" %e)
+                    logger.debug("format function raised exception: %s" %e)
                     return urwid.Text("", align=self.align, wrap=self.wrap)
                 except:
                     raise
@@ -1078,7 +1080,7 @@ class DataTable(urwid.WidgetWrap):
         super(DataTable, self).__init__(self.attr)
 
         if self.initial_sort:
-            logger.debug("initial sort: %s" %(self.initial_sort))
+            # logger.info("initial sort: %s" %(self.initial_sort))
             self.sort_by_column(self.initial_sort, toggle=False)
         self.requery()
 
@@ -1149,7 +1151,6 @@ class DataTable(urwid.WidgetWrap):
         if not isinstance(index, int):
             raise Exception("invalid column index: %s" %(index))
 
-        # logger.warning("sort: %s, %s" %(self.sort_field, self.sort_reverse))
         # raise Exception("%s, %s" %(index//2, self.selected_column))
         # print "%s, %s" %(index//2, self.selected_column)
         # print "%s, %s" %(sort_field, self.sort_field)
@@ -1160,7 +1161,6 @@ class DataTable(urwid.WidgetWrap):
             self.sort_reverse = self.columns[index//2].sort_reverse
         else:
             self.sort_reverse = not self.sort_reverse
-        # print "sort: %s, %s" %(self.sort_field, self.sort_reverse)
         self.sort_field = sort_field
         # print self.sort_reverse
         self.selected_column = index
@@ -1170,6 +1170,7 @@ class DataTable(urwid.WidgetWrap):
         # if not self.query_sort:
         #self.sort_by(index//2, reverse = self.sort_reverse)
         # self.sort_by(index//2, reverse = self.sort_reverse)
+        # logger.info("sort_by_column: %s, %s" %(self.sort_field, self.sort_reverse))
         self.walker.set_sort_column(column, reverse = self.sort_reverse)
         self.requery()
         # if len(self.listbox.body):
@@ -1259,6 +1260,12 @@ class DataTable(urwid.WidgetWrap):
         return row
 
 
+    def update_footer(self):
+
+        if not self.with_footer:
+            raise Exception("Data table has no footer")
+        self.footer.update()
+
     def query(self, sort=None, offset=None):
         pass
 
@@ -1326,6 +1333,9 @@ class DataTable(urwid.WidgetWrap):
         # self.listbox.listbox._invalidate()
         if self.selected_column is not None:
             self.highlight_column(self.selected_column)
+        if self.with_footer:
+            self.footer.update()
+
         urwid.emit_signal(self, "refresh", self)
 
 
@@ -1456,7 +1466,12 @@ def main():
 
 
 
-    def avg(data, attr):
+
+    def footer_sum(data, attr):
+        values = [ d[attr] for d in data ]
+        return sum(values)
+
+    def footer_avg(data, attr):
         values = [ d[attr] for d in data ]
         return sum(values)/len(values)
 
@@ -1471,9 +1486,10 @@ def main():
         columns = [
             DataTableColumn(
                 "foo", width=5,
+                footer_fn = footer_sum
             ),
             DataTableColumn("bar", width=12, align="right",
-                            footer_fn = avg, sort_reverse=True),
+                            footer_fn=footer_avg, sort_reverse=True),
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
         ]
 
@@ -1488,13 +1504,18 @@ def main():
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def random_row(self):
-            return dict(foo=random.randint(1, 100),
-                        bar =random.uniform(0, 1000),
-                        baz =''.join(random.choice(
+            return dict(foo=random.choice(range(100) + [None]*20),
+                        bar = (random.uniform(0, 1000)
+                               if random.randint(0, 5)
+                               else None),
+                        baz =(''.join(random.choice(
                             string.ascii_uppercase
                             + string.lowercase
                             + string.digits + ' ' * 20
                         ) for _ in range(32))
+                              if random.randint(0, 5)
+                              else None)
+
             )
 
         def keypress(self, size, key):
@@ -1521,8 +1542,11 @@ def main():
             sort_field, sort_reverse = sort
             if sort_field:
                 kwargs = {}
-                kwargs["reverse"] = sort_reverse
-                kwargs["key"] = itemgetter(sort_field)
+                # kwargs["reverse"] = sort_reverse
+                if not sort_reverse:
+                    kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
+                else:
+                    kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
                 logger.debug("query: %s" %(kwargs))
                 self.query_data.sort(**kwargs)
                 logger.debug("s" %(self.query_data))
