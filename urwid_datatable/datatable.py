@@ -141,24 +141,23 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         self._modified()
 
     def set_sort_column(self, column, **kwargs):
-        # logger.debug("sort_by: %s" %(column))
         # logger.debug("data: %s" %(self.rows))
-
         field = column.name
         sort_key = column.sort_key
         index = self.table.columns.index(column)
+        logger.debug("sort_by: %s, %d, %s" %(column.name, index, kwargs))
         if sort_key:
             kwargs['key'] = lambda x: sort_key(x[index].value)
         else:
             kwargs['key'] = lambda x: x[index].value
 
-        if column.sort_fn:
-            kwargs['cmp'] = column.sort_fn
+        # if column.sort_fn:
+        #     kwargs['cmp'] = column.sort_fn
         # print kwargs
         if not kwargs.get("reverse", None):
             key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
         else:
-            key = cmp_to_key(lambda a, b: cmp(b[index], a[index]))
+            key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
 
         self.rows = sortedcontainers.SortedListWithKey(key=key)
         self._modified()
@@ -1172,11 +1171,9 @@ class DataTable(urwid.WidgetWrap):
         # self.sort_by(index//2, reverse = self.sort_reverse)
         self.walker.set_sort_column(column, reverse = self.sort_reverse)
         self.requery()
-
-
         self.highlight_column(index)
-        if len(self.listbox.body):
-            self.listbox.focus_position = 0
+        # if len(self.listbox.body):
+        #     self.listbox.focus_position = 0
 
     # def cycle_columns(self, step):
 
@@ -1336,8 +1333,8 @@ class DataTable(urwid.WidgetWrap):
         self._invalidate()
         self.listbox._invalidate()
         # print self.selected_column
-        # if self.selected_column is not None:
-        #     self.highlight_column(self.selected_column)
+        if self.selected_column is not None:
+            self.highlight_column(self.selected_column)
 
 
     def clear(self):
@@ -1491,8 +1488,8 @@ def main():
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def random_row(self):
-            return dict(foo=random.randint(1, 10),
-                        bar =random.uniform(0, 100),
+            return dict(foo=random.randint(1, 100),
+                        bar =random.uniform(0, 1000),
                         baz =''.join(random.choice(
                             string.ascii_uppercase
                             + string.lowercase
