@@ -3,19 +3,19 @@ from __future__ import division
 import logging
 logger = logging.getLogger(__name__)
 
-# formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-#                                     datefmt='%Y-%m-%d %H:%M:%S')
-# logger.setLevel(logging.DEBUG)
-# console_handler = logging.StreamHandler()
-# console_handler.setFormatter(formatter)
-# console_handler.setLevel(logging.ERROR)
-# logger.addHandler(console_handler)
+formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
+                                    datefmt='%Y-%m-%d %H:%M:%S')
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.ERROR)
+logger.addHandler(console_handler)
 
 
-# fh = logging.FileHandler("datatable.log")
-# fh.setLevel(logging.DEBUG)
-# fh.setFormatter(formatter)
-# logger.addHandler(fh)
+fh = logging.FileHandler("datatable.log")
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 import urwid
 import urwid.raw_display
@@ -981,8 +981,8 @@ class DataTable(urwid.WidgetWrap):
 
         if border: self.border = border
         if padding: self.padding = padding
-        if with_header: self.with_header = with_header
-        if with_footer: self.with_footer = with_footer
+        if with_header is not None: self.with_header = with_header
+        if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar: self.with_scrollbar = with_scrollbar
         if initial_sort:
             self.initial_sort = initial_sort
@@ -1237,26 +1237,11 @@ class DataTable(urwid.WidgetWrap):
     #         # return key
 
     def add_row(self, data, position=None):
-    # def add_row(self, data):
-        # index = self.data.bisect(data)
-
-        # self.data.insert(index, data)
-        # print data
         row = DataTableBodyRow(self, data, header = self.header.row)
-        # if position is None:
-        # self.body.add(row)
         if not position:
             self.listbox.body.add(row)
         else:
             self.listbox.body.insert(position, row)
-
-        #     position = len(self.listbox.body)-1
-        # else:
-        #     self.listbox.body.insert(position, row)
-
-        # item = self.listbox.body[position]
-        # if keep_sorted:
-        #     self.sort_by_column()
         return row
 
 
@@ -1468,11 +1453,11 @@ def main():
 
 
     def footer_sum(data, attr):
-        values = [ d[attr] for d in data ]
+        values = [ d[attr] for d in data if d[attr]]
         return sum(values)
 
     def footer_avg(data, attr):
-        values = [ d[attr] for d in data ]
+        values = [ d[attr] for d in data if d[attr]]
         return sum(values)/len(values)
 
     class ExampleDataTable(DataTable):
@@ -1574,7 +1559,7 @@ def main():
 
             self.tables.append(
                 ExampleDataTable(initial_sort="foo", limit=10, num_rows=100,
-                                 with_scrollbar=True)
+                                 with_scrollbar=True, with_footer=True)
             )
 
             self.tables.append(
