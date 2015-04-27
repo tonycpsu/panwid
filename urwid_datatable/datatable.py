@@ -3,19 +3,21 @@ from __future__ import division
 import logging
 logger = logging.getLogger(__name__)
 
-formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-                                    datefmt='%Y-%m-%d %H:%M:%S')
-logger.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.ERROR)
-logger.addHandler(console_handler)
+
+# formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
+#                                     datefmt='%Y-%m-%d %H:%M:%S')
+# logger.setLevel(logging.DEBUG)
+# console_handler = logging.StreamHandler()
+# console_handler.setFormatter(formatter)
+# console_handler.setLevel(logging.ERROR)
+# logger.addHandler(console_handler)
 
 
-fh = logging.FileHandler("datatable.log")
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-logger.addHandler(fh)
+# fh = logging.FileHandler("datatable.log")
+# fh.setLevel(logging.DEBUG)
+# fh.setFormatter(formatter)
+# logger.addHandler(fh)
+
 
 import urwid
 import urwid.raw_display
@@ -907,10 +909,11 @@ class DataTableFooterRow(DataTableRow):
 
     # column_class = HeaderColumns
 
+
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
 
-    def __init__(self, table, *args, **kwargs):
+    def __init__(self, table,*args, **kwargs):
 
         self.attr_map = {}
         self.focus_map = {}
@@ -920,7 +923,7 @@ class DataTableFooterRow(DataTableRow):
 
         self.table = table
         self.contents = [ DataTableHeaderLabel("")
-                          for i in range(len(self.table.columns)) ]
+                     for i in range(len(self.table.columns)) ]
 
 
         super(DataTableFooterRow, self).__init__(
@@ -935,6 +938,7 @@ class DataTableFooterRow(DataTableRow):
 
     def update(self):
 
+        self.data = dict()
         columns = self.table.columns
 
         for i, col in enumerate(columns):
@@ -944,9 +948,10 @@ class DataTableFooterRow(DataTableRow):
                 # col_data = [ r.data.get(col.name, None)
                 #              for r in self.table.body ]
                 data = [ r.data for r in self.table.body ]
-                footer_content = col.footer_fn(data, col.name)
-                if not isinstance(footer_content, urwid.Widget):
-                    footer_content = col._format(footer_content)
+                footer_value = col.footer_fn(data, col.name)
+                self.data[col.name] = footer_value
+                if not isinstance(footer_value, urwid.Widget):
+                    footer_content = col._format(footer_value)
                 self[i] = footer_content
             except Exception, e:
                 logger.exception(e)
@@ -1453,7 +1458,7 @@ def main():
 
 
     def footer_sum(data, attr):
-        values = [ d[attr] for d in data if d[attr]]
+        values = [ d[attr] for d in data if d[attr] ]
         return sum(values)
 
     def footer_avg(data, attr):
