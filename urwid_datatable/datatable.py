@@ -648,7 +648,7 @@ class BodyColumns(urwid.Columns):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    column_class = urwid.Columns
+    # column_class = urwid.Columns
 
     # attr_map = {}
     # focus_map = {}
@@ -907,13 +907,12 @@ class DataTableHeaderRow(DataTableRow):
 
 class DataTableFooterRow(DataTableRow):
 
-    # column_class = HeaderColumns
-
+    column_class = HeaderColumns
 
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
 
-    def __init__(self, table,*args, **kwargs):
+    def __init__(self, table, data = None, *args, **kwargs):
 
         self.attr_map = {}
         self.focus_map = {}
@@ -922,13 +921,14 @@ class DataTableFooterRow(DataTableRow):
         self.focus_map = { None: "table_footer focused" }
 
         self.table = table
-        self.contents = [ DataTableHeaderLabel("")
+        if not data:
+            data = [ DataTableHeaderLabel("")
                      for i in range(len(self.table.columns)) ]
 
 
         super(DataTableFooterRow, self).__init__(
             self.table,
-            self.contents,
+            data,
             border_attr_map = self.border_attr_map,
             border_focus_map = self.border_focus_map,
             *args, **kwargs)
@@ -944,17 +944,17 @@ class DataTableFooterRow(DataTableRow):
         for i, col in enumerate(columns):
             if not col.footer_fn:
                 continue
-            try:
-                # col_data = [ r.data.get(col.name, None)
-                #              for r in self.table.body ]
-                data = [ r.data for r in self.table.body ]
-                footer_value = col.footer_fn(data, col.name)
-                self.data[col.name] = footer_value
-                if not isinstance(footer_value, urwid.Widget):
-                    footer_content = col._format(footer_value)
-                self[i] = footer_content
-            except Exception, e:
-                logger.exception(e)
+            # col_data = [ r.data.get(col.name, None)
+            #              for r in self.table.body ]
+            data = [ r.data for r in self.table.body ]
+            footer_content = col.footer_fn(data, col.name)
+            self.data[col.name] = footer_content
+            if not isinstance(footer_content, urwid.Widget):
+                try:
+                    footer_content = col._format(footer_content)
+                except Exception, e:
+                    logger.exception(e)
+            self[i] = footer_content
 
 
 class DataTable(urwid.WidgetWrap):
@@ -986,8 +986,8 @@ class DataTable(urwid.WidgetWrap):
 
         if border: self.border = border
         if padding: self.padding = padding
-        if with_header is not None: self.with_header = with_header
-        if with_footer is not None: self.with_footer = with_footer
+        if with_header: self.with_header = with_header
+        if with_footer: self.with_footer = with_footer
         if with_scrollbar: self.with_scrollbar = with_scrollbar
         if initial_sort:
             self.initial_sort = initial_sort
