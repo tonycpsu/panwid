@@ -258,23 +258,18 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.requery = False
 
         self.listbox = urwid.ListBox(body)
+        self.columns = urwid.Columns([
+            ('weight', 3, self.listbox)
+        ])
         if self.with_scrollbar:
             self.scroll_bar = ListBoxScrollBar(self)
-            self.columns = urwid.Columns([
-                ('weight', 3, self.listbox),
-                (1, self.scroll_bar),
-            ])
-            self.pile = urwid.Pile([
-                ('weight', 1, self.columns)
-             ])
-            super(ScrollingListBox, self).__init__(self.pile)
-
-        else:
-            super(ScrollingListBox, self).__init__(self.listbox)
-
-    # @property
-    # def contents(self):
-    #     return super(ScrollingListBox, self).contents()
+            self.columns.contents.append(
+                (self.scroll_bar, self.columns.options("given", 1))
+            )
+        self.pile = urwid.Pile([
+            ('weight', 1, self.columns)
+        ])
+        super(ScrollingListBox, self).__init__(self.pile)
 
     def mouse_event(self, size, event, button, col, row, focus):
         """Overrides ListBox.mouse_event method.
@@ -384,8 +379,6 @@ class ScrollingListBox(urwid.WidgetWrap):
             self.requery = False
             urwid.signals.emit_signal(
                 self, "load_more", len(self.body))
-        # (offset, inset) = self.listbox.get_focus_offset_inset(size)
-        # (middle, top, bottom) = self.listbox.calculate_visible(size, focus)
         if self.with_scrollbar:
             self.scroll_bar.update(size)
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
@@ -397,19 +390,29 @@ class ScrollingListBox(urwid.WidgetWrap):
     def enable(self):
         self.selectable = lambda: True
 
-    # @property
-    # def focus_position(self):
-    #     return self.listbox.focus_position
-    #     if not len(self.listbox.body):
-    #         raise Eception
-    #     if len(self.listbox.body):
-    #         return self.listbox.focus_position
-    #     return None
 
-    # @focus_position.setter
-    # def focus_position(self, value):
-    #     self.listbox.focus_position = value
-    #     self.listbox._invalidate()
+    @property
+    def contents(self):
+        return self.pile.contents
+
+
+    @property
+    def focus(self):
+        return self.listbox.focus
+
+    @property
+    def focus_position(self):
+        return self.listbox.focus_position
+        if not len(self.listbox.body):
+            raise Eception
+        if len(self.listbox.body):
+            return self.listbox.focus_position
+        return None
+
+    @focus_position.setter
+    def focus_position(self, value):
+        self.listbox.focus_position = value
+        self.listbox._invalidate()
 
     def __getattr__(self, attr):
         if attr in ["ends_visible", "set_focus", "body"]:
@@ -418,35 +421,11 @@ class ScrollingListBox(urwid.WidgetWrap):
         #     return self.walker
         raise AttributeError(attr)
 
-    def __setattr__(self, attr, value):
-        if attr in ["focus_position"]:
-            rv = setattr(self.listbox, attr, value)
-            self.listbox._invalidate()
-            return
-        return super(ScrollingListBox, self).__setattr__(attr, value)
-        raise AttributeError(attr)
-
-    def __getattribute__(self, attr):
-        if attr == "focus_position":
-            # print "focus_position"
-            # print len(self.listbox.body)
-            return urwid.ListBox.__getattribute__(self.listbox, "focus_position")
-        else:
-            return super(ScrollingListBox, self).__getattribute__(attr)
-
     @property
     def row_count(self):
         if self.row_count_fn:
             return self.row_count_fn()
         return len(self.body)
-
-    # @focus_position.setter
-    # def focus_position(self, value):
-    #     self.listbox.focus_position = value
-
-    # @focus_position.setter
-    # def set_focus(self, value):
-    #     self.listbox.focus_position = value
 
 
 
@@ -805,12 +784,17 @@ class DataTableRow(urwid.WidgetWrap):
 
 
     @property
+    def focus(self):
+        return self.row.focus
+
+    @property
     def focus_position(self):
         return self.row.focus_position
 
     @focus_position.setter
     def focus_position(self, value):
         self.row.focus_position = value
+
 
     @property
     def selected_column(self):
@@ -1114,11 +1098,22 @@ class DataTable(urwid.WidgetWrap):
 
     #     return self._data
 
-    def __getattr__(self, attr):
-        if attr == ["body"]:
-            return self.walker
-        raise AttributeError(attr)
+    # def __getattr__(self, attr):
+    #     if attr in ["contents"]:
+    #         return getattr(self.listbox, attr)
+    #     raise AttributeError(attr)
 
+    @property
+    def focus(self):
+        return self.walker
+
+    @property
+    def contents(self):
+        return self.listbox.contents
+
+    @property
+    def focus(self):
+        return self.listbox.focus
 
     @property
     def focus_position(self):
@@ -1524,6 +1519,7 @@ def main():
 
         def keypress(self, size, key):
 
+            logger.warning(self.contents)
             if self.ui_sort and key in [ "shift left", "shift right" ]:
                 self.cycle_index( -1 if key == "shift left" else 1 )
 
