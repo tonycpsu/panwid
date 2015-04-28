@@ -604,6 +604,12 @@ class DataTableCell(urwid.WidgetWrap):
 
         # print self.attr_map
 
+    def set_attr_map(self, attr_map):
+        self.attr.set_attr_map(attr_map)
+
+    def set_focus_map(self, focus_map):
+        self.attr.set_focus_map(focus_map)
+
     def unhighlight(self):
         self.attr.set_attr_map(self.orig_attr_map)
         self.attr.set_focus_map(self.orig_focus_map)
@@ -912,7 +918,9 @@ class DataTableFooterRow(DataTableRow):
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
 
-    def __init__(self, table, data = None, *args, **kwargs):
+    def __init__(self, table, data = None,
+                 row_predicate = None,
+                 *args, **kwargs):
 
         self.attr_map = {}
         self.focus_map = {}
@@ -921,14 +929,17 @@ class DataTableFooterRow(DataTableRow):
         self.focus_map = { None: "table_footer focused" }
 
         self.table = table
-        if not data:
-            data = [ DataTableHeaderLabel("")
-                     for i in range(len(self.table.columns)) ]
+        self.data = data
+        self.row_predicate = row_predicate
+
+        if not self.data:
+            self.data = [ DataTableHeaderLabel("")
+                          for i in range(len(self.table.columns)) ]
 
 
         super(DataTableFooterRow, self).__init__(
             self.table,
-            data,
+            self.data,
             border_attr_map = self.border_attr_map,
             border_focus_map = self.border_focus_map,
             *args, **kwargs)
@@ -947,14 +958,17 @@ class DataTableFooterRow(DataTableRow):
             # col_data = [ r.data.get(col.name, None)
             #              for r in self.table.body ]
             data = [ r.data for r in self.table.body ]
+            if self.row_predicate:
+                data = filter(self.row_predicate, data)
+
             footer_content = col.footer_fn(data, col.name)
             self.data[col.name] = footer_content
-            if not isinstance(footer_content, urwid.Widget):
-                try:
-                    footer_content = col._format(footer_content)
-                except Exception, e:
-                    logger.exception(e)
-            self[i] = footer_content
+            # if not isinstance(footer_content, urwid.Widget):
+            #     try:
+            #         footer_content = col._format(footer_content)
+            #     except Exception, e:
+            #         logger.exception(e)
+            self[i] = DataTableCell(self.table, col, self, footer_content)
 
 
 class DataTable(urwid.WidgetWrap):
@@ -1475,10 +1489,10 @@ def main():
 
         columns = [
             DataTableColumn(
-                "foo", width=5,
+                "foo", width=8,
                 footer_fn = footer_sum
             ),
-            DataTableColumn("bar", width=12, align="right",
+            DataTableColumn("bar", width=10, align="right",
                             footer_fn=footer_avg, sort_reverse=True),
             DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
         ]
@@ -1509,6 +1523,7 @@ def main():
             )
 
         def keypress(self, size, key):
+
             if self.ui_sort and key in [ "shift left", "shift right" ]:
                 self.cycle_index( -1 if key == "shift left" else 1 )
 
@@ -1589,7 +1604,7 @@ def main():
                 )
 
             self.grid_flow = urwid.GridFlow(
-                [urwid.BoxAdapter(t, 40) for t in self.tables], 55, 1, 1, "left"
+                [urwid.BoxAdapter(t, 40) for t in self.tables], 60, 1, 1, "left"
             )
             #     [ ('weight', 1, urwid.LineBox(t)) for t in self.tables ]
             # )
