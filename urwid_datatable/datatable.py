@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 from __future__ import division
 import logging
+import sys
+
 logger = logging.getLogger(__name__)
 
 
-# formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-#                                     datefmt='%Y-%m-%d %H:%M:%S')
-# logger.setLevel(logging.DEBUG)
-# console_handler = logging.StreamHandler()
-# console_handler.setFormatter(formatter)
-# console_handler.setLevel(logging.ERROR)
-# logger.addHandler(console_handler)
-
+formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
+                                    datefmt='%Y-%m-%d %H:%M:%S')
+console_handler = logging.StreamHandler(sys.stderr)
+console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.ERROR)
+logger.addHandler(console_handler)
 
 # fh = logging.FileHandler("datatable.log")
 # fh.setLevel(logging.DEBUG)
@@ -28,7 +28,7 @@ from operator import itemgetter
 import sortedcontainers
 from functools import cmp_to_key
 from urwid.compat import PYTHON3
-
+# import threading
 
 DEFAULT_BORDER_WIDTH = 1
 DEFAULT_BORDER_CHAR = " "
@@ -953,6 +953,7 @@ class DataTableFooterRow(DataTableRow):
             #     except Exception, e:
             #         logger.exception(e)
             self[i] = DataTableCell(self.table, col, self, footer_content)
+        self._invalidate()
 
 
 class DataTable(urwid.WidgetWrap):
@@ -1017,6 +1018,7 @@ class DataTable(urwid.WidgetWrap):
                             else None)
             )
 
+        # self.lock = threading.Lock()
         self.selected_column = None
         self.sort_reverse = False
 
@@ -1305,9 +1307,7 @@ class DataTable(urwid.WidgetWrap):
         if self.limit:
             kwargs["offset"] = offset
 
-        # if len(self.body):
-        #     logger.debug("setting focus_position = 0")
-        #     self.listbox.focus_position = 0
+        # with self.lock:
         if not offset:
             logger.debug("clearing")
             self.clear()
@@ -1318,23 +1318,13 @@ class DataTable(urwid.WidgetWrap):
             # print "adding: %s" %(r)
             self.add_row(r)
         logger.debug("body length: %d" %(len(self.body)))
-        # self.listbox.focus_position = 0
-        # logger.debug(self.listbox.focus_position)
-
-        # self.refresh(offset)
-        # if offset and orig_offset < len(self.body):
-        #     # self.listbox.set_focus(orig_offset)
-        #     self.listbox.focus_position = orig_offset
-        # self._invalidate()
-        # self.listbox._invalidate()
-        # if hasattr(self.listbox, "pile"):
-        #     self.listbox.pile._invalidate()
-        # self.listbox.listbox._invalidate()
         if self.selected_column is not None:
             self.highlight_column(self.selected_column)
         if self.with_footer:
             self.footer.update()
 
+        self._invalidate()
+        self.listbox._invalidate()
         urwid.emit_signal(self, "refresh", self)
 
 
@@ -1511,7 +1501,7 @@ def main():
                             string.ascii_uppercase
                             + string.lowercase
                             + string.digits + ' ' * 20
-                        ) for _ in range(32))
+                        ) for _ in range(16))
                               if random.randint(0, 5)
                               else None)
 
@@ -1600,7 +1590,7 @@ def main():
                 )
 
             self.grid_flow = urwid.GridFlow(
-                [urwid.BoxAdapter(t, 40) for t in self.tables], 60, 1, 1, "left"
+                [urwid.BoxAdapter(t, 25) for t in self.tables], 40, 1, 1, "left"
             )
             #     [ ('weight', 1, urwid.LineBox(t)) for t in self.tables ]
             # )
@@ -1625,7 +1615,6 @@ def main():
         else:
             return False
 
-
     loop = urwid.MainLoop(main_view,
                           palette,
                           screen=screen,
@@ -1635,13 +1624,9 @@ def main():
 
     old_signal_keys = screen.tty_signal_keys()
     l = list(old_signal_keys)
-    l[0] = 'undefined'
-    l[1] = 'undefined'
-    l[2] = 'undefined'
-    l[3] = 'undefined'
-    l[4] = 'undefined'
+    l[:] = ['undefined'] * 5
     screen.tty_signal_keys(*l)
-    print screen.tty_signal_keys()
+    # print screen.tty_signal_keys()
     try:
         loop.run()
     finally:
