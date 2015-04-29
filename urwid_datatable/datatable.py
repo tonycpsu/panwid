@@ -979,14 +979,14 @@ class DataTable(urwid.WidgetWrap):
     limit = None
 
     def __init__(self, border=None, padding=None,
-                 with_header=True, with_footer=False, with_scrollbar=False,
+                 with_header=None, with_footer=None, with_scrollbar=False,
                  initial_sort = None, query_sort = None, ui_sort = False,
                  limit = None):
 
         if border: self.border = border
         if padding: self.padding = padding
-        if with_header: self.with_header = with_header
-        if with_footer: self.with_footer = with_footer
+        if with_header is not None: self.with_header = with_header
+        if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar: self.with_scrollbar = with_scrollbar
         if initial_sort:
             self.initial_sort = initial_sort
@@ -1523,7 +1523,7 @@ def main():
                 self.add_row(self.random_row())
             # elif key == "A":
             #     self.add_row(self.random_row(), keep_sorted=False)
-            elif key == "r":
+            elif key in ["r", "ctrl r"]:
                 self.requery()
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
@@ -1569,19 +1569,14 @@ def main():
             )
 
             self.tables.append(
-                ExampleDataTable(initial_sort="bar", limit=20, num_rows=100,
-                                 with_scrollbar=True)
-            )
-
-            self.tables.append(
                 ExampleDataTable(initial_sort="baz", ui_sort=False,
-                                 num_rows=1000)
+                                 num_rows=1000, with_scrollbar=True)
             )
 
             self.tables.append(
                 ExampleDataTable(initial_sort=None, query_sort=False,
                                  limit = 20,
-                                 num_rows=1000)
+                                 num_rows=1000, with_footer=False)
             )
 
             for t in self.tables:
