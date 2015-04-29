@@ -6,12 +6,18 @@ import sys
 logger = logging.getLogger(__name__)
 
 
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
                                     datefmt='%Y-%m-%d %H:%M:%S')
-console_handler = logging.StreamHandler(sys.stderr)
-console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.ERROR)
-logger.addHandler(console_handler)
+
+# console_handler = logging.StreamHandler(sys.stderr)
+# console_handler.setFormatter(formatter)
+# console_handler.setLevel(logging.ERROR)
+# logger.addHandler(console_handler)
+logger.addHandler(NullHandler())
 
 # fh = logging.FileHandler("datatable.log")
 # fh.setLevel(logging.DEBUG)

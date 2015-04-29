@@ -1,6 +1,19 @@
 urwid-datatable
 ===============
 
-A simple data table widget for urwid.
+A data table widget for urwid.
 
-![ScreenShot](/doc/screenshot.png)
+Features include:
+* Flexible options for column formatting and sorting
+* Progressive loading / "infinite scrolling" for paginating large datasets
+*
+
+TODOs:
+* Make dependency on [sortedcontainers][1] optional
+* Documentation
+
+
+
+[1] https://github.com/grantjenks/sorted_containers
+
+![Output sample](doc/screenshot.gif)
