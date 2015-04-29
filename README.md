@@ -16,4 +16,4 @@ TODOs:
 
 [1] https://github.com/grantjenks/sorted_containers
 
-![Output sample](doc/screenshot.gif)
+![Output sample](doc/screencast.gif)
