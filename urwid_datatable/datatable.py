@@ -29,7 +29,14 @@ import urwid
 import urwid.raw_display
 from datetime import datetime, timedelta, date
 from operator import itemgetter
-import sortedcontainers
+
+USE_SORTEDCONTAINERS = False
+try:
+    import sortedcontainers
+    USE_SORTEDCONTAINERS=True
+except ImportError:
+    pass
+
 from functools import cmp_to_key
 from urwid.compat import PYTHON3
 # import threading
@@ -126,9 +133,15 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         self.table = table
         if not key:
             key = lambda x: 0
-        self.rows = sortedcontainers.SortedListWithKey(key=key)
+        self.initialize_list(key=key)
         self.focus = 0
         super(DataTableRowsListWalker, self).__init__()
+
+    def initialize_list(self, key):
+        if USE_SORTEDCONTAINERS:
+            self.rows = sortedcontainers.SortedListWithKey(key=key)
+        else:
+            self.rows = list()
 
     def __getitem__(self, position):
         # raise Exception
@@ -204,7 +217,8 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
             # key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
             key = cmp_to_key(sort_reverse)
 
-        self.rows = sortedcontainers.SortedListWithKey(key=key)
+        self.initialize_list(key=key)
+        # self.rows = sortedcontainers.SortedListWithKey(key=key)
         self._modified()
 
     def __len__(self):
@@ -226,7 +240,10 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
     def clear(self):
         self.focus = 0
         self._modified()
-        return self.rows.clear()
+        if USE_SORTEDCONTAINERS:
+            self.rows.clear()
+        else:
+            del self.rows[:]
 
     def __getattr__(self, attr):
         # logger.debug("getattr: %s" %(attr))
@@ -1001,7 +1018,7 @@ class DataTable(urwid.WidgetWrap):
 
         # self.sort_field = self.column_label_to_field(self.sort_field)
 
-        if query_sort: self.query_sort = query_sort
+        if query_sort is not None: self.query_sort = query_sort
         if ui_sort: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
@@ -1010,7 +1027,10 @@ class DataTable(urwid.WidgetWrap):
         # else:
         #     self.data = list()
 
-        self.data = sortedcontainers.SortedListWithKey()
+        if USE_SORTEDCONTAINERS:
+            self.data = sortedcontainers.SortedListWithKey()
+        else:
+            self.data = list()
 
         self.walker = DataTableRowsListWalker(self)
         self.listbox = ScrollingListBox(
@@ -1258,7 +1278,10 @@ class DataTable(urwid.WidgetWrap):
     def add_row(self, data, position=None):
         row = DataTableBodyRow(self, data, header = self.header.row)
         if not position:
-            self.listbox.body.add(row)
+            if USE_SORTEDCONTAINERS:
+                self.listbox.body.add(row)
+            else:
+                self.listbox.body.append(row)
         else:
             self.listbox.body.insert(position, row)
         return row
@@ -1401,8 +1424,8 @@ def main():
 
     # raise Exception(FOCUS_MAP)
     header_foreground_map = {
-        None: ["black,bold", "g7,bold"],
-        "focused": ["white,bold", "white,bold"],
+        None: ["black", "g7,bold"],
+        "focused": ["black", "white,bold"],
         "column_focused": ["yellow,bold", "yellow,bold"],
         "column_focused focused": ["yellow,bold", "yellow,bold"],
 
@@ -1411,7 +1434,7 @@ def main():
     header_background_map = {
         None: ["light gray", "g40"],
         "focused": ["light gray", "g40"],
-        "column_focused": ["white", "g40"],
+        "column_focused": ["light gray", "g40"],
         "column_focused focused": ["light gray", "g40"],
     }
 
