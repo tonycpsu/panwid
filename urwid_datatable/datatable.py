@@ -27,8 +27,6 @@ logger.addHandler(NullHandler())
 
 import urwid
 import urwid.raw_display
-import random
-import string
 from datetime import datetime, timedelta, date
 from operator import itemgetter
 import sortedcontainers
@@ -117,7 +115,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
             else:
                 marker = bg_marker
             self.pile.contents.append(
-                (marker, self.pile.options("pack"))
+                (urwid.Filler(marker), self.pile.options("weight", 1))
             )
         self._invalidate()
 
@@ -272,10 +270,10 @@ class ScrollingListBox(urwid.WidgetWrap):
             self.columns.contents.append(
                 (self.scroll_bar, self.columns.options("given", 1))
             )
-        self.pile = urwid.Pile([
-            ('weight', 1, self.columns)
-        ])
-        super(ScrollingListBox, self).__init__(self.pile)
+        # self.pile = urwid.Pile([
+        #     ('weight', 1, self.columns)
+        # ])
+        super(ScrollingListBox, self).__init__(self.columns)
 
     def mouse_event(self, size, event, button, col, row, focus):
         """Overrides ListBox.mouse_event method.
@@ -399,8 +397,7 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     @property
     def contents(self):
-        return self.pile.contents
-
+        return self.columns.contents
 
     @property
     def focus(self):
@@ -421,7 +418,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.listbox._invalidate()
 
     def __getattr__(self, attr):
-        if attr in ["ends_visible", "set_focus", "body"]:
+        if attr in ["ends_visible", "set_focus", "set_focus_valign", "body"]:
             return getattr(self.listbox, attr)
         # elif attr == "body":
         #     return self.walker
@@ -1356,6 +1353,8 @@ class DataTable(urwid.WidgetWrap):
 def main():
 
     import os
+    import random
+    import string
 
     from urwid_utils.palette import PaletteEntry, Palette
 

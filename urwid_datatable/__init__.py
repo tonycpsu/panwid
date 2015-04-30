@@ -2,5 +2,5 @@ from datatable import *
 
 __all__ = """
 DataTable
-DataTableColumnDef
+DataTableColumn
 """.split()
