@@ -9,7 +9,7 @@ Features include:
 * Scrollbar with indicator showing position within dataset even when not all data has been loaded
 
 TODOs:
-* Make dependency on [sortedcontainers][1] optional
+* Make more 16-color and non-unicode friendly
 * Documentation
 
 
