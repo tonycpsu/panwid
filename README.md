@@ -6,7 +6,7 @@ A data table widget for urwid.
 Features include:
 * Flexible options for column formatting and sorting
 * Progressive loading / "infinite scrolling" for paginating large datasets
-*
+* Scrollbar with indicator showing position within dataset even when not all data has been loaded
 
 TODOs:
 * Make dependency on [sortedcontainers][1] optional
