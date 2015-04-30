@@ -1642,8 +1642,7 @@ def main():
                           palette,
                           screen=screen,
                           pop_ups=True,
-                          unhandled_input=global_input,
-                          event_loop=urwid.TwistedEventLoop())
+                          unhandled_input=global_input)
 
     old_signal_keys = screen.tty_signal_keys()
     l = list(old_signal_keys)
