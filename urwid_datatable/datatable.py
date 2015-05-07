@@ -283,6 +283,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.drag_last = None
         self.drag_to = None
         self.requery = False
+        self.height = 0
 
         self.listbox = urwid.ListBox(body)
         self.columns = urwid.Columns([
@@ -303,7 +304,7 @@ class ScrollingListBox(urwid.WidgetWrap):
 
         Implements mouse scrolling.
         """
-        if row < 0 or row > len(self.body):
+        if row < 0 or row >= self.height:
             return
         if event == 'mouse press':
             if button == 1:
@@ -315,14 +316,14 @@ class ScrollingListBox(urwid.WidgetWrap):
                 pct = self.focus_position / len(self.body)
                 self.set_focus_valign(('relative', pct - 10))
                 self._invalidate()
-                return True
+                # return True
             elif button == 5:
                 # for _ in range(3):
                 #     self.keypress(size, 'down')
                 pct = self.focus_position / len(self.body)
                 self.set_focus_valign(('relative', pct + 5))
                 self._invalidate()
-                return True
+                # return True
         elif event == 'mouse drag':
             if self.drag_from is None:
                 return
@@ -349,8 +350,8 @@ class ScrollingListBox(urwid.WidgetWrap):
                     self, "drag_stop",self, self.drag_from, self.drag_to
                 )
             self.mouse_state = 0
-        return self.__super.mouse_event(size, event, button, col, row, focus)
-
+        # return self.__super.mouse_event(size, event, button, col, row, focus)
+        return super(ScrollingListBox, self).mouse_event(size, event, button, col, row, focus)
 
     def keypress(self, size, key):
         """Overrides ListBox.keypress method.
@@ -408,6 +409,8 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self, "load_more", len(self.body))
         if self.with_scrollbar:
             self.scroll_bar.update(size)
+
+        self.height = maxrow
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
 
 
