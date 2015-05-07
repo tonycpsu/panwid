@@ -180,6 +180,7 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
 
     def set_sort_column(self, column, **kwargs):
 
+        sort_key = column.sort_key
 
         def sort_natural(a, b):
             if a[index].value is None:
@@ -187,7 +188,10 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
             elif b[index].value is None:
                 return -1
             else:
-                return cmp(a[index].value, b[index].value)
+                if sort_key:
+                    return cmp(sort_key(a[index].value), sort_key(b[index].value))
+                else:
+                    return cmp(a[index].value, b[index].value)
 
         def sort_reverse(a, b):
             if a[index].value is None:
@@ -195,11 +199,13 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
             elif b[index].value is None:
                 return -1
             else:
-                return cmp(b[index].value, a[index].value)
+                if sort_key:
+                    return cmp(sort_key(b[index].value), sort_key(a[index].value))
+                else:
+                    return cmp(b[index].value, a[index].value)
 
         # logger.debug("data: %s" %(self.rows))
         field = column.name
-        sort_key = column.sort_key
         index = self.table.columns.index(column)
         # logger.info("set_sort_column: %s, %d, %s" %(column.name, index, kwargs))
         # if sort_key:
@@ -297,7 +303,7 @@ class ScrollingListBox(urwid.WidgetWrap):
 
         Implements mouse scrolling.
         """
-        if row < 0 or row >= len(self.body):
+        if row < 0 or row > len(self.body):
             return
         if event == 'mouse press':
             if button == 1:
@@ -758,6 +764,9 @@ class DataTableRow(urwid.WidgetWrap):
 
         super(DataTableRow, self).__init__(self.attr)
 
+
+    # def __del__(self):
+    #     del self.data
 
     # @property
     # def attr_map(self):
@@ -1566,7 +1575,7 @@ def main():
                     kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
                 else:
                     kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
-                logger.debug("query: %s" %(kwargs))
+                # logger.debug("query: %s" %(kwargs))
                 self.query_data.sort(**kwargs)
                 logger.debug("s" %(self.query_data))
             # print l[0]
