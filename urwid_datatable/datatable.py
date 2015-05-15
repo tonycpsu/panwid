@@ -180,6 +180,7 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
 
     def set_sort_column(self, column, **kwargs):
 
+        sort_key = column.sort_key
 
         def sort_natural(a, b):
             if a[index].value is None:
@@ -187,7 +188,10 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
             elif b[index].value is None:
                 return -1
             else:
-                return cmp(a[index].value, b[index].value)
+                if sort_key:
+                    return cmp(sort_key(a[index].value), sort_key(b[index].value))
+                else:
+                    return cmp(a[index].value, b[index].value)
 
         def sort_reverse(a, b):
             if a[index].value is None:
@@ -195,11 +199,13 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
             elif b[index].value is None:
                 return -1
             else:
-                return cmp(b[index].value, a[index].value)
+                if sort_key:
+                    return cmp(sort_key(b[index].value), sort_key(a[index].value))
+                else:
+                    return cmp(b[index].value, a[index].value)
 
         # logger.debug("data: %s" %(self.rows))
         field = column.name
-        sort_key = column.sort_key
         index = self.table.columns.index(column)
         # logger.info("set_sort_column: %s, %d, %s" %(column.name, index, kwargs))
         # if sort_key:
@@ -277,6 +283,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.drag_last = None
         self.drag_to = None
         self.requery = False
+        self.height = 0
 
         self.listbox = urwid.ListBox(body)
         self.columns = urwid.Columns([
@@ -297,7 +304,7 @@ class ScrollingListBox(urwid.WidgetWrap):
 
         Implements mouse scrolling.
         """
-        if row < 0 or row >= len(self.body):
+        if row < 0 or row >= self.height:
             return
         if event == 'mouse press':
             if button == 1:
@@ -309,14 +316,14 @@ class ScrollingListBox(urwid.WidgetWrap):
                 pct = self.focus_position / len(self.body)
                 self.set_focus_valign(('relative', pct - 10))
                 self._invalidate()
-                return True
+                # return True
             elif button == 5:
                 # for _ in range(3):
                 #     self.keypress(size, 'down')
                 pct = self.focus_position / len(self.body)
                 self.set_focus_valign(('relative', pct + 5))
                 self._invalidate()
-                return True
+                # return True
         elif event == 'mouse drag':
             if self.drag_from is None:
                 return
@@ -343,8 +350,8 @@ class ScrollingListBox(urwid.WidgetWrap):
                     self, "drag_stop",self, self.drag_from, self.drag_to
                 )
             self.mouse_state = 0
-        return self.__super.mouse_event(size, event, button, col, row, focus)
-
+        # return self.__super.mouse_event(size, event, button, col, row, focus)
+        return super(ScrollingListBox, self).mouse_event(size, event, button, col, row, focus)
 
     def keypress(self, size, key):
         """Overrides ListBox.keypress method.
@@ -402,6 +409,8 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self, "load_more", len(self.body))
         if self.with_scrollbar:
             self.scroll_bar.update(size)
+
+        self.height = maxrow
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
 
 
@@ -758,6 +767,9 @@ class DataTableRow(urwid.WidgetWrap):
 
         super(DataTableRow, self).__init__(self.attr)
 
+
+    # def __del__(self):
+    #     del self.data
 
     # @property
     # def attr_map(self):
@@ -1566,7 +1578,7 @@ def main():
                     kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
                 else:
                     kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
-                logger.debug("query: %s" %(kwargs))
+                # logger.debug("query: %s" %(kwargs))
                 self.query_data.sort(**kwargs)
                 logger.debug("s" %(self.query_data))
             # print l[0]
