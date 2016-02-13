@@ -3,6 +3,8 @@ from __future__ import division
 import logging
 import sys
 
+from collections import MutableMapping
+
 logger = logging.getLogger(__name__)
 
 
@@ -713,8 +715,10 @@ class DataTableRow(urwid.WidgetWrap):
 
             if isinstance(self.data, (list, tuple)):
                 val = self.data[i]
-            elif isinstance(data, dict):
+            elif isinstance(data, MutableMapping):
                 val = data.get(col.name, None)
+            elif hasattr(data, col.name):
+                val = getattr(data, col.name)
                 # details = data.get(c.details, None)
             else:
                 raise Exception(data)
@@ -1122,7 +1126,8 @@ class DataTable(urwid.WidgetWrap):
         if self.initial_sort:
             # logger.info("initial sort: %s" %(self.initial_sort))
             self.sort_by_column(self.initial_sort, toggle=False)
-        self.requery()
+        else:
+            self.requery()
 
 
 
@@ -1166,7 +1171,10 @@ class DataTable(urwid.WidgetWrap):
 
     @property
     def selection(self):
-        return self.body[self.focus_position]
+        try:
+            return self.body[self.focus_position]
+        except:
+            return None
 
     def highlight_column(self, index):
         self.header.highlight_column(index)
@@ -1187,7 +1195,6 @@ class DataTable(urwid.WidgetWrap):
         if index is None:
             return
 
-
         if isinstance(index, basestring):
             sort_field = index
             for i, col in enumerate(self.columns):
@@ -1196,6 +1203,7 @@ class DataTable(urwid.WidgetWrap):
                     break
         else:
             sort_field = self.columns[index//2].name
+
 
         column = self.columns[index//2]
 
@@ -1306,7 +1314,7 @@ class DataTable(urwid.WidgetWrap):
         self.footer.update()
 
     def query(self, sort=None, offset=None):
-        pass
+        raise Exception("query method must be overriden")
 
     def query_result_count(self):
         raise Exception("query_result_count method must be defined")
