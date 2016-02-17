@@ -1155,6 +1155,9 @@ class DataTable(urwid.WidgetWrap):
     def __iter__(self): return iter(self.body)
 
     def __contains__(self, value):
+        # for x in self.body:
+        #     for c in self.key_columns:
+        #         logger.info("%s, %s, %s, %s" %(c, value, value.get(c, None), x.data.get(c, None)))
         return any([all([ value.get(c, None) == x.data.get(c, None) for c in self.key_columns]) for x in self.body])
 
     # @property
