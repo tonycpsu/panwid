@@ -161,6 +161,10 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         # logger.debug("getitem: %s" %(row))
         return row
 
+    def __delitem__(self, index):
+        del self.rows[index]
+        self._modified()
+
     def next_position(self, position):
         index = position + 1
         if position >= len(self.rows):
@@ -256,7 +260,7 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
     def __getattr__(self, attr):
         # logger.debug("getattr: %s" %(attr))
         # logger.debug("len: %s" %(len(self.rows)))
-        if attr in [ "append", "add", "as_list", "index",
+        if attr in [ "append", "add", "as_list", "index", "pop",
                      "insert", "remove", "update"]:
             rv = getattr(self.rows, attr)
             self._modified()
@@ -854,13 +858,20 @@ class DataTableRow(urwid.WidgetWrap):
     #     self.focus_position = index
 
 
+    # def highlight_column(self, index):
+
+    #     self.selected_column = index
+    #     for i in range(0, len(self.row.contents), 2):
+    #         if i == index:
+    #             self.row[i].highlight()
+    #         else:
+
     def highlight_column(self, index):
+
+        if self.selected_column:
+            self.row[self.selected_column].unhighlight()
+        self.row[index].highlight()
         self.selected_column = index
-        for i in range(0, len(self.row.contents), 2):
-            if i == index:
-                self.row[i].highlight()
-            else:
-                self.row[i].unhighlight()
 
     def cycle_columns(self, step):
 
@@ -1016,7 +1027,7 @@ class DataTable(urwid.WidgetWrap):
 
     def __init__(self, border=None, padding=None,
                  with_header=None, with_footer=None, with_scrollbar=False,
-                 initial_sort = None, query_sort = None, ui_sort = False,
+                 initial_sort = None, query_sort = None, ui_sort = None,
                  limit = None):
 
         if border: self.border = border
@@ -1035,7 +1046,8 @@ class DataTable(urwid.WidgetWrap):
         # self.sort_field = self.column_label_to_field(self.sort_field)
 
         if query_sort is not None: self.query_sort = query_sort
-        if ui_sort: self.ui_sort = ui_sort
+        # raise Exception(ui_sort, self.ui_sort)
+        if ui_sort is not None: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
         # if not self.query_sort:
@@ -1306,6 +1318,16 @@ class DataTable(urwid.WidgetWrap):
             self.listbox.body.insert(position, row)
         return row
 
+    def remove_row(self, data):
+        self.listbox.body.remove(data)
+
+    def remove_row_by_predicate(self, fn):
+        for i, row in enumerate(self.listbox.body):
+            logger.debug(row.data)
+            if fn(row.data):
+                # raise Exception
+                del self.listbox.body[i]
+
 
     def update_footer(self):
 
@@ -1569,6 +1591,8 @@ def main():
                 self.sort_by_column(toggle=True)
             elif key == "a":
                 self.add_row(self.random_row())
+            elif key == "d":
+                self.remove_row(self.selection)
             # elif key == "A":
             #     self.add_row(self.random_row(), keep_sorted=False)
             elif key in ["r", "ctrl r"]:
@@ -1617,13 +1641,13 @@ def main():
             )
 
             self.tables.append(
-                ExampleDataTable(initial_sort="baz", ui_sort=False,
-                                 num_rows=1000, with_scrollbar=True)
+                ExampleDataTable(initial_sort="baz", ui_sort=True,
+                                 num_rows=2000, with_scrollbar=True)
             )
 
             self.tables.append(
                 ExampleDataTable(initial_sort=None, query_sort=False,
-                                 limit = 20,
+                                 limit = 20, ui_sort=False,
                                  num_rows=1000, with_footer=False)
             )
 
