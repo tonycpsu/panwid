@@ -3,7 +3,7 @@ from __future__ import division
 import logging
 import sys
 
-from collections import MutableMapping
+from collections import MutableMapping, Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ except ImportError:
 
 from functools import cmp_to_key
 from urwid.compat import PYTHON3
-# import threading
+
 
 DEFAULT_BORDER_WIDTH = 1
 DEFAULT_BORDER_CHAR = " "
@@ -189,48 +189,35 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         sort_key = column.sort_key
 
         def sort_natural(a, b):
-            if a[index].value is None:
+            if a.get("column.name", None) is None:
                 return 1
-            elif b[index].value is None:
+            elif b.get("column.name", None) is None:
                 return -1
             else:
                 if sort_key:
-                    return cmp(sort_key(a[index].value), sort_key(b[index].value))
+                    return cmp(sort_key(a.get("column.name", None)), sort_key(b.get("column.name", None)))
                 else:
-                    return cmp(a[index].value, b[index].value)
+                    return cmp(a.get("column.name", None), b.get("column.name", None))
 
         def sort_reverse(a, b):
-            if a[index].value is None:
+            if a.get("column.name", None) is None:
                 return 1
-            elif b[index].value is None:
+            elif b.get("column.name", None) is None:
                 return -1
             else:
                 if sort_key:
-                    return cmp(sort_key(b[index].value), sort_key(a[index].value))
+                    return cmp(sort_key(b.get("column.name", None)), sort_key(a.get("column.name", None)))
                 else:
-                    return cmp(b[index].value, a[index].value)
+                    return cmp(b.get("column.name", None), a.get("column.name", None))
 
-        # logger.debug("data: %s" %(self.rows))
         field = column.name
         index = self.table.columns.index(column)
-        # logger.info("set_sort_column: %s, %d, %s" %(column.name, index, kwargs))
-        # if sort_key:
-        #     kwargs['key'] = lambda x: sort_key(x[index].value)
-        # else:
-        #     kwargs['key'] = lambda x: x[index].value
-
-        # if column.sort_fn:
-        #     kwargs['cmp'] = column.sort_fn
-        # print kwargs
         if not kwargs.get("reverse", None):
-            #key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
             key = cmp_to_key(sort_natural)
         else:
-            # key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
             key = cmp_to_key(sort_reverse)
 
         self.initialize_list(key=key)
-        # self.rows = sortedcontainers.SortedListWithKey(key=key)
         self._modified()
 
     def __len__(self):
@@ -668,15 +655,7 @@ class BodyColumns(urwid.Columns):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    # column_class = urwid.Columns
-
-    # attr_map = {}
-    # focus_map = {}
-
-    # border_attr_map = { None: "table_border" }
-    # border_focus_map = { None: "table_border focused" }
-
-    decorate = True
+    # decorate = False
 
     def __init__(self, table, data,
                  header = None,
@@ -685,20 +664,23 @@ class DataTableRow(urwid.WidgetWrap):
                  **kwargs):
 
         self.table = table
-        self.data = data
+        if isinstance(data, (list, tuple)):
+            self.data = dict(zip([c.name for c in self.table.columns], data))
+        elif isinstance(data, MutableMapping):
+            self.data = data
+        else:
+            raise Exception
         self.header = header
         self.cell_click = cell_click
         self.cell_select = cell_select
-        # self.selected_column = None
         self.contents = []
         self._values = dict()
 
-        if self.decorate:
-            if table.attr_map:
-                self.attr_map.update(table.attr_map)
-            if table.focus_map:
-                self.focus_map.update(table.focus_map)
-
+        # if self.decorate:
+        #     if table.attr_map:
+        #         self.attr_map.update(table.attr_map)
+        #     if table.focus_map:
+        #         self.focus_map.update(table.focus_map)
 
         if border_attr_map:
             self.border_attr_map = border_attr_map
@@ -717,15 +699,16 @@ class DataTableRow(urwid.WidgetWrap):
             else:
                 l.append(col.width)
 
-            if isinstance(self.data, (list, tuple)):
-                val = self.data[i]
-            elif isinstance(data, MutableMapping):
-                val = data.get(col.name, None)
-            elif hasattr(data, col.name):
-                val = getattr(data, col.name)
-                # details = data.get(c.details, None)
-            else:
-                raise Exception(data)
+            val = self.data.get(col.name, None)
+            # if isinstance(self.data, (list, tuple)):
+            #     val = self.data[i]
+            # elif isinstance(data, MutableMapping):
+            #     val = data.get(col.name, None)
+            # elif hasattr(data, col.name):
+            #     val = getattr(data, col.name)
+            #     # details = data.get(c.details, None)
+            # else:
+            #     raise Exception(data)
 
             cell = DataTableCell(self.table, col, self, val)
             if self.cell_click:
@@ -760,6 +743,7 @@ class DataTableRow(urwid.WidgetWrap):
             self.row = self.column_class(self.contents, header = self.header)
         else:
             self.row = self.column_class(self.contents)
+        self.row.selected_column = None
 
         self.row.contents = intersperse(
             (urwid.AttrMap(urwid.Divider(border_char),
@@ -802,9 +786,19 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __len__(self): return len(self.contents)
 
-    def __getitem__(self, i): return self.row.contents[i*2][0]
+    # def __getitem__(self, i): return self.row.contents[i*2][0]
 
-    def __delitem__(self, i): del self.row.contents[i*2]
+    # def __delitem__(self, i): del self.row.contents[i*2]
+    def __getitem__(self, key): return self.data.get(key, None)
+
+
+    def get(self, key, default):
+        if key in self:
+            return self[key]
+        return default
+
+    def __iter__(self):
+        return iter(self.data)
 
     def __setitem__(self, i, v):
 
@@ -868,7 +862,7 @@ class DataTableRow(urwid.WidgetWrap):
 
     def highlight_column(self, index):
 
-        if self.selected_column:
+        if self.selected_column is not None:
             self.row[self.selected_column].unhighlight()
         self.row[index].highlight()
         self.selected_column = index
@@ -914,13 +908,14 @@ class DataTableHeaderRow(DataTableRow):
 
     def __init__(self, table, *args, **kwargs):
 
+        self.row = None
         self.attr_map = {}
         self.focus_map = {}
 
         self.attr_map = { None: "table_header" }
         self.focus_map = { None: "table_header focused" }
 
-        self.decorate = False
+        # self.decorate = False
 
         self.table = table
         self.contents = [ DataTableHeaderLabel(x.label) for x in self.table.columns ]
@@ -1000,7 +995,7 @@ class DataTableFooterRow(DataTableRow):
             #     except Exception, e:
             #         logger.exception(e)
             self[i] = DataTableCell(self.table, col, self, footer_content)
-        self._invalidate()
+        # self._invalidate()
 
 
 class DataTable(urwid.WidgetWrap):
@@ -1142,6 +1137,7 @@ class DataTable(urwid.WidgetWrap):
             self.requery()
 
 
+    def __getitem__(self, i): return [r[i] for r in self.body]
 
     # @property
     # def selected_column(self):
@@ -1593,6 +1589,8 @@ def main():
                 self.add_row(self.random_row())
             elif key == "d":
                 self.remove_row(self.selection)
+            elif key == "?":
+                print 1 in self["foo"]
             # elif key == "A":
             #     self.add_row(self.random_row(), keep_sorted=False)
             elif key in ["r", "ctrl r"]:
