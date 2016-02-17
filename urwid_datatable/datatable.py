@@ -800,6 +800,15 @@ class DataTableRow(urwid.WidgetWrap):
     def __iter__(self):
         return iter(self.data)
 
+    # def __eq__(self, other):
+    #     if isinstance(other, Mapping):
+    #         return all([ self.get(c, None) == other.get(c, None) for c in self.table.key_columns])
+    #     return object.__eq__(self, other)
+
+    def __hash__(self):
+        return hash(frozenset([self.get(c, None) for c in self.table.key_columns]))
+
+
     def __setitem__(self, i, v):
 
         self.row.contents[i*2] = (
@@ -1005,6 +1014,7 @@ class DataTable(urwid.WidgetWrap):
                "drag_start", "drag_continue", "drag_stop"]
 
     columns = []
+    key_columns = None
     attr_map = {}
     focus_map = {}
     # attr_map = { None: "table" }
@@ -1032,6 +1042,9 @@ class DataTable(urwid.WidgetWrap):
         if with_scrollbar: self.with_scrollbar = with_scrollbar
         if initial_sort:
             self.initial_sort = initial_sort
+
+        if not self.key_columns:
+            self.key_columns = self.columns
 
         if initial_sort: self.initial_sort = initial_sort
         #     self.sort_field = initial_sort
@@ -1137,7 +1150,12 @@ class DataTable(urwid.WidgetWrap):
             self.requery()
 
 
-    def __getitem__(self, i): return [r[i] for r in self.body]
+    # def __getitem__(self, i): return [r[i] for r in self.body]
+
+    def __iter__(self): return iter(self.body)
+
+    def __contains__(self, value):
+        return any([all([ value.get(c, None) == x.data.get(c, None) for c in self.key_columns]) for x in self.body])
 
     # @property
     # def selected_column(self):
@@ -1258,32 +1276,6 @@ class DataTable(urwid.WidgetWrap):
         self.walker.set_sort_column(index)
         self.requery()
 
-    def sort_by2(self, index, **kwargs):
-
-        sort_key = self.columns[index].sort_key
-
-        if sort_key:
-            kwargs['key'] = lambda x: sort_key(x[index].value)
-        else:
-            kwargs['key'] = lambda x: x[index].value
-
-        if self.columns[index].sort_fn:
-            kwargs['cmp'] = self.columns[index].sort_fn
-        # print kwargs
-        if not kwargs.get("reverse", None):
-            key = cmp_to_key(lambda a, b: cmp(a[index].value, b[index].value))
-        else:
-            key = cmp_to_key(lambda a, b: cmp(b[index].value, a[index].value))
-
-        # self.body.clear()
-        # body = SimpleMonitoredSortedFocusListWalker([], key=key)
-        self.walker.set_key(key)
-        # l = self.body.as_list()
-        # self.clear()
-        # self.body._key=key
-        # self.body.update(l)
-        # self.refresh()
-        # self.listbox.body.sort(**kwargs)
 
     def selectable(self):
         return True
@@ -1537,6 +1529,7 @@ def main():
         with_footer = True
         ui_sort = True
         num_rows = None
+        key_columns = ["foo"]
 
         columns = [
             DataTableColumn(
@@ -1590,7 +1583,7 @@ def main():
             elif key == "d":
                 self.remove_row(self.selection)
             elif key == "?":
-                print 1 in self["foo"]
+                print {"foo": 1} in self
             # elif key == "A":
             #     self.add_row(self.random_row(), keep_sorted=False)
             elif key in ["r", "ctrl r"]:
