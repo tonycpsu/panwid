@@ -655,7 +655,13 @@ class BodyColumns(urwid.Columns):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    # decorate = False
+    attr_map = {}
+    focus_map = {}
+
+    border_attr_map = { None: "table_border" }
+    border_focus_map = { None: "table_border focused" }
+
+    decorate = True
 
     def __init__(self, table, data,
                  header = None,
@@ -676,11 +682,11 @@ class DataTableRow(urwid.WidgetWrap):
         self.contents = []
         self._values = dict()
 
-        # if self.decorate:
-        #     if table.attr_map:
-        #         self.attr_map.update(table.attr_map)
-        #     if table.focus_map:
-        #         self.focus_map.update(table.focus_map)
+        if self.decorate:
+            if table.attr_map:
+                self.attr_map.update(table.attr_map)
+            if table.focus_map:
+                self.focus_map.update(table.focus_map)
 
         if border_attr_map:
             self.border_attr_map = border_attr_map
@@ -924,7 +930,7 @@ class DataTableHeaderRow(DataTableRow):
         self.attr_map = { None: "table_header" }
         self.focus_map = { None: "table_header focused" }
 
-        # self.decorate = False
+        self.decorate = False
 
         self.table = table
         self.contents = [ DataTableHeaderLabel(x.label) for x in self.table.columns ]
