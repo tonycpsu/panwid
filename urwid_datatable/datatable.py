@@ -84,6 +84,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
     def update(self, size):
 
         width, height = size
+        scroll_marker_height = 1
         del self.pile.contents[:]
         if (len(self.parent.body)
             and self.parent.focus is not None
@@ -91,6 +92,8 @@ class ListBoxScrollBar(urwid.WidgetWrap):
             scroll_position = int(
                 self.parent.focus_position / self.parent.row_count * height
             )
+            scroll_marker_height = max( height * (height / self.parent.row_count ), 1)
+            # print "height: %d" %(scroll_marker_height)
         else:
             scroll_position = -1
 
@@ -111,7 +114,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         )
 
         for i in range(height):
-            if i == scroll_position:
+            if abs( i - scroll_position ) <= scroll_marker_height/2:
                 if self.parent.row_count == self.parent.focus_position + 1:
                     marker = end_marker
                 else:
@@ -675,7 +678,7 @@ class DataTableRow(urwid.WidgetWrap):
         elif isinstance(data, MutableMapping):
             self.data = data
         else:
-            raise Exception
+            self.data = {}
         self.header = header
         self.cell_click = cell_click
         self.cell_select = cell_select
@@ -705,7 +708,17 @@ class DataTableRow(urwid.WidgetWrap):
             else:
                 l.append(col.width)
 
-            val = self.data.get(col.name, None)
+            val = None
+            # raise Exception(self.data)
+            if hasattr(self.data, col.name):
+                val = getattr(self.data, col.name, None)
+            else:
+                val = self.data.get(col.name, None)
+                # details = data.get(c.details, None)
+            # else:
+            #     val = data.get(col.name, None)
+            #     raise Exception(data)
+
             # if isinstance(self.data, (list, tuple)):
             #     val = self.data[i]
             # elif isinstance(data, MutableMapping):
