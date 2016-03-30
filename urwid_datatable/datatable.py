@@ -3,10 +3,9 @@ from __future__ import division
 import logging
 import sys
 
-from collections import MutableMapping, Mapping
+from collections import MutableMapping, MutableSequence, Mapping
 
 logger = logging.getLogger(__name__)
-
 
 class NullHandler(logging.Handler):
     def emit(self, record):
@@ -15,17 +14,18 @@ class NullHandler(logging.Handler):
 formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
                                     datefmt='%Y-%m-%d %H:%M:%S')
 
-# console_handler = logging.StreamHandler(sys.stderr)
-# console_handler.setFormatter(formatter)
-# console_handler.setLevel(logging.ERROR)
-# logger.addHandler(console_handler)
-logger.addHandler(NullHandler())
+
+# logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler(sys.stderr)
+console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.ERROR)
+logger.addHandler(console_handler)
+# logger.addHandler(NullHandler())
 
 # fh = logging.FileHandler("datatable.log")
 # fh.setLevel(logging.DEBUG)
 # fh.setFormatter(formatter)
 # logger.addHandler(fh)
-
 
 import urwid
 import urwid.raw_display
@@ -109,23 +109,32 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                                    {None: "scroll_marker"}
         )
 
+        view_marker = urwid.AttrMap(urwid.Text(" "),
+                                    {None: "scroll_view"}
+        )
+
         bg_marker = urwid.AttrMap(urwid.Text(" "),
                                    {None: "scroll_bg"}
         )
 
         for i in range(height):
-            if abs( i - scroll_position ) <= scroll_marker_height/2:
-                if self.parent.row_count == self.parent.focus_position + 1:
+            if abs( i - scroll_position ) <= scroll_marker_height//2:
+                if self.parent.row_count == self.parent.focus_position:
+                    # logger.info("end: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                     marker = end_marker
+                elif len(self.parent.body) == self.parent.focus_position+1 and i == scroll_position + scroll_marker_height//2:
+                    marker = down_marker
+                    # logger.info("down: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                 else:
+                    # logger.info("pos: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                     marker = pos_marker
-            elif (i == scroll_position + 1
-            and self.parent.focus is not None
-            and len(self.parent.body) == self.parent.focus_position + 1
-            and len(self.parent.body) != self.parent.row_count):
-                marker = down_marker
             else:
+                # logger.info("bg: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                 marker = bg_marker
+                if i < scroll_position:
+                    marker = view_marker
+                else:
+                    marker = bg_marker
             self.pile.contents.append(
                 (urwid.Filler(marker), self.pile.options("weight", 1))
             )
@@ -134,8 +143,10 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
 class DataTableRowsListWalker(urwid.listbox.ListWalker):
 
-    def __init__(self, table, key=None):
+    def __init__(self, table, sort=None, key=None):
         self.table = table
+        self.sort = sort
+        # logger.warning("sort: %s, key=%s" %(self.sort, key))
         if not key:
             key = lambda x: 0
         self.initialize_list(key=key)
@@ -143,13 +154,12 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         super(DataTableRowsListWalker, self).__init__()
 
     def initialize_list(self, key):
-        if USE_SORTEDCONTAINERS:
+        if self.sort and USE_SORTEDCONTAINERS:
             self.rows = sortedcontainers.SortedListWithKey(key=key)
         else:
             self.rows = list()
 
     def __getitem__(self, position):
-        # raise Exception
         # logger.debug("position: %d" %(position))
         # logger.debug("data: %s" %(self.rows))
         if position < 0 or position >= len(self.rows):
@@ -158,10 +168,10 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
 
         try:
             #row = DataTableBodyRow(self.table, self.rows[position])
-            return self.rows[position]
+            row = self.rows[position]
         except Exception, e:
-            logger.exception(e)
-        # logger.debug("getitem: %s" %(row))
+            # logger.warning(e)
+            raise
         return row
 
     def __delitem__(self, index):
@@ -190,28 +200,30 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
     def set_sort_column(self, column, **kwargs):
 
         sort_key = column.sort_key
-
+        # logger.warning("set_sort_column: %s" %(column))
         def sort_natural(a, b):
-            if a.get("column.name", None) is None:
+            # logger.warning("sort_natural: %s, %s" %(a["foo"], b["foo"]))
+            if a.get(column.name, None) is None:
                 return 1
-            elif b.get("column.name", None) is None:
+            elif b.get(column.name, None) is None:
                 return -1
             else:
                 if sort_key:
-                    return cmp(sort_key(a.get("column.name", None)), sort_key(b.get("column.name", None)))
+                    return cmp(sort_key(a.get(column.name, None)), sort_key(b.get(column.name, None)))
                 else:
-                    return cmp(a.get("column.name", None), b.get("column.name", None))
+                    return cmp(a.get(column.name, None), b.get(column.name, None))
 
         def sort_reverse(a, b):
-            if a.get("column.name", None) is None:
+            # logger.warning("sort_reverse: %s, %s" %(a, b))
+            if a.get(column.name, None) is None:
                 return 1
-            elif b.get("column.name", None) is None:
+            elif b.get(column.name, None) is None:
                 return -1
             else:
                 if sort_key:
-                    return cmp(sort_key(b.get("column.name", None)), sort_key(a.get("column.name", None)))
+                    return cmp(sort_key(b.get(column.name, None)), sort_key(a.get(column.name, None)))
                 else:
-                    return cmp(b.get("column.name", None), a.get("column.name", None))
+                    return cmp(b.get(column.name, None), a.get(column.name, None))
 
         field = column.name
         index = self.table.columns.index(column)
@@ -242,10 +254,21 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
     def clear(self):
         self.focus = 0
         self._modified()
-        if USE_SORTEDCONTAINERS:
+        if self.sort and USE_SORTEDCONTAINERS:
             self.rows.clear()
         else:
             del self.rows[:]
+
+    def add(self, item):
+
+        if self.sort:
+            # logger.warning("sorted add")
+            self.rows.add(item)
+            # logger.warning([ x.data["foo"] for x in self.rows])
+        else:
+            # logger.warning("unsorted add")
+            self.append(item)
+        self._modified()
 
     def __getattr__(self, attr):
         # logger.debug("getattr: %s" %(attr))
@@ -548,7 +571,7 @@ class DataTableCell(urwid.WidgetWrap):
             self.attr_map.update(column.attr_map)
         if row.attr_map:
             self.attr_map.update(row.attr_map)
-        if column.attr and isinstance(row.data, dict):
+        if column.attr and isinstance(row.data, MutableMapping):
             a = row.data.get(column.attr, {})
             if isinstance(a, basestring):
                 a = {None: a}
@@ -824,8 +847,19 @@ class DataTableRow(urwid.WidgetWrap):
     #         return all([ self.get(c, None) == other.get(c, None) for c in self.table.key_columns])
     #     return object.__eq__(self, other)
 
+    def _key(self):
+        return frozenset([self.get(c, None) for c in self.table.key_columns])
+
+    # def __eq__(x, y):
+    #     if not (hasattr(x, "_key") and hasattr(y, "_key")):
+    #         return False
+    #     return x._key() == y._key()
+
     def __hash__(self):
-        return hash(frozenset([self.get(c, None) for c in self.table.key_columns]))
+        return hash(self._key())
+
+    # def __hash__(self):
+    #     return hash(frozenset([self.get(c, None) for c in self.table.key_columns]))
 
 
     def __setitem__(self, i, v):
@@ -1026,8 +1060,12 @@ class DataTableFooterRow(DataTableRow):
         # self._invalidate()
 
 
-class DataTable(urwid.WidgetWrap):
+class Meta(urwid.WidgetWrap.__metaclass__, MutableSequence.__metaclass__):
+    pass
 
+class DataTable(urwid.WidgetWrap, MutableSequence):
+
+    __metaclass__ = Meta
     signals = ["select", "refresh",
                "focus", "unfocus", "row_focus", "row_unfocus",
                "drag_start", "drag_continue", "drag_stop"]
@@ -1050,22 +1088,24 @@ class DataTable(urwid.WidgetWrap):
     limit = None
 
     def __init__(self, border=None, padding=None,
-                 with_header=None, with_footer=None, with_scrollbar=False,
+                 with_header=None, with_footer=None, with_scrollbar=None,
                  initial_sort = None, query_sort = None, ui_sort = None,
                  limit = None):
 
+        logger.info("initial_sort: %s" %(initial_sort))
         if border: self.border = border
         if padding: self.padding = padding
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
-        if with_scrollbar: self.with_scrollbar = with_scrollbar
-        if initial_sort:
+        if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
+        if initial_sort is not None:
             self.initial_sort = initial_sort
 
         if not self.key_columns:
             self.key_columns = self.columns
 
         if initial_sort: self.initial_sort = initial_sort
+        logger.info("self.initial_sort: %s" %(self.initial_sort))
         #     self.sort_field = initial_sort
         # else:
         #     self.sort_field = self.initial_sort
@@ -1082,12 +1122,12 @@ class DataTable(urwid.WidgetWrap):
         # else:
         #     self.data = list()
 
-        if USE_SORTEDCONTAINERS:
-            self.data = sortedcontainers.SortedListWithKey()
-        else:
-            self.data = list()
+        # if USE_SORTEDCONTAINERS:
+        #     self.data = sortedcontainers.SortedListWithKey()
+        # else:
+        #     self.data = list()
 
-        self.walker = DataTableRowsListWalker(self)
+        self.walker = DataTableRowsListWalker(self, sort = self.initial_sort)
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
@@ -1162,7 +1202,7 @@ class DataTable(urwid.WidgetWrap):
         )
         super(DataTable, self).__init__(self.attr)
 
-        if self.initial_sort:
+        if self.initial_sort and self.initial_sort in [c.name for c in self.columns]:
             # logger.info("initial sort: %s" %(self.initial_sort))
             self.sort_by_column(self.initial_sort, toggle=False)
         else:
@@ -1173,11 +1213,28 @@ class DataTable(urwid.WidgetWrap):
 
     def __iter__(self): return iter(self.body)
 
+    def __len__(self): return len(self.body)
+
+    def __setitem__(self, i, v): self.body[i] = v
+
+    def __getitem__(self, i): return self.body[i]
+
+    def __delitem__(self, i): del self.body[i]
+
     def __contains__(self, value):
         # for x in self.body:
         #     for c in self.key_columns:
         #         logger.info("%s, %s, %s, %s" %(c, value, value.get(c, None), x.data.get(c, None)))
         return any([all([ value.get(c, None) == x.data.get(c, None) for c in self.key_columns]) for x in self.body])
+
+    def insert(self, i, v):
+        self.body.insert(i, v)
+
+    # def index(self):
+    #     if not self.key_columns:
+    #        return super(DataTable, self).index(self.body)
+    #    return
+
 
     # @property
     # def selected_column(self):
@@ -1253,10 +1310,10 @@ class DataTable(urwid.WidgetWrap):
             sort_field = self.columns[index//2].name
 
 
-        column = self.columns[index//2]
-
         if not isinstance(index, int):
             raise Exception("invalid column index: %s" %(index))
+
+        column = self.columns[index//2]
 
         # raise Exception("%s, %s" %(index//2, self.selected_column))
         # print "%s, %s" %(index//2, self.selected_column)
@@ -1320,16 +1377,15 @@ class DataTable(urwid.WidgetWrap):
     def add_row(self, data, position=None):
         row = DataTableBodyRow(self, data, header = self.header.row)
         if not position:
-            if USE_SORTEDCONTAINERS:
-                self.listbox.body.add(row)
-            else:
-                self.listbox.body.append(row)
+            # logger.warning("add_row")
+            self.listbox.body.add(row)
+        #     if USE_SORTEDCONTAINERS:
+        #     else:
+        #         self.listbox.body.append(row)
         else:
+            # logger.warning("add_row position: %s" %(position))
             self.listbox.body.insert(position, row)
         return row
-
-    def remove_row(self, data):
-        self.listbox.body.remove(data)
 
     def remove_row_by_predicate(self, fn):
         for i, row in enumerate(self.listbox.body):
@@ -1514,14 +1570,21 @@ def main():
             background_high = "white"
         ),
         "scroll_marker": PaletteEntry(
-            mono = "white",
+            mono = "white,bold",
             foreground = "black",
             background = "white",
             foreground_high = "black",
             background_high = "white"
         ),
+        "scroll_view": PaletteEntry(
+            mono = "black",
+            foreground = "black",
+            background = "light gray",
+            foreground_high = "black",
+            background_high = "light gray"
+        ),
         "scroll_bg": PaletteEntry(
-            mono = "white,bold",
+            mono = "black",
             foreground = "black",
             background = "dark gray",
             foreground_high = "black",
@@ -1590,7 +1653,7 @@ def main():
 
         def keypress(self, size, key):
 
-            logger.warning(self.contents)
+            # logger.warning(self.contents)
             if self.ui_sort and key in [ "shift left", "shift right" ]:
                 self.cycle_index( -1 if key == "shift left" else 1 )
 
@@ -1601,9 +1664,12 @@ def main():
             elif self.ui_sort and key == "ctrl s":
                 self.sort_by_column(toggle=True)
             elif key == "a":
-                self.add_row(self.random_row())
+                self.append(self.random_row())
+                loop.draw_screen()
             elif key == "d":
-                self.remove_row(self.selection)
+                del self[self.focus_position]
+            elif key == "D":
+                self.remove(3)
             elif key == "?":
                 print {"foo": 1} in self
             # elif key == "A":
@@ -1650,7 +1716,7 @@ def main():
 
             self.tables.append(
                 ExampleDataTable(initial_sort="foo", limit=10, num_rows=100,
-                                 with_scrollbar=True, with_footer=True)
+                                 with_scrollbar=True, with_footer=False)
             )
 
             self.tables.append(
@@ -1670,7 +1736,7 @@ def main():
                 )
 
             self.grid_flow = urwid.GridFlow(
-                [urwid.BoxAdapter(t, 25) for t in self.tables], 40, 1, 1, "left"
+                [urwid.BoxAdapter(t, 24) for t in self.tables], 40, 1, 1, "left"
             )
             #     [ ('weight', 1, urwid.LineBox(t)) for t in self.tables ]
             # )
