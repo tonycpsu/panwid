@@ -659,6 +659,8 @@ class HeaderColumns(urwid.Columns):
         self.selected_column = None
         super(HeaderColumns, self).__init__(contents)
 
+    def __setitem__(self, i, v):
+        self.contents[i*2] = (v, self.contents[i*2][1])
 
 class BodyColumns(urwid.Columns):
 
@@ -900,6 +902,9 @@ class DataTableRow(urwid.WidgetWrap):
     def selected_column(self, value):
         self.row.selected_column = value
 
+    def cell(self, i):
+        return self.row[i*2]
+
 
     # def cycle_focus(self, step):
 
@@ -1050,13 +1055,14 @@ class DataTableFooterRow(DataTableRow):
                 data = filter(self.row_predicate, data)
 
             footer_content = col.footer_fn(data, col.name)
+            # logger.info("%s, %s" %(col.name, footer_content))
             self.data[col.name] = footer_content
             # if not isinstance(footer_content, urwid.Widget):
             #     try:
             #         footer_content = col._format(footer_content)
             #     except Exception, e:
             #         logger.exception(e)
-            self[i] = DataTableCell(self.table, col, self, footer_content)
+            self.row[i] = DataTableCell(self.table, col, self, footer_content)
         # self._invalidate()
 
 
@@ -1092,7 +1098,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
                  initial_sort = None, query_sort = None, ui_sort = None,
                  limit = None):
 
-        logger.info("initial_sort: %s" %(initial_sort))
+        # logger.info("initial_sort: %s" %(initial_sort))
         if border: self.border = border
         if padding: self.padding = padding
         if with_header is not None: self.with_header = with_header
@@ -1105,7 +1111,6 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
             self.key_columns = self.columns
 
         if initial_sort: self.initial_sort = initial_sort
-        logger.info("self.initial_sort: %s" %(self.initial_sort))
         #     self.sort_field = initial_sort
         # else:
         #     self.sort_field = self.initial_sort
