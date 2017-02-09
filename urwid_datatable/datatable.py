@@ -11,21 +11,27 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
+class classproperty(object):
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
 formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
                                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler(sys.stderr)
 console_handler.setFormatter(formatter)
 console_handler.setLevel(logging.ERROR)
 logger.addHandler(console_handler)
 # logger.addHandler(NullHandler())
 
-# fh = logging.FileHandler("datatable.log")
-# fh.setLevel(logging.DEBUG)
-# fh.setFormatter(formatter)
-# logger.addHandler(fh)
+fh = logging.FileHandler("datatable.log")
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 import urwid
 import urwid.raw_display
@@ -696,7 +702,6 @@ class DataTableRow(urwid.WidgetWrap):
                  cell_click = None, cell_select = None,
                  border_attr_map = None, border_focus_map = None,
                  **kwargs):
-
         self.table = table
         if isinstance(data, (list, tuple)):
             self.data = dict(zip([c.name for c in self.table.columns], data))
@@ -985,9 +990,11 @@ class DataTableHeaderRow(DataTableRow):
         self.decorate = False
 
         self.table = table
-        self.contents = [ DataTableHeaderLabel(x.label) for x in self.table.columns ]
+        # self.placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
         if not self.table.ui_sort:
             self.selectable = lambda: False
+
+        self.contents = [ DataTableHeaderLabel(x.label) for x in self.table.columns ]
 
         super(DataTableHeaderRow, self).__init__(
             self.table,
@@ -997,6 +1004,7 @@ class DataTableHeaderRow(DataTableRow):
             cell_click = self.header_clicked,
             cell_select = self.header_clicked,
             *args, **kwargs)
+
 
     def header_clicked(self, index):
         # print "click: %d" %(index)
@@ -1108,7 +1116,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
             self.initial_sort = initial_sort
 
         if not self.key_columns:
-            self.key_columns = self.columns
+            self.key_columns = self._columns
 
         if initial_sort: self.initial_sort = initial_sort
         #     self.sort_field = initial_sort
@@ -1174,16 +1182,8 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
 
         self.pile = urwid.Pile([])
 
-        self.header = DataTableHeaderRow(self)
         if self.with_header:
-            self.pile.contents.append(
-                (self.header, self.pile.options('pack'))
-             )
-            if self.ui_sort:
-                urwid.connect_signal(
-                    self.header, "column_click",
-                    lambda index: self.sort_by_column(index, toggle=True)
-                )
+            self.add_header()
 
         self.pile.contents.append(
             (self.listbox, self.pile.options('weight', 1))
@@ -1213,6 +1213,49 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         else:
             self.requery()
 
+    def add_header(self):
+        self.header = DataTableHeaderRow(self)
+        if self.with_header:
+            self.pile.contents.insert(0,
+                (self.header, self.pile.options('pack'))
+             )
+            if self.ui_sort:
+                urwid.connect_signal(
+                    self.header, "column_click",
+                    lambda index: self.sort_by_column(index, toggle=True)
+                )
+
+    def update_header(self):
+        if not self.with_header:
+            return
+        self.pile.contents.pop(0)
+        self.add_header()
+
+
+    def add_column(self, column):
+        logger.info("add: %s" %(column.name))
+        self.columns.append(column)
+        self.update_header()
+        self.requery()
+
+    def remove_column(self, name):
+        for i, c in enumerate(self.columns):
+            if c.name == name:
+                logger.info("removing: %s" %(c.name))
+                del self.columns[i]
+                self.update_header()
+                self.requery()
+                break
+
+    def set_columns(self, columns):
+        # raise Exception(columns)
+        # for c in self.columns:
+        #     self.remove_column(c.name)
+        del self.columns[:]
+        for c in columns:
+            self.add_column(c)
+        self.update_header()
+        self.requery()
 
     # def __getitem__(self, i): return [r[i] for r in self.body]
 
@@ -1457,7 +1500,8 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
             # print "adding: %s" %(r)
             self.add_row(r)
         logger.debug("body length: %d" %(len(self.body)))
-        if self.selected_column is not None:
+        if self.selected_column is not None and self.selected_column/2 < len(self.columns):
+            logger.info("selected column: %d" %(self.selected_column))
             self.highlight_column(self.selected_column)
         if self.with_footer:
             self.footer.update()
@@ -1652,7 +1696,10 @@ def main():
                             + string.digits + ' ' * 20
                         ) for _ in range(16))
                               if random.randint(0, 5)
-                              else None)
+                              else None),
+                        qux = (random.uniform(0, 200)
+                               if random.randint(0, 5)
+                               else None),
 
             )
 
@@ -1677,6 +1724,17 @@ def main():
                 self.remove(3)
             elif key == "?":
                 print {"foo": 1} in self
+            elif key == "c":
+                self.add_column(
+                    DataTableColumn("qux", width=5)
+                )
+            elif key == "C":
+                # self.columns = [DataTableColumn("qux", width=5)]
+                self.remove_column("qux")
+            elif key == "R":
+                cols = [ i for i in self.columns]
+                random.shuffle(cols)
+                self.set_columns(cols)
             # elif key == "A":
             #     self.add_row(self.random_row(), keep_sorted=False)
             elif key in ["r", "ctrl r"]:
@@ -1741,7 +1799,7 @@ def main():
                 )
 
             self.grid_flow = urwid.GridFlow(
-                [urwid.BoxAdapter(t, 24) for t in self.tables], 40, 1, 1, "left"
+                [urwid.BoxAdapter(t, 24) for t in self.tables], 60, 1, 1, "left"
             )
             #     [ ('weight', 1, urwid.LineBox(t)) for t in self.tables ]
             # )
