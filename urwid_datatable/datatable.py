@@ -72,6 +72,23 @@ def sort_reverse_none_last(a, b):
     else:
         return cmp(b, a)
 
+def get_value(data, path):
+
+    def get_key(d, k):
+        logger.info("get_key: %s, %s" %(d, k))
+        if hasattr(d, k):
+            return getattr(d, k, None)
+        else:
+            return d.get(k, None)
+
+    while True:
+        k, _, path = path.partition(".")
+        logger.info("%s,%s" %(k, path))
+        if not len(path):
+            return get_key(data, k)
+        data = get_key(data, k)
+
+
 sort_key_natural_none_last = cmp_to_key(sort_natural_none_last)
 sort_key_reverse_none_last = cmp_to_key(sort_reverse_none_last)
 
@@ -740,10 +757,10 @@ class DataTableRow(urwid.WidgetWrap):
 
             val = None
             # raise Exception(self.data)
-            if hasattr(self.data, col.name):
-                val = getattr(self.data, col.name, None)
-            else:
+            if isinstance(self, DataTableHeaderRow):
                 val = self.data.get(col.name, None)
+            else:
+                val = get_value(self.data, col.name)
                 # details = data.get(c.details, None)
             # else:
             #     val = data.get(col.name, None)
@@ -1704,6 +1721,7 @@ def main():
                         qux = (random.uniform(0, 200)
                                if random.randint(0, 5)
                                else None),
+                        a = dict(b=dict(c=random.randint(0, 100)))
 
             )
 
@@ -1730,11 +1748,11 @@ def main():
                 print {"foo": 1} in self
             elif key == "c":
                 self.add_column(
-                    DataTableColumn("qux", width=5)
+                    DataTableColumn("a.b.c", label="qux", width=5)
                 )
             elif key == "C":
                 # self.columns = [DataTableColumn("qux", width=5)]
-                self.remove_column("qux")
+                self.remove_column("a.b.c")
             elif key == "R":
                 cols = [ i for i in self.columns]
                 random.shuffle(cols)
@@ -1753,9 +1771,11 @@ def main():
                 kwargs = {}
                 # kwargs["reverse"] = sort_reverse
                 if not sort_reverse:
-                    kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
+                    # kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
+                    kwargs["key"] = lambda x: sort_key_natural_none_last(get_value(x, sort_field))
                 else:
-                    kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
+                    # kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
+                    kwargs["key"] = lambda x: sort_key_reverse_none_last(get_value(x, sort_field))
                 # logger.debug("query: %s" %(kwargs))
                 self.query_data.sort(**kwargs)
                 logger.debug("s" %(self.query_data))
