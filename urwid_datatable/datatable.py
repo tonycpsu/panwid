@@ -1241,13 +1241,9 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.requery()
 
     def _remove_column(self, name):
-        for i, c in enumerate(self.columns):
-            if c.name == name:
-                logger.info("removing: %s" %(c.name))
-                del self.columns[i]
-                self.update_header()
-                # self.requery()
-                break
+        cols = [ c for c in self.columns if c.name != name ]
+        if len(cols) != len(self.columns):
+            self.columns = cols
 
     def remove_column(self, column):
         self._remove_column(column)
