@@ -21,17 +21,17 @@ formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
                                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler(sys.stderr)
 console_handler.setFormatter(formatter)
 console_handler.setLevel(logging.ERROR)
 logger.addHandler(console_handler)
 # logger.addHandler(NullHandler())
 
-fh = logging.FileHandler("datatable.log")
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-logger.addHandler(fh)
+# fh = logging.FileHandler("datatable.log")
+# fh.setLevel(logging.DEBUG)
+# fh.setFormatter(formatter)
+# logger.addHandler(fh)
 
 import urwid
 import urwid.raw_display
