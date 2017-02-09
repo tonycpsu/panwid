@@ -77,9 +77,11 @@ def get_value(data, path):
     def get_key(d, k):
         logger.info("get_key: %s, %s" %(d, k))
         if hasattr(d, k):
-            return getattr(d, k, None)
+            return getattr(d, k)
+        elif isinstance(d, dict) and k in d:
+            return d.get(k)
         else:
-            return d.get(k, None)
+            return None
 
     while True:
         k, _, path = path.partition(".")
@@ -1721,7 +1723,8 @@ def main():
                         qux = (random.uniform(0, 200)
                                if random.randint(0, 5)
                                else None),
-                        a = dict(b=dict(c=random.randint(0, 100)))
+                        a = dict(b=dict(c=random.randint(0, 100))),
+                        d = dict(e=dict(f=random.randint(0, 100)))
 
             )
 
@@ -1749,6 +1752,10 @@ def main():
             elif key == "c":
                 self.add_column(
                     DataTableColumn("a.b.c", label="qux", width=5)
+                )
+            elif key == "f":
+                self.add_column(
+                    DataTableColumn("d.e.f.g", label="xyzzy", width=5)
                 )
             elif key == "C":
                 # self.columns = [DataTableColumn("qux", width=5)]
