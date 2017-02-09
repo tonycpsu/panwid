@@ -1255,7 +1255,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         # raise Exception(columns)
         # for c in self.columns:
         #     self.remove_column(c.name)
-        del self.columns[:]
+        self.columns = []
         for c in columns:
             self._add_column(c)
         self.update_header()
