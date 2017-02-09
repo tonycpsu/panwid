@@ -75,7 +75,7 @@ def sort_reverse_none_last(a, b):
 def get_value(data, path):
 
     def get_key(d, k):
-        logger.info("get_key: %s, %s" %(d, k))
+        # logger.info("get_key: %s, %s" %(d, k))
         if hasattr(d, k):
             return getattr(d, k)
         elif isinstance(d, dict) and k in d:
@@ -85,7 +85,7 @@ def get_value(data, path):
 
     while True:
         k, _, path = path.partition(".")
-        logger.info("%s,%s" %(k, path))
+        # logger.info("%s,%s" %(k, path))
         if not len(path):
             return get_key(data, k)
         data = get_key(data, k)
