@@ -1232,20 +1232,28 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.add_header()
 
 
-    def add_column(self, column):
-        logger.info("add: %s" %(column.name))
+    def _add_column(self, column):
         self.columns.append(column)
+
+    def add_column(self, column):
+        self._add_column(column)
         self.update_header()
         self.requery()
 
-    def remove_column(self, name):
+    def _remove_column(self, name):
         for i, c in enumerate(self.columns):
             if c.name == name:
                 logger.info("removing: %s" %(c.name))
                 del self.columns[i]
                 self.update_header()
-                self.requery()
+                # self.requery()
                 break
+
+    def remove_column(self, column):
+        self._remove_column(column)
+        self.update_header()
+        self.requery()
+
 
     def set_columns(self, columns):
         # raise Exception(columns)
@@ -1253,7 +1261,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         #     self.remove_column(c.name)
         del self.columns[:]
         for c in columns:
-            self.add_column(c)
+            self._add_column(c)
         self.update_header()
         self.requery()
 
