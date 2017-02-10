@@ -1135,7 +1135,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
             self.initial_sort = initial_sort
 
         if not self.key_columns:
-            self.key_columns = self._columns
+            self.key_columns = self.columns
 
         if initial_sort: self.initial_sort = initial_sort
         #     self.sort_field = initial_sort
