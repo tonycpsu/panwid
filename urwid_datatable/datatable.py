@@ -1755,7 +1755,7 @@ def main():
                 )
             elif key == "f":
                 self.add_column(
-                    DataTableColumn("d.e.f.g", label="xyzzy", width=5)
+                    DataTableColumn("d.e.f.g", label="xyzzy", width=8)
                 )
             elif key == "C":
                 # self.columns = [DataTableColumn("qux", width=5)]
