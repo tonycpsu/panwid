@@ -505,7 +505,8 @@ class ScrollingListBox(urwid.WidgetWrap):
 class DataTableColumn(object):
 
     def __init__(self, name, label=None, width=('weight', 1),
-                 align="left", wrap="space", padding = None,
+                 align="left", wrap="space", clip_indicator=None,
+                 padding = None,
                  format_fn=None, attr = None,
                  sort_key = None, sort_fn = None, sort_reverse=False,
                  footer_fn = None,
@@ -516,6 +517,7 @@ class DataTableColumn(object):
         self.width = width
         self.align = align
         self.wrap = wrap
+        self.clip_indicator = clip_indicator
         self.padding = padding
         self.format_fn = format_fn
         self.attr = attr
@@ -565,9 +567,19 @@ class DataTableColumn(object):
             v = v.strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(v, date):
             v = v.strftime("%Y-%m-%d")
-
         if not isinstance(v, urwid.Widget):
             v = urwid.Text(v, align=self.align, wrap=self.wrap)
+
+        # if isinstance(v, urwid.Text):
+        #     t = v.get_text()
+        #     if (self.sizing == "given"
+        #         # and len(t) > self.width
+        #         and self.wrap == "clip"
+        #         and self.clip_indicator):
+        #         print "trunc: %s, %s" %(len(t), self.width)
+        #         t = "".join(list(t)[:min(self.width-1, len(t)-1)] + [self.clip_indicator])
+        #         print t
+        #         v.set_text(t)
         return v
 
 class DataTableCell(urwid.WidgetWrap):
@@ -734,6 +746,8 @@ class DataTableRow(urwid.WidgetWrap):
         self.contents = []
         self._values = dict()
 
+        self.details_open = False
+
         if self.decorate:
             if table.attr_map:
                 self.attr_map.update(table.attr_map)
@@ -821,10 +835,18 @@ class DataTableRow(urwid.WidgetWrap):
             self.row.contents)
 
 
-        self.attr = urwid.AttrMap(self.row,
+        # self.attr = urwid.AttrMap(self.row,
+        #                           attr_map = self.attr_map,
+        #                           focus_map = self.focus_map)
+
+        self.pile = urwid.Pile([
+            (1, urwid.Filler(self.row))
+        ])
+        self.attr = urwid.AttrMap(self.pile,
                                   attr_map = self.attr_map,
                                   focus_map = self.focus_map)
 
+        # self.placeholder = urwid.WidgetPlaceholder(self.pile)
         super(DataTableRow, self).__init__(self.attr)
 
 
@@ -859,6 +881,19 @@ class DataTableRow(urwid.WidgetWrap):
     # def __delitem__(self, i): del self.row.contents[i*2]
     def __getitem__(self, key): return self.data.get(key, None)
 
+    def toggle_details(self):
+
+        if not self.table.detail_fn:
+            return
+        if self.details_open:
+            self.details_open = False
+            del self.pile.contents[1]
+        else:
+            content = self.table.detail_fn(self.data)
+            self.details_open = True
+            self.pile.contents.append(
+                (content, self.pile.options("given", 1))
+            )
 
     def get(self, key, default):
         if key in self:
@@ -1123,6 +1158,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     def __init__(self, border=None, padding=None,
                  with_header=None, with_footer=None, with_scrollbar=None,
                  initial_sort = None, query_sort = None, ui_sort = None,
+                 detail_fn = None,
                  limit = None):
 
         # logger.info("initial_sort: %s" %(initial_sort))
@@ -1149,6 +1185,8 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         if ui_sort is not None: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
+        if detail_fn is not None: self.detail_fn = detail_fn
+
         # if not self.query_sort:
         #     self.data = SortedListWithKey()
         # else:
@@ -1171,6 +1209,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         # self.lock = threading.Lock()
         self.selected_column = None
         self.sort_reverse = False
+        self.loaded = False
 
         urwid.connect_signal(
             self.listbox, "select",
@@ -1201,8 +1240,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
 
         self.pile = urwid.Pile([])
 
-        if self.with_header:
-            self.add_header()
+        self.add_header()
 
         self.pile.contents.append(
             (self.listbox, self.pile.options('weight', 1))
@@ -1277,8 +1315,9 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.columns = []
         for c in columns:
             self._add_column(c)
-        self.update_header()
-        self.requery()
+        if self.loaded:
+            self.update_header()
+            self.requery()
 
     # def __getitem__(self, i): return [r[i] for r in self.body]
 
@@ -1386,9 +1425,6 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
 
         column = self.columns[index//2]
 
-        # raise Exception("%s, %s" %(index//2, self.selected_column))
-        # print "%s, %s" %(index//2, self.selected_column)
-        # print "%s, %s" %(sort_field, self.sort_field)
 
         if reverse is not None:
             self.sort_reverse = reverse ^ self.columns[index//2].sort_reverse
@@ -1399,27 +1435,11 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.sort_field = sort_field
         # print self.sort_reverse
         self.selected_column = index
-        # if self.query_sort:
-        #     self.requery()
-        # else:
-        # if not self.query_sort:
-        #self.sort_by(index//2, reverse = self.sort_reverse)
-        # self.sort_by(index//2, reverse = self.sort_reverse)
-        # logger.info("sort_by_column: %s, %s" %(self.sort_field, self.sort_reverse))
         self.walker.set_sort_column(column, reverse = self.sort_reverse)
         self.requery()
         # if len(self.listbox.body):
         #     self.listbox.focus_position = 0
 
-    # def cycle_columns(self, step):
-
-    #     index = (self.header.focus_position + 2*step)
-    #     if index < 0:
-    #         index = len(self.row.contents)-1
-    #     if index > len(self.row.contents)-1:
-    #         index = 0
-    #     self.highlight_column(index)
-    #     raise Exception(self.selected_column)
 
 
     def sort_by(self, index, **kwargs):
@@ -1435,15 +1455,6 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.header.cycle_columns(step)
         self.sort_by_column(self.header.row.selected_column)
 
-    # def keypress(self, size, key):
-
-    #     if self.ui_sort and key in [ "<", ">" ]:
-
-    #         self.header.cycle_columns( -1 if key == "<" else 1 )
-    #         self.sort_by_column(self.header.row.selected_column)
-    #     else:
-    #         return super(DataTable, self).keypress(size, key)
-    #         # return key
 
     def add_row(self, data, position=None):
         row = DataTableBodyRow(self, data, header = self.header.row)
@@ -1479,6 +1490,8 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         raise Exception("query_result_count method must be defined")
 
 
+    def toggle_details(self):
+        self.selection.toggle_details()
     # def refresh(self, offset=0):
 
     #     if not offset:
@@ -1531,6 +1544,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
 
         self._invalidate()
         self.listbox._invalidate()
+        self.loaded = True
         urwid.emit_signal(self, "refresh", self)
 
 
@@ -1577,8 +1591,8 @@ def main():
     background_map = {
         None: [ "black", "black" ],
         "focused": [ "dark gray", "g7" ],
-        "column_focused": [ "dark gray", "g7" ],
-        "column_focused focused": [ "dark gray", "g11" ],
+        "column_focused": [ "dark gray", "g11" ],
+        "column_focused focused": [ "dark gray", "g19" ],
     }
 
     entries = dict()
@@ -1599,7 +1613,7 @@ def main():
             )
 
         FOCUS_MAP[prefix] = "%s focused" %(prefix)
-        # FOCUS_MAP["%s column_focused" %(prefix)] = "%s column_focused focused" %(prefix)
+        FOCUS_MAP["%s column_focused" %(prefix)] = "%s column_focused focused" %(prefix)
 
 
     # raise Exception(FOCUS_MAP)
@@ -1695,7 +1709,9 @@ def main():
             ),
             DataTableColumn("bar", width=10, align="right",
                             footer_fn=footer_avg, sort_reverse=True),
-            DataTableColumn("baz", width=('weight', 1), attr="baz_attr"),
+            DataTableColumn("baz", width=20, attr="baz_attr",
+                            wrap="clip",
+                            clip_indicator=u"\N{HORIZONTAL ELLIPSIS}"),
         ]
 
 
@@ -1717,16 +1733,19 @@ def main():
                             string.ascii_uppercase
                             + string.lowercase
                             + string.digits + ' ' * 20
-                        ) for _ in range(16))
+                        ) for _ in range(60))
                               if random.randint(0, 5)
                               else None),
                         qux = (random.uniform(0, 200)
                                if random.randint(0, 5)
                                else None),
+                        xyzzy = random.randint(10, 100),
                         a = dict(b=dict(c=random.randint(0, 100))),
                         d = dict(e=dict(f=random.randint(0, 100)))
 
             )
+
+
 
         def keypress(self, size, key):
 
@@ -1764,6 +1783,9 @@ def main():
                 cols = [ i for i in self.columns]
                 random.shuffle(cols)
                 self.set_columns(cols)
+            elif key == " ":
+                self.toggle_details()
+                # self.requery()
             # elif key == "A":
             #     self.add_row(self.random_row(), keep_sorted=False)
             elif key in ["r", "ctrl r"]:
@@ -1808,9 +1830,18 @@ def main():
 
             self.tables = list()
 
+            def detail_fn(data):
+
+                return urwid.Filler(urwid.Columns([
+                    ("weight", 1, urwid.Text(str(data.get("qux")))),
+                    ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
+                ]))
+
             self.tables.append(
                 ExampleDataTable(initial_sort="foo", limit=10, num_rows=100,
-                                 with_scrollbar=True, with_footer=False)
+                                 with_scrollbar=True, with_footer=False,
+                                 detail_fn = detail_fn
+                )
             )
 
             self.tables.append(
@@ -1874,4 +1905,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
