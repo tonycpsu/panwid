@@ -840,7 +840,7 @@ class DataTableRow(urwid.WidgetWrap):
         #                           focus_map = self.focus_map)
 
         self.pile = urwid.Pile([
-            (1, urwid.Filler(self.row))
+            ('weight', 1, self.row)
         ])
         self.attr = urwid.AttrMap(self.pile,
                                   attr_map = self.attr_map,
@@ -1578,7 +1578,7 @@ def main():
     loop = None
 
     screen = urwid.raw_display.Screen()
-    screen.set_terminal_properties(256)
+    screen.set_terminal_properties(16)
 
     foreground_map = {
         "table_row": [ "light gray", "light gray" ],
