@@ -94,8 +94,14 @@ def get_value(data, path):
 sort_key_natural_none_last = cmp_to_key(sort_natural_none_last)
 sort_key_reverse_none_last = cmp_to_key(sort_reverse_none_last)
 
-class DataTableHeaderLabel(str):
-    pass
+class DataTableHeaderLabel(object):
+
+    def __init__(self, val):
+        self.val = val
+
+    @property
+    def markup(self):
+        return self.val
 
 
 class ListBoxScrollBar(urwid.WidgetWrap):
@@ -540,7 +546,10 @@ class DataTableColumn(object):
     def _format(self, v):
 
         if isinstance(v, DataTableHeaderLabel):
-            return urwid.Text(v, align=self.align, wrap=self.wrap)
+            if isinstance(v.markup, urwid.Widget):
+                return v.markup
+            else:
+                return urwid.Text(v.markup, align=self.align, wrap=self.wrap)
         else:
             # First, call the format function for the column, if there is one
             if self.format_fn:
@@ -887,12 +896,32 @@ class DataTableRow(urwid.WidgetWrap):
             return
         if self.details_open:
             self.details_open = False
+            del self.pile.contents[0]
             del self.pile.contents[1]
         else:
+
             content = self.table.detail_fn(self.data)
+
+            if self.table.detail_column:
+                col_index = (i for i,c in enumerate(self.table.columns)
+                         if c.name==self.table.detail_column).next()
+            else:
+                col_index = 0
+            v = [ None for n in range(len(self.table.header.row.contents)+1) ]
+            row = DataTableBodyRow(self.table, v, header = self.table.header.row)
+            for i in range(0, len(row.row.contents)):
+                if i/2 == col_index:
+                    row.row.contents[i] = (content, row.row.options("weight", 1))
+                else:
+                    row.row.contents[i] = (urwid.Text(""), row.row.contents[i][1])
+            if col_index*2 < len(self.table.header.row.contents):
+                del row.row.contents[(col_index*2)+1:]
             self.details_open = True
+            self.pile.contents.insert(0,
+                (urwid.Filler(urwid.Text("")), self.pile.options("given", 1))
+            )
             self.pile.contents.append(
-                (content, self.pile.options("given", 1))
+                (row, self.pile.options("pack"))
             )
 
     def get(self, key, default):
@@ -1154,11 +1183,13 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     query_sort = False
     ui_sort = False
     limit = None
+    detail_fn = None
+    detail_column = None
 
     def __init__(self, border=None, padding=None,
                  with_header=None, with_footer=None, with_scrollbar=None,
                  initial_sort = None, query_sort = None, ui_sort = None,
-                 detail_fn = None,
+                 detail_fn = None, detail_column = None,
                  limit = None):
 
         # logger.info("initial_sort: %s" %(initial_sort))
@@ -1186,6 +1217,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         if limit: self.limit = limit
 
         if detail_fn is not None: self.detail_fn = detail_fn
+        if detail_column is not None: self.detail_column = detail_column
 
         # if not self.query_sort:
         #     self.data = SortedListWithKey()
@@ -1578,7 +1610,7 @@ def main():
     loop = None
 
     screen = urwid.raw_display.Screen()
-    screen.set_terminal_properties(16)
+    screen.set_terminal_properties(256)
 
     foreground_map = {
         "table_row": [ "light gray", "light gray" ],
@@ -1770,7 +1802,7 @@ def main():
                 print {"foo": 1} in self
             elif key == "c":
                 self.add_column(
-                    DataTableColumn("a.b.c", label="qux", width=5)
+                    DataTableColumn("a.b.c", label=("red", "qux"), width=5)
                 )
             elif key == "f":
                 self.add_column(
@@ -1832,7 +1864,7 @@ def main():
 
             def detail_fn(data):
 
-                return urwid.Filler(urwid.Columns([
+                return urwid.Padding(urwid.Columns([
                     ("weight", 1, urwid.Text(str(data.get("qux")))),
                     ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
                 ]))
@@ -1840,7 +1872,7 @@ def main():
             self.tables.append(
                 ExampleDataTable(initial_sort="foo", limit=10, num_rows=100,
                                  with_scrollbar=True, with_footer=False,
-                                 detail_fn = detail_fn
+                                 detail_fn = detail_fn, detail_column="bar"
                 )
             )
 
