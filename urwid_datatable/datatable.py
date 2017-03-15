@@ -920,9 +920,11 @@ class DataTableRow(urwid.WidgetWrap):
             self.pile.contents.insert(0,
                 (urwid.Filler(urwid.Text("")), self.pile.options("given", 1))
             )
+            row.selectable = lambda: False
             self.pile.contents.append(
                 (row, self.pile.options("pack"))
             )
+            self.pile.focus_position = 1
 
     def get(self, key, default):
         if key in self:
