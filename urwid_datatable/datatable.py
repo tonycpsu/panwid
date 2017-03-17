@@ -1470,7 +1470,9 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.sort_field = sort_field
         # print self.sort_reverse
         self.selected_column = index
-        self.walker.set_sort_column(column, reverse = self.sort_reverse)
+
+        if not self.query_sort:
+            self.walker.set_sort_column(column, reverse = self.sort_reverse)
         self.requery()
         # if len(self.listbox.body):
         #     self.listbox.focus_position = 0
@@ -1881,6 +1883,7 @@ def main():
 
             self.tables.append(
                 ExampleDataTable(initial_sort="baz", ui_sort=True,
+                                 query_sort=False,
                                  num_rows=2000, with_scrollbar=True)
             )
 
