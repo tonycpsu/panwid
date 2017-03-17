@@ -24,7 +24,7 @@ formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
 # logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler(sys.stderr)
 console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.ERROR)
+console_handler.setLevel(logging.INFO)
 logger.addHandler(console_handler)
 # logger.addHandler(NullHandler())
 
@@ -513,7 +513,9 @@ class DataTableColumn(object):
     def __init__(self, name, label=None, width=('weight', 1),
                  align="left", wrap="space", clip_indicator=None,
                  padding = None,
-                 format_fn=None, attr = None,
+                 format_fn = None,
+                 format_record = None, # format_fn is passed full row data
+                 attr = None,
                  sort_key = None, sort_fn = None, sort_reverse=False,
                  footer_fn = None,
                  attr_map = None, focus_map = None):
@@ -526,6 +528,7 @@ class DataTableColumn(object):
         self.clip_indicator = clip_indicator
         self.padding = padding
         self.format_fn = format_fn
+        self.format_record = format_record
         self.attr = attr
         self.sort_key = sort_key
         self.sort_fn = sort_fn
@@ -556,7 +559,7 @@ class DataTableColumn(object):
                 try:
                     v = self.format_fn(v)
                 except TypeError, e:
-                    logger.debug("format function raised exception: %s" %e)
+                    logger.debug("%s: format function raised exception: %s" %(self.name, e))
                     return urwid.Text("", align=self.align, wrap=self.wrap)
                 except:
                     raise
@@ -565,6 +568,7 @@ class DataTableColumn(object):
 
     def format(self, v):
 
+        # logger.debug("format %s: %s, %s" %(self.name, v, type(v)))
         # Do our best to make the value into something presentable
         if v is None:
             v = ""
@@ -578,17 +582,6 @@ class DataTableColumn(object):
             v = v.strftime("%Y-%m-%d")
         if not isinstance(v, urwid.Widget):
             v = urwid.Text(v, align=self.align, wrap=self.wrap)
-
-        # if isinstance(v, urwid.Text):
-        #     t = v.get_text()
-        #     if (self.sizing == "given"
-        #         # and len(t) > self.width
-        #         and self.wrap == "clip"
-        #         and self.clip_indicator):
-        #         print "trunc: %s, %s" %(len(t), self.width)
-        #         t = "".join(list(t)[:min(self.width-1, len(t)-1)] + [self.clip_indicator])
-        #         print t
-        #         v.set_text(t)
         return v
 
 class DataTableCell(urwid.WidgetWrap):
@@ -801,7 +794,11 @@ class DataTableRow(urwid.WidgetWrap):
             # else:
             #     raise Exception(data)
 
-            cell = DataTableCell(self.table, col, self, val)
+            if not isinstance(self, DataTableHeaderRow) and col.format_record:
+                cell = DataTableCell(self.table, col, self, self.data)
+            else:
+                cell = DataTableCell(self.table, col, self, val)
+
             if self.cell_click:
                 urwid.connect_signal(cell, 'click', self.cell_click, i*2)
             if self.cell_select:
@@ -903,8 +900,11 @@ class DataTableRow(urwid.WidgetWrap):
             content = self.table.detail_fn(self.data)
 
             if self.table.detail_column:
-                col_index = (i for i,c in enumerate(self.table.columns)
-                         if c.name==self.table.detail_column).next()
+                try:
+                    col_index = (i for i,c in enumerate(self.table.columns)
+                                 if c.name==self.table.detail_column).next()
+                except StopIteration:
+                    col_index = 0
             else:
                 col_index = 0
             v = [ None for n in range(len(self.table.header.row.contents)+1) ]
@@ -1155,6 +1155,7 @@ class DataTableFooterRow(DataTableRow):
             #         footer_content = col._format(footer_content)
             #     except Exception, e:
             #         logger.exception(e)
+
             self.row[i] = DataTableCell(self.table, col, self, footer_content)
         # self._invalidate()
 
@@ -1571,7 +1572,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
             self.add_row(r)
         logger.debug("body length: %d" %(len(self.body)))
         if self.selected_column is not None and self.selected_column/2 < len(self.columns):
-            logger.info("selected column: %d" %(self.selected_column))
+            # logger.info("selected column: %d" %(self.selected_column))
             self.highlight_column(self.selected_column)
         if self.with_footer:
             self.footer.update()
