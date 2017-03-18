@@ -466,7 +466,7 @@ class ScrollingListBox(urwid.WidgetWrap):
                     pct = ((maxrow - self.scroll_rows )/maxrow)*100
                     self.set_focus_valign(("relative", pct))
 
-        # self.height = maxrow
+        self.height = maxrow
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
 
 
