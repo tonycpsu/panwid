@@ -151,16 +151,12 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         for i in range(height):
             if abs( i - scroll_position ) <= scroll_marker_height//2:
                 if self.parent.row_count == self.parent.focus_position:
-                    # logger.info("end: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                     marker = end_marker
                 elif len(self.parent.body) == self.parent.focus_position+1 and i == scroll_position + scroll_marker_height//2:
                     marker = down_marker
-                    # logger.info("down: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                 else:
-                    # logger.info("pos: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                     marker = pos_marker
             else:
-                # logger.info("bg: %s, %s, %s, %s, %s" %(i, scroll_position, len(self.parent.body), self.parent.focus_position, height))
                 marker = bg_marker
                 if i < scroll_position:
                     marker = view_marker
@@ -322,10 +318,12 @@ class ScrollingListBox(urwid.WidgetWrap):
     def __init__(self, body,
                  infinite = False,
                  with_scrollbar=False,
+                 scroll_rows=None,
                  row_count_fn = None):
 
         self.infinite = infinite
         self.with_scrollbar = with_scrollbar
+        self.scroll_rows = scroll_rows
         self.row_count_fn = row_count_fn
 
         self.mouse_state = 0
@@ -361,19 +359,13 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self.mouse_state = 1
                 self.drag_from = self.drag_last = (col, row)
             elif button == 4:
-                # for _ in range(3):
-                #     self.keypress(size, 'up')
                 pct = self.focus_position / len(self.body)
                 self.set_focus_valign(('relative', pct - 10))
                 self._invalidate()
-                # return True
             elif button == 5:
-                # for _ in range(3):
-                #     self.keypress(size, 'down')
                 pct = self.focus_position / len(self.body)
                 self.set_focus_valign(('relative', pct + 5))
                 self._invalidate()
-                # return True
         elif event == 'mouse drag':
             if self.drag_from is None:
                 return
@@ -384,7 +376,6 @@ class ScrollingListBox(urwid.WidgetWrap):
                     urwid.signals.emit_signal(
                         self, "drag_start",self, self.drag_from
                     )
-                    # self.on_drag_start(self.drag_from)
                 else:
                     urwid.signals.emit_signal(
                         self, "drag_continue",self,
@@ -406,40 +397,39 @@ class ScrollingListBox(urwid.WidgetWrap):
     def keypress(self, size, key):
         """Overrides ListBox.keypress method.
 
-        Implements vim-like scrolling.
+        Implements vim-like scrolling and infinite scrolling.
         """
+        KEY_MAP = {
+            "j": "down",
+            "k": "up",
+            "g": "home",
+            "G": "end",
+        }
+        key = KEY_MAP.get(key, key)
+
         if len(self.body):
-            if key == 'j':
-                self._invalidate()
-                self.keypress(size, 'down')
-            elif key == 'k':
-                self._invalidate()
-                self.keypress(size, 'up')
-            elif key == 'g':
-                self._invalidate()
-                self.focus_position = 0
-            elif key == 'G':
-                self.focus_position = len(self.body) - 1
-                self.listbox._invalidate()
-                self.set_focus_valign('bottom')
-            elif key == 'home':
-                self.focus_position = 0
-                self.listbox._invalidate()
-                return key
-            elif key == 'end':
-                self.focus_position = len(self.body)-1
-                self._invalidate()
-                return key
-            elif (self.infinite
-            and key in ['page down', "down"]
+            if (self.infinite
+            and key in ["page down", "down"]
             and len(self.body)
             and self.focus_position == len(self.body)-1):
                 self.requery = True
-                self._invalidate()
+
+            if key == "home":
+                self.focus_position = 0
+            elif key == "end":
+                self.focus_position = 0
+                self.focus_position = len(self.body) - 1
+
+            if key in ["up", "down", "home", "end", "page up", "page down"]:
+                super(ScrollingListBox, self).keypress(size, key)
+
             elif key == "enter":
                 urwid.signals.emit_signal(self, "select", self, self.selection)
+
             else:
                 return super(ScrollingListBox, self).keypress(size, key)
+
+                # self._invalidate()
         else:
             return super(ScrollingListBox, self).keypress(size, key)
 
@@ -451,7 +441,13 @@ class ScrollingListBox(urwid.WidgetWrap):
 
 
     def render(self, size, focus=False):
+
         maxcol, maxrow = size
+
+        # print
+        # print
+        # print self.listbox.get_focus_offset_inset(size)
+
         if self.requery and "bottom" in self.ends_visible(
                 (maxcol, maxrow) ):
             self.requery = False
@@ -459,6 +455,15 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self, "load_more", len(self.body))
         if self.with_scrollbar:
             self.scroll_bar.update(size)
+
+        scroll_pos = self.listbox.get_focus_offset_inset(size)[0]
+        if self.scroll_rows:
+            if (scroll_pos <= self.scroll_rows):
+                pct = ((self.scroll_rows )/maxrow)*100
+                self.set_focus_valign(("relative", pct))
+            elif (scroll_pos >= (maxrow - self.scroll_rows)):
+                pct = ((maxrow - self.scroll_rows )/maxrow)*100
+                self.set_focus_valign(("relative", pct))
 
         self.height = maxrow
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
@@ -1181,6 +1186,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     with_header = True
     with_footer = False
     with_scrollbar = False
+    scroll_rows = None
     sort_field = None
     initial_sort = None
     query_sort = False
@@ -1191,6 +1197,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
 
     def __init__(self, border=None, padding=None,
                  with_header=None, with_footer=None, with_scrollbar=None,
+                 scroll_rows=None,
                  initial_sort = None, query_sort = None, ui_sort = None,
                  detail_fn = None, detail_column = None,
                  limit = None):
@@ -1201,6 +1208,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
+        if scroll_rows is not None: self.scroll_rows = scroll_rows
         if initial_sort is not None:
             self.initial_sort = initial_sort
 
@@ -1236,6 +1244,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
+            scroll_rows = self.scroll_rows,
             row_count_fn = (self.query_result_count
                             if self.with_scrollbar
                             else None)
@@ -1738,7 +1747,6 @@ def main():
         ui_sort = True
         num_rows = None
         key_columns = ["foo"]
-
         columns = [
             DataTableColumn(
                 "foo", width=8,
@@ -1883,7 +1891,7 @@ def main():
 
             self.tables.append(
                 ExampleDataTable(initial_sort="baz", ui_sort=True,
-                                 query_sort=False,
+                                 query_sort=False, scroll_rows = 3,
                                  num_rows=2000, with_scrollbar=True)
             )
 
