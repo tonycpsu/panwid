@@ -456,16 +456,17 @@ class ScrollingListBox(urwid.WidgetWrap):
         if self.with_scrollbar:
             self.scroll_bar.update(size)
 
-        scroll_pos = self.listbox.get_focus_offset_inset(size)[0]
-        if self.scroll_rows:
-            if (scroll_pos <= self.scroll_rows):
-                pct = ((self.scroll_rows )/maxrow)*100
-                self.set_focus_valign(("relative", pct))
-            elif (scroll_pos >= (maxrow - self.scroll_rows)):
-                pct = ((maxrow - self.scroll_rows )/maxrow)*100
-                self.set_focus_valign(("relative", pct))
+        if len(self.body) and self.focus_position:
+            scroll_pos = self.listbox.get_focus_offset_inset(size)[0]
+            if self.scroll_rows:
+                if (scroll_pos <= self.scroll_rows):
+                    pct = ((self.scroll_rows )/maxrow)*100
+                    self.set_focus_valign(("relative", pct))
+                elif (scroll_pos >= (maxrow - self.scroll_rows)):
+                    pct = ((maxrow - self.scroll_rows )/maxrow)*100
+                    self.set_focus_valign(("relative", pct))
 
-        self.height = maxrow
+        # self.height = maxrow
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
 
 
@@ -486,9 +487,8 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     @property
     def focus_position(self):
-        return self.listbox.focus_position
         if not len(self.listbox.body):
-            raise Eception
+            raise IndexError
         if len(self.listbox.body):
             return self.listbox.focus_position
         return None
