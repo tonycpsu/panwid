@@ -224,9 +224,19 @@ class DataTableRowsListWalker(urwid.listbox.ListWalker):
         self.focus = position
         self._modified()
 
+    # def insert_sorted(self, item):
+    #     # FIXME: Some sort of bisect approach would be faster, or maybe find
+    #     # a way to have client-side and server-side sorting coexist
+    #     # peacefully.  For now, brute force. :/
+    #     for r in self:
+
+
     def set_sort_column(self, column, **kwargs):
 
         sort_key = column.sort_key
+        self.sort_key = sort_key
+        if self.table.query_sort:
+            return
         # logger.warning("set_sort_column: %s" %(column))
         def sort_natural(a, b):
             # logger.warning("sort_natural: %s, %s" %(a["foo"], b["foo"]))
@@ -1384,25 +1394,6 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     def insert(self, i, v):
         self.body.insert(i, v)
 
-    # def index(self):
-    #     if not self.key_columns:
-    #        return super(DataTable, self).index(self.body)
-    #    return
-
-
-    # @property
-    # def selected_column(self):
-    #     return self.header.focus_position
-
-    # @property
-    # def data(self):
-
-    #     return self._data
-
-    # def __getattr__(self, attr):
-    #     if attr in ["contents"]:
-    #         return getattr(self.listbox, attr)
-    #     raise AttributeError(attr)
 
     @property
     def focus(self):
@@ -1480,8 +1471,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         # print self.sort_reverse
         self.selected_column = index
 
-        if not self.query_sort:
-            self.walker.set_sort_column(column, reverse = self.sort_reverse)
+        self.walker.set_sort_column(column, reverse = self.sort_reverse)
         self.requery()
         # if len(self.listbox.body):
         #     self.listbox.focus_position = 0
@@ -1805,7 +1795,10 @@ def main():
             elif self.ui_sort and key == "ctrl s":
                 self.sort_by_column(toggle=True)
             elif key == "a":
-                self.append(self.random_row())
+                self.add_row(self.random_row())
+                loop.draw_screen()
+            elif key == "i":
+                self.insert(self.random_row())
                 loop.draw_screen()
             elif key == "d":
                 del self[self.focus_position]
