@@ -902,44 +902,51 @@ class DataTableRow(urwid.WidgetWrap):
     # def __delitem__(self, i): del self.row.contents[i*2]
     def __getitem__(self, key): return self.data.get(key, None)
 
+    def open_details(self):
+        if not self.table.detail_fn or self.details_open:
+            return
+        content = self.table.detail_fn(self.data)
+
+        if self.table.detail_column:
+            try:
+                col_index = (i for i,c in enumerate(self.table.columns)
+                             if c.name==self.table.detail_column).next()
+            except StopIteration:
+                col_index = 0
+        else:
+            col_index = 0
+        v = [ None for n in range(len(self.table.header.row.contents)+1) ]
+        row = DataTableBodyRow(self.table, v, header = self.table.header.row)
+        for i in range(0, len(row.row.contents)):
+            if i/2 == col_index:
+                row.row.contents[i] = (content, row.row.options("weight", 1))
+            else:
+                row.row.contents[i] = (urwid.Text(""), row.row.contents[i][1])
+        if col_index*2 < len(self.table.header.row.contents):
+            del row.row.contents[(col_index*2)+1:]
+        self.details_open = True
+        self.pile.contents.insert(0,
+            (urwid.Filler(urwid.Text("")), self.pile.options("given", 1))
+        )
+        row.selectable = lambda: False
+        self.pile.contents.append(
+            (row, self.pile.options("pack"))
+        )
+        self.pile.focus_position = 1
+
+    def close_details(self):
+        if not self.table.detail_fn or not self.details_open:
+            return
+        self.details_open = False
+        del self.pile.contents[0]
+        del self.pile.contents[1]
+
     def toggle_details(self):
 
-        if not self.table.detail_fn:
-            return
         if self.details_open:
-            self.details_open = False
-            del self.pile.contents[0]
-            del self.pile.contents[1]
+            self.close_details()
         else:
-
-            content = self.table.detail_fn(self.data)
-
-            if self.table.detail_column:
-                try:
-                    col_index = (i for i,c in enumerate(self.table.columns)
-                                 if c.name==self.table.detail_column).next()
-                except StopIteration:
-                    col_index = 0
-            else:
-                col_index = 0
-            v = [ None for n in range(len(self.table.header.row.contents)+1) ]
-            row = DataTableBodyRow(self.table, v, header = self.table.header.row)
-            for i in range(0, len(row.row.contents)):
-                if i/2 == col_index:
-                    row.row.contents[i] = (content, row.row.options("weight", 1))
-                else:
-                    row.row.contents[i] = (urwid.Text(""), row.row.contents[i][1])
-            if col_index*2 < len(self.table.header.row.contents):
-                del row.row.contents[(col_index*2)+1:]
-            self.details_open = True
-            self.pile.contents.insert(0,
-                (urwid.Filler(urwid.Text("")), self.pile.options("given", 1))
-            )
-            row.selectable = lambda: False
-            self.pile.contents.append(
-                (row, self.pile.options("pack"))
-            )
-            self.pile.focus_position = 1
+            self.open_details()
 
     def get(self, key, default):
         if key in self:
@@ -1204,12 +1211,14 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     limit = None
     detail_fn = None
     detail_column = None
+    auto_expand_details = False
 
     def __init__(self, border=None, padding=None,
                  with_header=None, with_footer=None, with_scrollbar=None,
                  scroll_rows=None,
                  initial_sort = None, query_sort = None, ui_sort = None,
                  detail_fn = None, detail_column = None,
+                 auto_expand_details = False,
                  limit = None):
 
         # logger.info("initial_sort: %s" %(initial_sort))
@@ -1235,10 +1244,11 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         if query_sort is not None: self.query_sort = query_sort
         # raise Exception(ui_sort, self.ui_sort)
         if ui_sort is not None: self.ui_sort = ui_sort
-        if limit: self.limit = limit
-
         if detail_fn is not None: self.detail_fn = detail_fn
         if detail_column is not None: self.detail_column = detail_column
+        if auto_expand_details: self.auto_expand_details = auto_expand_details
+        if limit: self.limit = limit
+
 
         # if not self.query_sort:
         #     self.data = SortedListWithKey()
@@ -1264,6 +1274,7 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
         self.selected_column = None
         self.sort_reverse = False
         self.loaded = False
+        self.last_focus_position = None
 
         urwid.connect_signal(
             self.listbox, "select",
@@ -1544,6 +1555,21 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     #     # if self.sort_field:
     #     #     self.sort_by_column(self.initial_sort, toggle = False)
     #     urwid.emit_signal(self, "refresh", self)
+
+    def keypress(self, size, key):
+        last_position = self.focus_position
+        key = super(DataTable, self).keypress(size, key)
+        if self.auto_expand_details and self.focus_position != last_position:
+            self.body[last_position].close_details()
+            self.body[self.focus_position].open_details()
+        return key
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        last_position = self.focus_position
+        super(DataTable, self).mouse_event(size, event, button, col, row, focus)
+        if self.auto_expand_details and self.focus_position != last_position:
+            self.body[last_position].close_details()
+            self.body[self.focus_position].open_details()
 
     # def keypress(self, size, key):
 
@@ -1878,7 +1904,8 @@ def main():
             self.tables.append(
                 ExampleDataTable(initial_sort="foo", limit=10, num_rows=100,
                                  with_scrollbar=True, with_footer=False,
-                                 detail_fn = detail_fn, detail_column="bar"
+                                 detail_fn = detail_fn, detail_column="bar",
+                                 auto_expand_details=True
                 )
             )
 
