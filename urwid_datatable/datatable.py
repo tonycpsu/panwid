@@ -1557,14 +1557,21 @@ class DataTable(urwid.WidgetWrap, MutableSequence):
     #     urwid.emit_signal(self, "refresh", self)
 
     def keypress(self, size, key):
+        if not len(self.body):
+            return super(DataTable, self).keypress(size, key)
+
         last_position = self.focus_position
         key = super(DataTable, self).keypress(size, key)
+
         if self.auto_expand_details and self.focus_position != last_position:
             self.body[last_position].close_details()
             self.body[self.focus_position].open_details()
         return key
 
     def mouse_event(self, size, event, button, col, row, focus):
+        if not len(self.body):
+            return super(DataTable, self).mouse_event(size, event, button, col, row, focus)
+
         last_position = self.focus_position
         super(DataTable, self).mouse_event(size, event, button, col, row, focus)
         if self.auto_expand_details and self.focus_position != last_position:
