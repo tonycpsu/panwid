@@ -1,8 +1,14 @@
 #!/usr/bin/python
 from __future__ import division
+import logging
+logger = logging.getLogger(__name__)
 import urwid
 from urwid_datatable import *
 from urwid_utils.palette import *
+import os
+import random
+import string
+from optparse import OptionParser
 
 screen = urwid.raw_display.Screen()
 # screen.set_terminal_properties(1<<24)
@@ -16,9 +22,22 @@ NORMAL_BG_256 = "g0"
 
 def main():
 
-    import os
-    import random
-    import string
+
+    parser = OptionParser()
+    parser.add_option("-v", "--verbose", action="store_true", default=False),
+    (options, args) = parser.parse_args()
+
+    if options.verbose:
+        logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
+                                        datefmt='%Y-%m-%d %H:%M:%S')
+        fh = logging.FileHandler("datatable.log")
+        fh.setFormatter(formatter)
+        logging.getLogger("urwid_datatable.datatable").setLevel(logging.DEBUG)
+        logging.getLogger("urwid_datatable.datatable").addHandler(fh)
+        # fh.setLevel(logging.DEBUG)
+        logger.addHandler(fh)
+
 
     entries = DataTable.get_palette_entries()
     palette = Palette("default", **entries)
@@ -37,11 +56,12 @@ def main():
 
         def __init__(self, num_rows = 10, *args, **kwargs):
             self.num_rows = num_rows
-            indexes = range(self.num_rows)
+            indexes = range(self.num_rows*5)
             self.query_data = [
-                # self.random_row(indexes.pop(random.randrange(0, len(indexes)))) for i in range(self.num_rows)
-                self.random_row(i) for i in range(self.num_rows)
+                self.random_row(indexes.pop(random.randrange(0, len(indexes)))) for i in range(self.num_rows)
+                # self.random_row(i) for i in range(self.num_rows)
             ]
+            random.shuffle(self.query_data)
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def random_row(self, uniqueid):
@@ -100,8 +120,10 @@ def main():
 
 
         def keypress(self, size, key):
-            if key == "0":
+            if key == "`":
                 datatable.sort_index()
+            elif key == "0":
+                datatable.sort("uniqueid")
             elif key == "1":
                 datatable.sort("foo")
             elif key == "2":
@@ -114,7 +136,9 @@ def main():
                 return super(ExampleDataTable, self).keypress(size, key)
 
 
-    datatable = ExampleDataTable(1000, index="uniqueid", with_scrollbar=True)
+    datatable = ExampleDataTable(1000, index="uniqueid",
+                                 with_header=True,
+                                 with_scrollbar=True)
 
 
     pile = urwid.Pile([

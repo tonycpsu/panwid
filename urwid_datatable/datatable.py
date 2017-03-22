@@ -4,6 +4,8 @@ import urwid
 from urwid_utils.palette import *
 import raccoon as rc
 from listbox import ScrollingListBox
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime, date as datetype
 
@@ -155,15 +157,15 @@ class DataTableRow(urwid.WidgetWrap):
 
     ATTR = "table_row"
 
-    attr_map = { None: ATTR }
-    focus_map = {None: "%s focused" %(ATTR),
-                 ATTR: "%s focused" %(ATTR)
-    }
+    # attr_map = { None: ATTR }
+    # focus_map = {None: "%s focused" %(ATTR),
+    #              ATTR: "%s focused" %(ATTR)
+    # }
 
     def __init__(self, table, data):
 
-        self._attr_map =  self.attr_map.copy()
-        self._focus_map =  self.focus_map.copy()
+        self.attr_map =  { None: self.ATTR }
+        self.focus_map = {None: "%s focused" %(self.ATTR)}
 
         self.columns = urwid.Columns([])
 
@@ -175,7 +177,7 @@ class DataTableRow(urwid.WidgetWrap):
 
         self.attr = urwid.AttrMap(
             self.columns,
-            attr_map = {},
+            attr_map = self.attr_map,
             focus_map = self.focus_map
         )
         super(DataTableRow, self).__init__(self.attr)
@@ -187,6 +189,15 @@ class DataTableRow(urwid.WidgetWrap):
         return super(DataTableRow, self).keypress(size, key)
 
 
+class DataTableHeaderRow(DataTableRow):
+
+    signals = ['column_click']
+
+    ATTR = "table_header"
+    attr_map = { None: ATTR }
+
+    def selectable(self):
+        return False
 
 class DataTable(urwid.WidgetWrap):
 
@@ -202,11 +213,14 @@ class DataTable(urwid.WidgetWrap):
     with_header = False
     with_footer = False
     with_scrollbar = None
+
+    ui_sort = False
     limit = None
 
     def __init__(self,
                  index=None,
                  with_header=None, with_footer=None, with_scrollbar=False,
+                 ui_sort=None,
                  limit=None):
 
         class DataTableListWalker(urwid.listbox.ListWalker):
@@ -244,18 +258,26 @@ class DataTable(urwid.WidgetWrap):
         if with_header: self.with_header = with_header
         if with_footer: self.with_footer = with_footer
         if with_scrollbar: self.with_scrollbar = with_scrollbar
+
+        if ui_sort: self.ui_sort = ui_sort
         if limit: self.limit = limit
 
         self.colnames = [c.name for c in self.columns]
         self.pd_columns = self.colnames + ["_rendered_row"]
+
         self.df = rc.DataFrame(
             columns = self.colnames,
             use_blist=True,
+            # sorted=False,
+            sorted=True,
             index_name = self.index
         )
-
         self.df["_rendered_row"] = None
+
         self.walker = DataTableListWalker()
+
+
+        self.pile = urwid.Pile([])
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
@@ -263,11 +285,26 @@ class DataTable(urwid.WidgetWrap):
                             if self.with_scrollbar
                             else None)
             )
+        if self.with_header:
+            self.header = DataTableHeaderRow(self, self.colnames)
+            self.pile.contents.insert(0,
+                (self.header, self.pile.options('pack'))
+             )
+            if self.ui_sort:
+                urwid.connect_signal(
+                    self.header, "column_click",
+                    lambda index: self.sort_by_column(index, toggle=True)
+                )
+
+        self.pile.contents.append(
+            (self.listbox, self.pile.options('weight', 1))
+         )
+        self.pile.focus_position = len(self.pile.contents)-1
 
         self.requery()
 
         self.attr = urwid.AttrMap(
-            self.listbox,
+            self.pile,
             attr_map = {},
             focus_map = {}
         )
@@ -279,6 +316,7 @@ class DataTable(urwid.WidgetWrap):
 
         foreground_map = {
             "table_row": [ "light gray", "light gray" ],
+            "header_row": [ "light gray", "light gray" ],
         }
 
         background_map = {
@@ -304,6 +342,37 @@ class DataTable(urwid.WidgetWrap):
                 foreground_high = foreground_map[row_attr][1],
                 background_high = background_map[suffix][1],
             )
+
+
+        header_foreground_map = {
+            None: ["black", "g7,bold"],
+            "focused": ["black", "white,bold"],
+            "column_focused": ["yellow,bold", "yellow,bold"],
+            "column_focused focused": ["yellow,bold", "yellow,bold"],
+
+        }
+
+        header_background_map = {
+            None: ["light gray", "g40"],
+            "focused": ["light gray", "g40"],
+            "column_focused": ["light gray", "g40"],
+            "column_focused focused": ["light gray", "g40"],
+        }
+
+        for prefix in ["table_header", "table_footer"]:
+            for suffix in [None, "focused", "column_focused", "column_focused focused"]:
+                if suffix:
+                    attr = ' '.join([prefix, suffix])
+                else:
+                    attr = prefix
+                entries[attr] = PaletteEntry(
+                    mono = "white",
+                    foreground = header_foreground_map[suffix][0],
+                    background = header_background_map[suffix][0],
+                    foreground_high = header_foreground_map[suffix][1],
+                    background_high = header_background_map[suffix][1],
+                )
+
 
         entries.update({
 
@@ -374,10 +443,17 @@ class DataTable(urwid.WidgetWrap):
 
     def sort(self, column):
         self.listbox.focus_position = 0
+        logger.debug("before:\n%s" %(self.df.head(10)))
         self.df.sort_columns(column)
+        logger.debug("after:\n%s" %(self.df.head(10)))
         self.df.index = range(len(self.df))
         self.walker._modified()
 
+    def sort_index(self):
+        logger.debug("before:\n%s" %(self.df.head(10)))
+        self.df.sort_index()
+        logger.debug("after:\n%s" %(self.df.head(10)))
+        self.walker._modified()
 
     def requery(self, offset=0, **kwargs):
 
@@ -392,8 +468,12 @@ class DataTable(urwid.WidgetWrap):
         newdata = rc.DataFrame(
             columns = self.colnames,
             data = data,
-            use_blist=True
+            use_blist=True,
+            # sorted=False,
+            sorted=True,
+            index_name = self.index
         )
         newdata["_rendered_row"] = None
+        logger.debug("new:\n%s" %(newdata))
         self.df.append(newdata)
         self.walker._modified()
