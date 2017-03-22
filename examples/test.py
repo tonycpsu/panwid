@@ -138,6 +138,7 @@ def main():
 
     datatable = ExampleDataTable(1000, index="uniqueid",
                                  with_header=True,
+                                 with_footer=True,
                                  with_scrollbar=True)
 
 

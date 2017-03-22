@@ -157,23 +157,26 @@ class DataTableRow(urwid.WidgetWrap):
 
     ATTR = "table_row"
 
-    # attr_map = { None: ATTR }
-    # focus_map = {None: "%s focused" %(ATTR),
-    #              ATTR: "%s focused" %(ATTR)
-    # }
-
-    def __init__(self, table, data):
+    def __init__(self, columns, cells):
 
         self.attr_map =  { None: self.ATTR }
         self.focus_map = {None: "%s focused" %(self.ATTR)}
 
         self.columns = urwid.Columns([])
 
-        for i, col in enumerate(table.columns):
+        # for i, col in enumerate(table.columns):
 
+        #     self.columns.contents.append(
+        #         (col.cell(data[i]), self.columns.options(col.sizing, col.width))
+        #     )
+
+
+        for i, cell in enumerate(cells):
+            col = columns[i]
             self.columns.contents.append(
-                (col.cell(data[i]), self.columns.options(col.sizing, col.width))
+                (cell, self.columns.options(col.sizing, col.width))
             )
+
 
         self.attr = urwid.AttrMap(
             self.columns,
@@ -189,15 +192,42 @@ class DataTableRow(urwid.WidgetWrap):
         return super(DataTableRow, self).keypress(size, key)
 
 
+class DataTableBodyRow(DataTableRow):
+
+    def __init__(self, columns, data):
+
+        cells = [col.cell(data[i]) for i, col in enumerate(columns)]
+        super(DataTableBodyRow, self).__init__(columns, cells)
+
+
 class DataTableHeaderRow(DataTableRow):
 
     signals = ['column_click']
 
     ATTR = "table_header"
-    attr_map = { None: ATTR }
+
+    def __init__(self, columns):
+
+        cells = [col.cell(col.label) for i, col in enumerate(columns)]
+        super(DataTableHeaderRow, self).__init__(columns, cells)
 
     def selectable(self):
         return False
+
+
+class DataTableFooterRow(DataTableRow):
+
+    ATTR = "table_footer"
+
+
+    def __init__(self, columns):
+
+        cells = [col.cell(col.label) for i, col in enumerate(columns)]
+        super(DataTableFooterRow, self).__init__(columns, cells)
+
+    def selectable(self):
+        return False
+
 
 class DataTable(urwid.WidgetWrap):
 
@@ -286,7 +316,7 @@ class DataTable(urwid.WidgetWrap):
                             else None)
             )
         if self.with_header:
-            self.header = DataTableHeaderRow(self, self.colnames)
+            self.header = DataTableHeaderRow(self.columns)
             self.pile.contents.insert(0,
                 (self.header, self.pile.options('pack'))
              )
@@ -300,6 +330,13 @@ class DataTable(urwid.WidgetWrap):
             (self.listbox, self.pile.options('weight', 1))
          )
         self.pile.focus_position = len(self.pile.contents)-1
+
+        if self.with_footer:
+            self.footer = DataTableFooterRow(self.columns)
+            self.pile.contents.append(
+                (self.footer, self.pile.options('pack'))
+             )
+
 
         self.requery()
 
@@ -345,22 +382,21 @@ class DataTable(urwid.WidgetWrap):
 
 
         header_foreground_map = {
-            None: ["black", "g7,bold"],
-            "focused": ["black", "white,bold"],
+            None: ["white,bold", "white,bold"],
+            # "focused": ["white,bold", "white,bold"],
             "column_focused": ["yellow,bold", "yellow,bold"],
             "column_focused focused": ["yellow,bold", "yellow,bold"],
-
         }
 
         header_background_map = {
             None: ["light gray", "g40"],
-            "focused": ["light gray", "g40"],
+            # "focused": ["light gray", "g40"],
             "column_focused": ["light gray", "g40"],
             "column_focused focused": ["light gray", "g40"],
         }
 
         for prefix in ["table_header", "table_footer"]:
-            for suffix in [None, "focused", "column_focused", "column_focused focused"]:
+            for suffix in [None, "column_focused"]:
                 if suffix:
                     attr = ' '.join([prefix, suffix])
                 else:
@@ -438,7 +474,7 @@ class DataTable(urwid.WidgetWrap):
     #     return self.walker.focus
 
     def render_item(self, item):
-        row = DataTableRow(self, item)
+        row = DataTableBodyRow(self.columns, item)
         return row
 
     def sort(self, column):
