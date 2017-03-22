@@ -32,15 +32,19 @@ def main():
             DataTableColumn("baz", width=("weight", 1)),
         ]
 
+        index="index"
+
         def __init__(self, num_rows = 10, *args, **kwargs):
             self.num_rows = num_rows
+            indexes = range(self.num_rows)
             self.query_data = [
-                self.random_row() for i in range(self.num_rows)
+                self.random_row(self.random_row(indexes.pop(random.randrange(len(indexes)))) for i in range(self.num_rows)) for i in range(self.num_rows)
             ]
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
-        def random_row(self):
-            return dict(foo=random.choice(range(100) + [None]*20),
+        def random_row(self, index):
+            return dict(index=index,
+                        foo=random.choice(range(100) + [None]*20),
                         bar = (random.uniform(0, 1000)
                                if random.randint(0, 5)
                                else None),
@@ -94,7 +98,9 @@ def main():
 
 
         def keypress(self, size, key):
-            if key == "1":
+            if key == "0":
+                datatable.sort_index()
+            elif key == "1":
                 datatable.sort("foo")
             elif key == "2":
                 datatable.sort("bar")

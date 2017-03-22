@@ -198,7 +198,16 @@ class DataTable(urwid.WidgetWrap):
 
     columns = []
 
-    def __init__(self, limit=None, with_scrollbar=False):
+    index = None
+    with_header = False
+    with_footer = False
+    with_scrollbar = None
+    limit = None
+
+    def __init__(self,
+                 index=None,
+                 with_header=None, with_footer=None, with_scrollbar=False,
+                 limit=None):
 
         class DataTableListWalker(urwid.listbox.ListWalker):
 
@@ -231,13 +240,18 @@ class DataTable(urwid.WidgetWrap):
 
             def __len__(self): return len(self.table)
 
-        self.limit = limit
-        self.with_scrollbar = with_scrollbar
+        if index: self.index = index
+        if with_header: self.with_header = with_header
+        if with_footer: self.with_footer = with_footer
+        if with_scrollbar: self.with_scrollbar = with_scrollbar
+        if limit: self.limit = limit
+
         self.colnames = [c.name for c in self.columns]
         self.pd_columns = self.colnames + ["_rendered_row"]
         self.df = rc.DataFrame(
             columns = self.colnames,
-            use_blist=True
+            use_blist=True,
+            index_name = self.index
         )
 
         self.df["_rendered_row"] = None
