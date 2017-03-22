@@ -27,6 +27,7 @@ def main():
     class ExampleDataTable(DataTable):
 
         columns = [
+            DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", width=10, align="right", padding=1),
             DataTableColumn("bar", width=30, align="right", padding=1),
             DataTableColumn("baz", width=("weight", 1)),
@@ -38,12 +39,13 @@ def main():
             self.num_rows = num_rows
             indexes = range(self.num_rows)
             self.query_data = [
-                self.random_row(self.random_row(indexes.pop(random.randrange(len(indexes)))) for i in range(self.num_rows)) for i in range(self.num_rows)
+                # self.random_row(indexes.pop(random.randrange(0, len(indexes)))) for i in range(self.num_rows)
+                self.random_row(i) for i in range(self.num_rows)
             ]
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
-        def random_row(self, index):
-            return dict(index=index,
+        def random_row(self, uniqueid):
+            return dict(uniqueid=uniqueid,
                         foo=random.choice(range(100) + [None]*20),
                         bar = (random.uniform(0, 1000)
                                if random.randint(0, 5)
@@ -112,7 +114,7 @@ def main():
                 return super(ExampleDataTable, self).keypress(size, key)
 
 
-    datatable = ExampleDataTable(1000, with_scrollbar=True)
+    datatable = ExampleDataTable(1000, index="uniqueid", with_scrollbar=True)
 
 
     pile = urwid.Pile([
