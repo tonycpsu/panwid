@@ -187,38 +187,8 @@ class DataTableRow(urwid.WidgetWrap):
         return super(DataTableRow, self).keypress(size, key)
 
 
+
 class DataTable(urwid.WidgetWrap):
-
-
-    class DataTableListWalker(urwid.listbox.ListWalker):
-
-        def __init__(self, source):
-            self.source = source
-            self._focus = 0
-            super(DataTable.DataTableListWalker, self).__init__()
-
-        def __getitem__(self, position):
-            if position < 0 or position >= len(self): raise IndexError
-            return self.source[position]
-
-        @property
-        def focus(self): return self._focus
-
-        def next_position(self, position):
-            index = position + 1
-            if position >= len(self): raise IndexError
-            return index
-
-        def prev_position(self, position):
-            index = position-1
-            if position < 0: raise IndexError
-            return index
-
-        def set_focus(self, position):
-            self._focus = position
-            self._modified()
-
-        def __len__(self): return len(self.source)
 
 
     ATTR = "table"
@@ -229,6 +199,38 @@ class DataTable(urwid.WidgetWrap):
     columns = []
 
     def __init__(self, limit=None, with_scrollbar=False):
+
+        class DataTableListWalker(urwid.listbox.ListWalker):
+
+            table = self
+
+            def __init__(self):
+                self._focus = 0
+                super(DataTableListWalker, self).__init__()
+
+            def __getitem__(self, position):
+                if position < 0 or position >= len(self): raise IndexError
+                return self.table.get_row(position)
+
+            @property
+            def focus(self): return self._focus
+
+            def next_position(self, position):
+                index = position + 1
+                if position >= len(self): raise IndexError
+                return index
+
+            def prev_position(self, position):
+                index = position-1
+                if position < 0: raise IndexError
+                return index
+
+            def set_focus(self, position):
+                self._focus = position
+                self._modified()
+
+            def __len__(self): return len(self.table)
+
         self.limit = limit
         self.with_scrollbar = with_scrollbar
         self.colnames = [c.name for c in self.columns]
@@ -239,7 +241,7 @@ class DataTable(urwid.WidgetWrap):
         )
 
         self.df["_rendered_row"] = None
-        self.walker = DataTable.DataTableListWalker(self)
+        self.walker = DataTableListWalker()
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
@@ -324,15 +326,22 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception(entries)
         return entries
 
-
     def __getitem__(self, index):
+        return [
+            v[0]
+            for k, v in self.df[index:index].to_dict(ordered=True).items()
+            if k in self.colnames
+        ]
+
+    def get_row(self, index):
         try:
             item = self.df.get(index, "_rendered_row")
         except ValueError:
             item = None
 
         if not item:
-            vals = [ v[0] for k, v in self.df[index:index].to_dict(ordered=True).items() if k in self.colnames ]
+            # vals = [ v[0] for k, v in self.df[index:index].to_dict(ordered=True).items() if k in self.colnames ]
+            vals = self[index]
             item = self.render_item(vals)
             self.df.set(index, "_rendered_row", item)
         return item
@@ -341,9 +350,9 @@ class DataTable(urwid.WidgetWrap):
     def __len__(self):
         return len(self.df)
 
-    @property
-    def focus(self):
-        return self.walker.focus
+    # @property
+    # def focus(self):
+    #     return self.walker.focus
 
     def render_item(self, item):
         row = DataTableRow(self, item)

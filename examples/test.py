@@ -89,9 +89,21 @@ def main():
                 yield d
 
 
-
         def query_result_count(self):
             return self.num_rows
+
+
+        def keypress(self, size, key):
+            if key == "1":
+                datatable.sort("foo")
+            elif key == "2":
+                datatable.sort("bar")
+            elif key == "3":
+                datatable.sort("baz")
+            elif key == "a":
+                self.add_row(self.random_row())
+            else:
+                return super(ExampleDataTable, self).keypress(size, key)
 
 
     datatable = ExampleDataTable(1000, with_scrollbar=True)
@@ -105,13 +117,6 @@ def main():
     def global_input(key):
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()
-        if key == "1":
-            datatable.sort("foo")
-        if key == "2":
-            datatable.sort("bar")
-        if key == "3":
-            datatable.sort("baz")
-            # box.focus_position = random.randrange(0,9)
         else:
             return False
 
