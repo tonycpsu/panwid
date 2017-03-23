@@ -566,17 +566,25 @@ class DataTable(urwid.WidgetWrap):
         if self.limit:
             kwargs["offset"] = offset
 
+        rows = list(self.query(**kwargs))
+        self.append_rows(rows)
+
+        # focus = self.df.index[0]
+        # logger.debug("focus: %d" %(focus))
+        # self.listbox.focus_position = focus
+        # if self.sort_by and not self.query_sort:
+        #     self.sort(self.sort_by)
+
+    def append_rows(self, rows):
+        # if not rows:
+        #     return
         colnames = self.colnames + [self.index]
-        recs = list(self.query(**kwargs))
-        if not recs:
-            return
+
         data = dict(
-            zip((r for r in recs[0] if r in colnames),
-                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in recs])]
+            zip((r for r in rows[0] if r in colnames),
+                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
             )
         )
-        # raise Exception(data["uniqueid"])
-        # raise Exception(self.index)
         newdata = rc.DataFrame(
             columns = colnames,
             data = data,
@@ -584,7 +592,7 @@ class DataTable(urwid.WidgetWrap):
             sorted=False,
             # sorted=True,
             index = data["uniqueid"],
-            index_name = (self.index)
+            index_name = self.index
         )
         newdata["_rendered_row"] = None
 
@@ -593,20 +601,16 @@ class DataTable(urwid.WidgetWrap):
         logger.debug("orig:\n%s, %s" %(self.df.index_name, sorted(self.df.index)))
         logger.debug("new:\n%s, %s" %(newdata.index_name, sorted(newdata.index)))
         self.df.append(newdata)
-        if not self.query_sort and self.sort_by:
-            self.sort(self.sort_by)
-        # self.df.sort_index()
-        # logger.debug("after sort index:\n%s, %s" %(self.df.index_name, sorted(newdata.index)))
-
         self.walker._modified()
-        # focus = self.df.index[0]
-        # logger.debug("focus: %d" %(focus))
-        # self.listbox.focus_position = focus
-        # if self.sort_by and not self.query_sort:
-        #     self.sort(self.sort_by)
 
+
+    def add_row(self, data, sorted=True):
+        # raise Exception(data)
+        self.append_rows([data])
 
     def load_more(self, offset):
+        if offset >= self.query_result_count():
+            return
         self.requery(offset)
         # self._invalidate()
         # self.listbox._invalidate()

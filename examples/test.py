@@ -58,6 +58,7 @@ def main():
 
         index="index"
 
+
         def __init__(self, num_rows = 10, *args, **kwargs):
             self.num_rows = num_rows
             # indexes = random.sample(range(self.num_rows*2), num_rows)
@@ -67,6 +68,7 @@ def main():
                 # self.random_row(i) for i in range(self.num_rows)
             ]
             random.shuffle(self.query_data)
+            self.last_rec = len(self.query_data)
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def random_row(self, uniqueid):
@@ -136,7 +138,9 @@ def main():
         def keypress(self, size, key):
             # if key == "`":
             #     datatable.sort_by_column_index()
-            if key == "0":
+            if key == "ctrl r":
+                datatable.reset()
+            elif key == "0":
                 datatable.sort_by_column("uniqueid")
             elif key == "1":
                 datatable.sort_by_column("foo")
@@ -145,7 +149,8 @@ def main():
             elif key == "3":
                 datatable.sort_by_column("baz")
             elif key == "a":
-                self.add_row(self.random_row())
+                self.add_row(self.random_row(self.last_rec))
+                self.last_rec += 1
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
@@ -154,7 +159,7 @@ def main():
                                  index="uniqueid",
                                  limit = 10,
                                  sort_by = ("bar", False),
-                                 query_sort=True,
+                                 # query_sort=True,
                                  with_header=True,
                                  with_footer=True,
                                  with_scrollbar=True
