@@ -6,6 +6,7 @@ import raccoon as rc
 from listbox import ScrollingListBox
 import logging
 from collections import OrderedDict
+import itertools
 logger = logging.getLogger(__name__)
 
 import traceback
@@ -274,7 +275,7 @@ class DataTableFooterRow(DataTableRow):
     # ATTR = "table_footer_cell"
 
     def __init__(self, columns, *args, **kwargs):
-        cells = [DataTableFooterCell(col, "") for i, col in enumerate(columns)]
+        cells = [DataTableFooterCell(col, "footer") for i, col in enumerate(columns)]
         super(DataTableFooterRow, self).__init__(columns, cells)
 
     def selectable(self):
@@ -465,8 +466,10 @@ class DataTable(urwid.WidgetWrap):
                 (self.footer, self.pile.options('pack'))
              )
 
+        if self.sort_by:
+            self.sort_by_column(self.sort_by)
 
-        self.requery()
+        self.reset()
 
         self.attr = urwid.AttrMap(
             self.pile,
@@ -520,7 +523,7 @@ class DataTable(urwid.WidgetWrap):
 
         header_foreground_map = {
             None: ["white,bold", "white,bold"],
-            "focused": ["white,bold", "white,bold"],
+            "focused": ["white,bold", "yellow,bold"],
             "highlight": ["yellow,bold", "yellow,bold"],
             "highlight focused": ["yellow,bold", "yellow,bold"],
         }
@@ -625,10 +628,15 @@ class DataTable(urwid.WidgetWrap):
         row = DataTableBodyRow(self.columns, item.values())
         return row
 
+
     def sort_by_column(self, column):
+
+        if isinstance(column, tuple):
+            column = column[0] # FIXME: descending
+
         if isinstance(column, int):
             try:
-                colname = self.columns[column]
+                colname = self.columns[column].name
             except IndexError:
                 raise IndexError("bad column number: %d" %(column))
             self.sort_column = column
@@ -641,22 +649,45 @@ class DataTable(urwid.WidgetWrap):
 
         self.sort_by = colname
 
-        if self.query_sort:
-            self.reset()
-        self.sort(colname)
+
+        if not self.query_sort:
+            self.sort(colname)
+
         self.set_focus_column(self.sort_column)
 
+        # if self.query_sort:
+        self.reset()
+
+
+
     def sort(self, column):
-        if isinstance(column, tuple):
-            column = column[0] # FIXME: descending
         logger.debug(column)
         self.df.sort_columns(column)
         self.walker._modified()
 
+
     def set_focus_column(self, index):
+        if self.with_header:
+            self.header.set_focus_column(self.sort_column)
+
+        if self.with_footer:
+            self.footer.set_focus_column(self.sort_column)
+
         logger.debug("set_focus_column: %d" %(index))
         self.df["_focus_position"] = index
         self.df["_dirty"] = True
+
+
+    def cycle_columns(self, step):
+
+        if self.sort_column is None:
+            index = 0
+        else:
+            index = (self.sort_column + step)
+            if index < 0: index = len(self.columns)-1
+            if index > len(self.columns)-1: index = 0
+        self.sort_by_column(index)
+
 
     def sort_index(self):
         # logger.debug("before:\n%s" %(self.df.head(10)))
@@ -682,8 +713,6 @@ class DataTable(urwid.WidgetWrap):
         self.df["_focus_position"] = self.sort_column
         self.df["_dirty"] = True
         self.walker._modified()
-        if self.sort_by and not self.query_sort:
-            self.sort(self.sort_by)
 
 
     def add_row(self, data, sorted=True):
@@ -700,3 +729,5 @@ class DataTable(urwid.WidgetWrap):
         self.df.clear()
         self.requery()
         self.walker.set_focus(0)
+        # if self.sort_by:
+        #     self.sort_by_column(self.sort_by)

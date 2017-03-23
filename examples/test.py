@@ -128,8 +128,8 @@ def main():
             #     datatable.sort_by_column_index()
             if key == "ctrl r":
                 datatable.reset()
-            elif key == "0":
-                datatable.sort_by_column("uniqueid")
+            # elif key == "0":
+            #     datatable.sort_by_column("uniqueid")
             elif key == "1":
                 datatable.sort_by_column("foo")
             elif key == "2":
@@ -139,15 +139,19 @@ def main():
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
+            elif key == "shift left":
+                datatable.cycle_columns(-1)
+            elif key == "shift right":
+                datatable.cycle_columns(1)
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
 
     datatable = ExampleDataTable(100,
                                  index="uniqueid",
-                                 limit = 10,
+                                 limit = 25,
                                  sort_by = ("bar", False),
-                                 # query_sort=True,
+                                 query_sort=True,
                                  with_header=True,
                                  with_footer=True,
                                  with_scrollbar=True
