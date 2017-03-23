@@ -51,7 +51,7 @@ def main():
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", width=10, align="right", padding=1),
-            DataTableColumn("bar", width=30, align="right", padding=1),
+            DataTableColumn("bar", width=10, align="right", padding=1),
             DataTableColumn("baz", width=("weight", 1)),
         ]
 
@@ -80,7 +80,7 @@ def main():
                             string.ascii_uppercase
                             + string.lowercase
                             + string.digits + ' ' * 20
-                        ) for _ in range(60))
+                        ) for _ in range(20))
                               if random.randint(0, 5)
                               else None),
                         qux = (random.uniform(0, 200)
@@ -131,35 +131,62 @@ def main():
             # elif key == "0":
             #     datatable.sort_by_column("uniqueid")
             elif key == "1":
-                datatable.sort_by_column("foo")
+                self.sort_by_column("foo")
             elif key == "2":
-                datatable.sort_by_column("bar")
+                self.sort_by_column("bar")
             elif key == "3":
-                datatable.sort_by_column("baz")
+                self.sort_by_column("baz")
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
             elif key == "shift left":
-                datatable.cycle_columns(-1)
+                self.cycle_columns(-1)
             elif key == "shift right":
-                datatable.cycle_columns(1)
+                self.cycle_columns(1)
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
 
-    datatable = ExampleDataTable(100,
-                                 index="uniqueid",
-                                 limit = 25,
-                                 sort_by = ("bar", False),
-                                 query_sort=True,
-                                 with_header=True,
-                                 with_footer=True,
-                                 with_scrollbar=True
+    tables = [
+        ExampleDataTable(
+            100,
+            limit=10,
+            index="uniqueid",
+            sort_by = ("foo", False),
+            query_sort=True,
+            with_header=True,
+            with_footer=True,
+            with_scrollbar=True
+        ),
+        ExampleDataTable(
+            1000,
+            limit=100,
+            index="uniqueid",
+            sort_by = ("bar", False),
+            with_header=True,
+            with_footer=True,
+            with_scrollbar=True
+        ),
+        ExampleDataTable(
+            10000,
+            limit=1000,
+            index="uniqueid",
+            sort_by = ("baz", False),
+            query_sort=True,
+            # with_header=True,
+            # with_footer=True,
+            with_scrollbar=True
+        ),
+    ]
+
+
+    grid_flow = urwid.GridFlow(
+        [urwid.BoxAdapter(t, 30) for t in tables], 60, 1, 1, "left"
     )
 
 
     pile = urwid.Pile([
-        ('weight', 1, datatable),
+        ('weight', 1, urwid.Filler(grid_flow)),
     ])
 
     def global_input(key):

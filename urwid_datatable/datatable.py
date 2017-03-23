@@ -14,105 +14,6 @@ import traceback
 from datetime import datetime, date as datetype
 
 
-class DataTableCell(urwid.WidgetWrap):
-
-    ATTR = "table_row"
-
-    def __init__(self, column, value):
-
-        self.attr = self.ATTR
-        self.attr_focused = "%s focused" %(self.attr)
-        self.attr_highlight = "%s highlight" %(self.attr)
-        self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
-
-        self.column = column
-        self.attr_map =  {}
-
-        self.normal_attr_map = {
-            None: self.attr,
-        }
-
-        self.highlight_attr_map = {
-            None: self.attr_highlight,
-        }
-
-        self.normal_focus_map = {
-            None: self.attr_focused,
-        }
-
-        self.highlight_focus_map = {
-            None: self.attr_highlight,
-            self.attr_highlight: self.attr_highlight_focused,
-        }
-        # self.focus_map = None
-
-        self.widget = self.format(value)
-        # self.widget = urwid.Text(str(value))
-        self.padding = urwid.Padding(
-            self.widget,
-            left=self.column.padding or 0,
-            right=self.column.padding or 0
-        )
-        self.attr = urwid.AttrMap(
-            self.padding,
-            attr_map = self.normal_attr_map,
-            focus_map = self.normal_focus_map
-        )
-        super(DataTableCell, self).__init__(self.attr)
-
-    def highlight(self):
-        self.attr.set_attr_map(self.highlight_attr_map)
-        self.attr.set_focus_map(self.highlight_focus_map)
-
-
-    def unhighlight(self):
-        self.attr.set_attr_map(self.normal_attr_map)
-        self.attr.set_focus_map(self.normal_focus_map)
-
-
-    def format(self, v):
-
-        # Do our best to make the value into something presentable
-        if v is None:
-            v = ""
-        elif isinstance(v, int):
-            v = "%d" %(v)
-        elif isinstance(v, float):
-            v = "%.03f" %(v)
-        elif isinstance(v, datetime):
-            v = v.strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(v, datetype):
-            v = v.strftime("%Y-%m-%d")
-        if not isinstance(v, urwid.Widget):
-            v = urwid.Text(v,
-                           align=self.column.align,
-                           wrap=self.column.wrap)
-        return v
-
-
-    def selectable(self):
-        return True
-
-    def keypress(self, size, key):
-        return key
-        # return super(DataTableCell, self).keypress(size, key)
-
-
-class DataTableBodyCell(DataTableCell):
-    ATTR = "table_row_body"
-
-class DataTableHeaderCell(DataTableCell):
-    ATTR = "table_row_header"
-
-class DataTableFooterCell(DataTableCell):
-    ATTR = "table_row_footer"
-
-
-# class DataTableCellFocused(DataTableCell):
-
-#     ATTR = "table_cell highlight"
-
-
 
 class DataTableColumn(object):
 
@@ -192,23 +93,131 @@ class DataTableColumn(object):
     #     return DataTableCell(self, value)
 
 
-class DataTableRow(urwid.WidgetWrap):
 
-    CELL_ATTR = "table_cell"
+class DataTableCell(urwid.WidgetWrap):
 
+    ATTR = "table_cell"
+    PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, columns, cells, *args, **kwargs):
+    def __init__(self, column, value):
 
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
         self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
+
+        self.column = column
         self.attr_map =  {}
+
+        self.normal_attr_map = {
+            None: self.attr,
+        }
+
+
+        self.highlight_attr_map = {
+            None: self.attr_highlight,
+        }
+
+        self.normal_focus_map = {
+            None: self.attr_focused,
+        }
+
+        self.highlight_focus_map = {
+            None: self.attr_highlight,
+            self.attr_highlight: self.attr_highlight_focused,
+        }
+
+        self.contents = self.format(value)
+        self.padding = urwid.Padding(
+            self.contents,
+            left=self.column.padding or 0,
+            right=self.column.padding or 0
+        )
+
+        self.attr = urwid.AttrMap(
+            self.padding,
+            attr_map = self.normal_attr_map,
+            focus_map = self.normal_focus_map
+        )
+        super(DataTableCell, self).__init__(self.attr)
+
+    def highlight(self):
+        self.attr.set_attr_map(self.highlight_attr_map)
+        self.attr.set_focus_map(self.highlight_focus_map)
+
+
+    def unhighlight(self):
+        self.attr.set_attr_map(self.normal_attr_map)
+        self.attr.set_focus_map(self.normal_focus_map)
+
+
+    def format(self, v):
+
+        # Do our best to make the value into something presentable
+        if v is None:
+            v = ""
+        elif isinstance(v, int):
+            v = "%d" %(v)
+        elif isinstance(v, float):
+            v = "%.03f" %(v)
+        elif isinstance(v, datetime):
+            v = v.strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(v, datetype):
+            v = v.strftime("%Y-%m-%d")
+
+        if not isinstance(v, urwid.Widget):
+            v = urwid.Text(v,
+                           align=self.column.align,
+                           wrap=self.column.wrap)
+        return v
+
+
+    def selectable(self):
+        return False
+
+    def keypress(self, size, key):
+        return key
+        # return super(DataTableCell, self).keypress(size, key)
+
+
+class DataTableBodyCell(DataTableCell):
+    ATTR = "table_row_body"
+    PADDING_ATTR = "table_row_body_padding"
+
+
+class DataTableHeaderCell(DataTableCell):
+    ATTR = "table_row_header"
+    PADDING_ATTR = "table_row_header_padding"
+
+
+class DataTableFooterCell(DataTableCell):
+    ATTR = "table_row_footer"
+    PADDING_ATTR = "table_row_footer_padding"
+
+
+class DataTableRow(urwid.WidgetWrap):
+
+    def __init__(self, columns, data, *args, **kwargs):
+
+        logger.info("%s, %s, %s" %(self.__class__.__name__, columns, data))
+
+        self.attr = self.ATTR
+        self.attr_focused = "%s focused" %(self.attr)
+        self.attr_highlight = "%s highlight" %(self.attr)
+        self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
+
+        self.attr_map =  {
+            None: self.attr,
+        }
 
         self.focus_map = {
             self.attr: self.attr_focused,
-            self.attr_highlight: self.attr_highlight_focused,
+            self.attr_highlight: self.attr_highlight_focused
         }
+
+        cells = [self.CELL_CLASS(col, data[i])
+                 for i, col in enumerate(columns)]
+
 
         self.columns = urwid.Columns([])
 
@@ -217,7 +226,6 @@ class DataTableRow(urwid.WidgetWrap):
             self.columns.contents.append(
                 (cell, self.columns.options(col.sizing, col.width))
             )
-
 
         self.attr = urwid.AttrMap(
             self.columns,
@@ -245,11 +253,8 @@ class DataTableRow(urwid.WidgetWrap):
 class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
-    # CELL_ATTR = "table_row_body"
 
-    def __init__(self, columns, data, *args, **kwargs):
-        cells = [DataTableBodyCell(col, data[i]) for i, col in enumerate(columns)]
-        super(DataTableBodyRow, self).__init__(columns, cells)
+    CELL_CLASS = DataTableBodyCell
 
 
 class DataTableHeaderRow(DataTableRow):
@@ -257,12 +262,10 @@ class DataTableHeaderRow(DataTableRow):
     signals = ['column_click']
 
     ATTR = "table_row_header"
-    # CELL_ATTR = "table_row_header"
-    # ATTR = "table_header_cell"
+    CELL_CLASS = DataTableHeaderCell
 
     def __init__(self, columns, *args, **kwargs):
-        cells = [DataTableHeaderCell(col, col.label) for i, col in enumerate(columns)]
-        super(DataTableHeaderRow, self).__init__(columns, cells)
+        super(DataTableHeaderRow, self).__init__(columns, [c.name for c in columns])
 
     def selectable(self):
         return False
@@ -271,12 +274,10 @@ class DataTableHeaderRow(DataTableRow):
 class DataTableFooterRow(DataTableRow):
 
     ATTR = "table_row_footer"
-    # CELL_ATTR = "table_row_footer"
-    # ATTR = "table_footer_cell"
+    CELL_CLASS = DataTableFooterCell
 
     def __init__(self, columns, *args, **kwargs):
-        cells = [DataTableFooterCell(col, "footer") for i, col in enumerate(columns)]
-        super(DataTableFooterRow, self).__init__(columns, cells)
+        super(DataTableFooterRow, self).__init__(columns, ["footer" for n in range(len(columns))])
 
     def selectable(self):
         return False
@@ -287,8 +288,6 @@ class DataTableDataFrame(rc.DataFrame):
     DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_rendered_row"]
 
     def __init__(self, data=None, columns=None, index=None, index_name='index', use_blist=False, sorted=None):
-        # columns = [index_name] + self.DATA_TABLE_COLUMNS + columns
-        # print "super: %s" %(columns)
         columns = [index_name] + columns
         super(DataTableDataFrame, self).__init__(data, columns, index, index_name, use_blist, sorted)
         for c in self.DATA_TABLE_COLUMNS:
@@ -496,8 +495,8 @@ class DataTable(urwid.WidgetWrap):
 
         background_map = {
             None: [ "black", "black" ],
-            "focused": [ "dark gray", "g11" ],
-            "highlight": ["light gray", "g11"],
+            "focused": [ "dark gray", "g15" ],
+            "highlight": ["light gray", "g15"],
             "highlight focused": ["light gray", "g23"],
         }
 
@@ -519,6 +518,7 @@ class DataTable(urwid.WidgetWrap):
                     foreground_high = foreground_map[row_attr][1],
                     background_high = background_map[suffix][1],
                 )
+
 
 
         header_foreground_map = {
@@ -549,6 +549,7 @@ class DataTable(urwid.WidgetWrap):
                     background_high = header_background_map[suffix][1],
                 )
 
+
         entries.update({
 
             "scroll_pos": PaletteEntry(
@@ -575,9 +576,9 @@ class DataTable(urwid.WidgetWrap):
             "scroll_bg": PaletteEntry(
                 mono = "black",
                 foreground = "black",
-                background = "dark green",
+                background = "dark gray",
                 foreground_high = "black",
-                background_high = "dark green"
+                background_high = "dark gray"
             ),
 
         })
@@ -655,8 +656,8 @@ class DataTable(urwid.WidgetWrap):
 
         self.set_focus_column(self.sort_column)
 
-        # if self.query_sort:
-        self.reset()
+        if self.query_sort:
+            self.reset()
 
 
 
@@ -673,7 +674,7 @@ class DataTable(urwid.WidgetWrap):
         if self.with_footer:
             self.footer.set_focus_column(self.sort_column)
 
-        logger.debug("set_focus_column: %d" %(index))
+        # logger.debug("set_focus_column: %d" %(index))
         self.df["_focus_position"] = index
         self.df["_dirty"] = True
 
