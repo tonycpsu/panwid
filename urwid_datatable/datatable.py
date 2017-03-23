@@ -18,20 +18,13 @@ class DataTableHeaderLabel(str):
 class DataTableCell(urwid.WidgetWrap):
 
     ATTR = "table_cell"
-    attr_map = { None: ATTR }
-    # focus_map = {ATTR: "%s focused" %(ATTR)}
-    attr_map = {}
-    focus_map = {}
 
     def __init__(self, column, value):
 
         self.column = column
-        # self._attr_map =  self.attr_map.copy()
-        # self._focus_map =  self.focus_map.copy()
+        self.attr_map =  {}# { None: self.ATTR }
+        self.focus_map = {}# {None: "%s focused" %(self.ATTR)}
 
-        # self._attr_map.update(row.attr_map)
-        # self._focus_map.update(row.focus_map)
-        # raise Exception(self._focus_map)
 
         self.widget = self.format(value)
         # self.text = urwid.Text(value)
@@ -42,10 +35,16 @@ class DataTableCell(urwid.WidgetWrap):
         )
         self.attr = urwid.AttrMap(
             self.padding,
-            attr_map = self.attr_map
+            attr_map = self.attr_map,
+            # focus_map = self.focus_map
         )
         # raise Exception(self.widget)
         super(DataTableCell, self).__init__(self.attr)
+
+
+    # def set_focus(self, value=None):
+    #     self.focus_map[None] =
+
 
 
     def format(self, v):
@@ -74,6 +73,12 @@ class DataTableCell(urwid.WidgetWrap):
     def keypress(self, size, key):
         return key
         # return super(DataTableCell, self).keypress(size, key)
+
+
+# class DataTableCellFocused(DataTableCell):
+
+#     ATTR = "table_cell column_focused"
+
 
 
 class DataTableColumn(object):
@@ -159,7 +164,7 @@ class DataTableRow(urwid.WidgetWrap):
 
     ATTR = "table_row"
 
-    def __init__(self, columns, cells):
+    def __init__(self, columns, cells, *args, **kwargs):
 
         self.attr_map =  { None: self.ATTR }
         self.focus_map = {None: "%s focused" %(self.ATTR)}
@@ -193,10 +198,15 @@ class DataTableRow(urwid.WidgetWrap):
     def keypress(self, size, key):
         return super(DataTableRow, self).keypress(size, key)
 
+    def set_focus_column(self, index):
+        self.focus_position = index
+        # self.columns[index].set_focus(value)
+
+
 
 class DataTableBodyRow(DataTableRow):
 
-    def __init__(self, columns, data):
+    def __init__(self, columns, data, *args, **kwargs):
 
         cells = [col.cell(data[i]) for i, col in enumerate(columns)]
         super(DataTableBodyRow, self).__init__(columns, cells)
@@ -208,7 +218,7 @@ class DataTableHeaderRow(DataTableRow):
 
     ATTR = "table_header"
 
-    def __init__(self, columns):
+    def __init__(self, columns, *args, **kwargs):
 
         cells = [col.cell(col.label) for i, col in enumerate(columns)]
         super(DataTableHeaderRow, self).__init__(columns, cells)
@@ -221,14 +231,54 @@ class DataTableFooterRow(DataTableRow):
 
     ATTR = "table_footer"
 
-
-    def __init__(self, columns):
+    def __init__(self, columns, *args, **kwargs):
 
         cells = [col.cell(col.label) for i, col in enumerate(columns)]
         super(DataTableFooterRow, self).__init__(columns, cells)
 
     def selectable(self):
         return False
+
+
+class DataTableDataFrame(rc.DataFrame):
+
+    DATA_TABLE_COLUMNS = ["_rendered_row", "_dirty"]
+
+    def __init__(self, data=None, columns=None, index=None, index_name='index', use_blist=False, sorted=None):
+        # columns = [index_name] + self.DATA_TABLE_COLUMNS + columns
+        # print "super: %s" %(columns)
+        columns = [index_name] + columns
+        super(DataTableDataFrame, self).__init__(data, columns, index, index_name, use_blist, sorted)
+        for c in self.DATA_TABLE_COLUMNS:
+            self[c] = None
+
+    def append_rows(self, rows):
+
+        # columns = [self.index_name] + self.DATA_TABLE_COLUMNS + list(self.columns)
+        # raise Exception(self.columns)
+        colnames = [self.index_name] + list(self.columns) + self.DATA_TABLE_COLUMNS
+        data = dict(
+            zip((r for r in rows[0] if r in colnames),
+                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
+            )
+        )
+        # raise Exception(data)
+        columns = [c for c in self.columns if not c.startswith("_")]
+        # print "newdata: %s" %(columns)
+        newdata = DataTableDataFrame(
+            columns = columns,
+            data = data,
+            use_blist=True,
+            sorted=False,
+            # sorted=True,
+            index = data[self.index_name],
+            index_name = self.index_name
+        )
+        self.append(newdata)
+
+    def clear(self):
+        self.delete_rows(self.index)
+
 
 
 class DataTable(urwid.WidgetWrap):
@@ -321,16 +371,16 @@ class DataTable(urwid.WidgetWrap):
             self.limit = limit
 
         self.colnames = [c.name for c in self.columns]
-        self.pd_columns = self.colnames + ["_rendered_row"]
+        # self.pd_columns = self.colnames + ["_rendered_row"]
 
-        self.df = rc.DataFrame(
+        self.df = DataTableDataFrame(
             columns = self.colnames,
             use_blist=True,
             sorted=False,
             # sorted=True,
             index_name = self.index,
         )
-        self.df["_rendered_row"] = None
+        # self.df["_rendered_row"] = None
 
         self.walker = DataTableListWalker()
 
@@ -533,10 +583,24 @@ class DataTable(urwid.WidgetWrap):
         return row
 
     def sort_by_column(self, column):
-        self.sort_by = column
+        if isinstance(column, int):
+            try:
+                colname = self.columns[column]
+            except IndexError:
+                raise IndexError("bad column number: %d" %(column))
+            self.sort_column = column
+        elif isinstance(column, str):
+            colname = column
+            try:
+                self.sort_column = self.colnames.index(colname)
+            except:
+                raise IndexError("bad column name: %s" %(colname))
+
+        self.sort_by = colname
+
         if self.query_sort:
             self.reset()
-        self.sort(column)
+        self.sort(colname)
 
     def sort(self, column):
         # self.sort_by = column
@@ -558,6 +622,12 @@ class DataTable(urwid.WidgetWrap):
         # logger.debug("after:\n%s" %(self.df.head(10)))
         self.walker._modified()
 
+    def set_focus_column(self, index):
+        self.df["focus_position"] = index
+        pass
+        # for n in self.df.index:
+        #     df[[n],
+
     def requery(self, offset=0, **kwargs):
 
         kwargs = {}
@@ -572,36 +642,38 @@ class DataTable(urwid.WidgetWrap):
         # focus = self.df.index[0]
         # logger.debug("focus: %d" %(focus))
         # self.listbox.focus_position = focus
-        # if self.sort_by and not self.query_sort:
-        #     self.sort(self.sort_by)
 
     def append_rows(self, rows):
         # if not rows:
         #     return
-        colnames = self.colnames + [self.index]
+        # colnames = self.colnames
 
-        data = dict(
-            zip((r for r in rows[0] if r in colnames),
-                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
-            )
-        )
-        newdata = rc.DataFrame(
-            columns = colnames,
-            data = data,
-            use_blist=True,
-            sorted=False,
-            # sorted=True,
-            index = data["uniqueid"],
-            index_name = self.index
-        )
-        newdata["_rendered_row"] = None
+        # data = dict(
+        #     zip((r for r in rows[0] if r in colnames),
+        #         [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
+        #     )
+        # )
+        # newdata = DataTableDataFrame(
+        #     columns = colnames,
+        #     data = data,
+        #     use_blist=True,
+        #     sorted=False,
+        #     # sorted=True,
+        #     index = data[self.index],
+        #     index_name = self.index
+        # )
+        # newdata["_rendered_row"] = None
+        # newdata["focus_position"] = None
 
-        # logger.debug("orig:\n%s" %(self.df.head(5)))
-        # logger.debug("new:\n%s" %(newdata.head(5)))
-        logger.debug("orig:\n%s, %s" %(self.df.index_name, sorted(self.df.index)))
-        logger.debug("new:\n%s, %s" %(newdata.index_name, sorted(newdata.index)))
-        self.df.append(newdata)
+        # # logger.debug("orig:\n%s" %(self.df.head(5)))
+        # # logger.debug("new:\n%s" %(newdata.head(5)))
+        # logger.debug("orig:\n%s, %s" %(self.df.index_name, sorted(self.df.index)))
+        # logger.debug("new:\n%s, %s" %(newdata.index_name, sorted(newdata.index)))
+        # self.df.append(newdata)
+        self.df.append_rows(rows)
         self.walker._modified()
+        if self.sort_by and not self.query_sort:
+            self.sort(self.sort_by)
 
 
     def add_row(self, data, sorted=True):
@@ -617,15 +689,6 @@ class DataTable(urwid.WidgetWrap):
 
     def reset(self):
         self.offset = 0
-        self.clear()
+        self.df.clear()
         self.requery()
         self.walker.set_focus(0)
-        # self.listbox.focus_position = 0
-        # self.walker._modified()
-
-    def clear(self):
-        # raise Exception(self.df.index)
-        logger.debug("before delete:\n%s" %(self.df.head(5)))
-        self.df.delete_rows(self.df.index)
-        logger.debug("after delete:\n%s" %(self.df.head(5)))
-        # self.walker._modified()

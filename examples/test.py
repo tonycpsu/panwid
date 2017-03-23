@@ -159,7 +159,7 @@ def main():
                                  index="uniqueid",
                                  limit = 10,
                                  sort_by = ("bar", False),
-                                 # query_sort=True,
+                                 query_sort=True,
                                  with_header=True,
                                  with_footer=True,
                                  with_scrollbar=True
