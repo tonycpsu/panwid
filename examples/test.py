@@ -94,6 +94,7 @@ def main():
 
         def query(self, sort=(None, None), offset=None):
 
+            logger.debug("query: offset=%s, sort=%s" %(offset, sort))
             try:
                 sort_field, sort_reverse = sort
             except:
@@ -102,7 +103,8 @@ def main():
 
             if sort_field:
                 kwargs = {}
-                # kwargs["reverse"] = sort_reverse
+                kwargs["key"] = lambda x: (x[sort_field], x[self.index])
+                kwargs["reverse"] = sort_reverse
                 # if not sort_reverse:
                 #     # kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
                 #     kwargs["key"] = lambda x: sort_key_natural_none_last(get_value(x, sort_field))
@@ -152,6 +154,7 @@ def main():
                                  index="uniqueid",
                                  limit = 10,
                                  sort_by = ("bar", False),
+                                 query_sort=True,
                                  with_header=True,
                                  with_footer=True,
                                  with_scrollbar=True
