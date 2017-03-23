@@ -199,8 +199,6 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, columns, data, *args, **kwargs):
 
-        logger.info("%s, %s, %s" %(self.__class__.__name__, columns, data))
-
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
@@ -397,7 +395,8 @@ class DataTable(urwid.WidgetWrap):
 
         if index: self.index = index
         if query_sort: self.query_sort = query_sort
-        if sort_by: self.sort_by = sort_by
+        if sort_by: self.initial_sort = self.sort_by = sort_by
+        # raise Exception(self.initial_sort)
 
         if with_header: self.with_header = with_header
         if with_footer: self.with_footer = with_footer
@@ -465,10 +464,11 @@ class DataTable(urwid.WidgetWrap):
                 (self.footer, self.pile.options('pack'))
              )
 
+        self.reset()
+
         if self.sort_by:
             self.sort_by_column(self.sort_by)
 
-        self.reset()
 
         self.attr = urwid.AttrMap(
             self.pile,
@@ -654,11 +654,10 @@ class DataTable(urwid.WidgetWrap):
         if not self.query_sort:
             self.sort(colname)
 
-        self.set_focus_column(self.sort_column)
-
         if self.query_sort:
             self.reset()
 
+        self.set_focus_column(self.sort_column)
 
 
     def sort(self, column):
@@ -713,7 +712,9 @@ class DataTable(urwid.WidgetWrap):
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
         self.df["_dirty"] = True
-        self.walker._modified()
+        if not self.query_sort:
+            self.sort_by_column(self.sort_by)
+        # self.walker._modified()
 
 
     def add_row(self, data, sorted=True):
@@ -725,10 +726,13 @@ class DataTable(urwid.WidgetWrap):
             return
         self.requery(offset)
 
-    def reset(self):
+    def reset(self, reset_sort=False):
         self.offset = 0
         self.df.clear()
         self.requery()
         self.walker.set_focus(0)
-        # if self.sort_by:
+        if reset_sort:
+            self.sort_by = self.initial_sort
+        # raise Exception(self.sort_by)
+        # if not self.query_sort:
         #     self.sort_by_column(self.sort_by)

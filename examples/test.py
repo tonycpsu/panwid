@@ -24,23 +24,25 @@ def main():
 
 
     parser = OptionParser()
-    parser.add_option("-v", "--verbose", action="store_true", default=False),
+    parser.add_option("-v", "--verbose", action="count", default=0),
     (options, args) = parser.parse_args()
 
     if options.verbose:
-        logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
                                         datefmt='%Y-%m-%d %H:%M:%S')
         fh = logging.FileHandler("datatable.log")
+        # fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
-        logging.getLogger("urwid_datatable.datatable").setLevel(logging.DEBUG)
+        if options.verbose > 1:
+            logger.setLevel(logging.DEBUG)
+            logging.getLogger("urwid_datatable.datatable").setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+            logging.getLogger("urwid_datatable.datatable").setLevel(logging.INFO)
+        logger.addHandler(fh)
         logging.getLogger("urwid_datatable.datatable").addHandler(fh)
-        logging.getLogger("urwid.listbox").setLevel(logging.DEBUG)
-        logging.getLogger("urwid.listbox").addHandler(fh)
         # logging.getLogger("raccoon.dataframe").setLevel(logging.DEBUG)
         # logging.getLogger("raccoon.dataframe").addHandler(fh)
-        # fh.setLevel(logging.DEBUG)
-        logger.addHandler(fh)
 
 
     entries = DataTable.get_palette_entries()
@@ -95,7 +97,7 @@ def main():
 
         def query(self, sort=(None, None), offset=None):
 
-            logger.debug("query: offset=%s, sort=%s" %(offset, sort))
+            logger.info("query: offset=%s, sort=%s" %(offset, sort))
             try:
                 sort_field, sort_reverse = sort
             except:
@@ -124,12 +126,8 @@ def main():
 
 
         def keypress(self, size, key):
-            # if key == "`":
-            #     datatable.sort_by_column_index()
             if key == "ctrl r":
-                datatable.reset()
-            # elif key == "0":
-            #     datatable.sort_by_column("uniqueid")
+                self.reset(reset_sort=True)
             elif key == "1":
                 self.sort_by_column("foo")
             elif key == "2":
@@ -150,10 +148,9 @@ def main():
     tables = [
         ExampleDataTable(
             100,
-            limit=10,
+            # limit=10,
             index="uniqueid",
             sort_by = ("foo", False),
-            query_sort=True,
             with_header=True,
             with_footer=True,
             with_scrollbar=True
@@ -163,6 +160,7 @@ def main():
             limit=100,
             index="uniqueid",
             sort_by = ("bar", False),
+            query_sort=True,
             with_header=True,
             with_footer=True,
             with_scrollbar=True
