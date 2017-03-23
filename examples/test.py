@@ -35,6 +35,10 @@ def main():
         fh.setFormatter(formatter)
         logging.getLogger("urwid_datatable.datatable").setLevel(logging.DEBUG)
         logging.getLogger("urwid_datatable.datatable").addHandler(fh)
+        logging.getLogger("urwid.listbox").setLevel(logging.DEBUG)
+        logging.getLogger("urwid.listbox").addHandler(fh)
+        # logging.getLogger("raccoon.dataframe").setLevel(logging.DEBUG)
+        # logging.getLogger("raccoon.dataframe").addHandler(fh)
         # fh.setLevel(logging.DEBUG)
         logger.addHandler(fh)
 
@@ -46,7 +50,7 @@ def main():
     class ExampleDataTable(DataTable):
 
         columns = [
-            DataTableColumn("uniqueid", width=10, align="right", padding=1),
+            # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", width=10, align="right", padding=1),
             DataTableColumn("bar", width=30, align="right", padding=1),
             DataTableColumn("baz", width=("weight", 1)),
@@ -56,9 +60,10 @@ def main():
 
         def __init__(self, num_rows = 10, *args, **kwargs):
             self.num_rows = num_rows
-            indexes = range(self.num_rows*5)
+            # indexes = random.sample(range(self.num_rows*2), num_rows)
+            indexes = range(self.num_rows)
             self.query_data = [
-                self.random_row(indexes.pop(random.randrange(0, len(indexes)))) for i in range(self.num_rows)
+                self.random_row(indexes[i]) for i in range(self.num_rows)
                 # self.random_row(i) for i in range(self.num_rows)
             ]
             random.shuffle(self.query_data)
@@ -93,20 +98,22 @@ def main():
             if sort_field:
                 kwargs = {}
                 # kwargs["reverse"] = sort_reverse
-                if not sort_reverse:
-                    # kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
-                    kwargs["key"] = lambda x: sort_key_natural_none_last(get_value(x, sort_field))
-                else:
-                    # kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
-                    kwargs["key"] = lambda x: sort_key_reverse_none_last(get_value(x, sort_field))
-                # logger.debug("query: %s" %(kwargs))
+                # if not sort_reverse:
+                #     # kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
+                #     kwargs["key"] = lambda x: sort_key_natural_none_last(get_value(x, sort_field))
+                # else:
+                #     # kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
+                #     kwargs["key"] = lambda x: sort_key_reverse_none_last(get_value(x, sort_field))
+                # # logger.debug("query: %s" %(kwargs))
                 self.query_data.sort(**kwargs)
-                logger.debug("s" %(self.query_data))
+                # logger.debug("s" %(self.query_data))
             # print l[0]
             if offset is not None:
                 start = offset
                 end = offset + self.limit
+                # raise Exception(start, end)
                 r = self.query_data[start:end]
+                logger.debug("%s:%s (%s)" %(start, end, len(r)))
                 # print "%s, %s, %d, %d" %(sort_field, sort_reverse, start, end)
             else:
                 r = self.query_data
@@ -122,7 +129,7 @@ def main():
         def keypress(self, size, key):
             if key == "`":
                 datatable.sort_index()
-            elif key == "0":
+            if key == "0":
                 datatable.sort("uniqueid")
             elif key == "1":
                 datatable.sort("foo")
@@ -136,10 +143,14 @@ def main():
                 return super(ExampleDataTable, self).keypress(size, key)
 
 
-    datatable = ExampleDataTable(1000, index="uniqueid",
+    datatable = ExampleDataTable(100,
+                                 index="uniqueid",
+                                 limit = 10,
+                                 sort_by = ("bar", False),
                                  with_header=True,
                                  with_footer=True,
-                                 with_scrollbar=True)
+                                 with_scrollbar=True
+    )
 
 
     pile = urwid.Pile([
@@ -154,6 +165,7 @@ def main():
             return False
 
     main = urwid.MainLoop(
+        # urwid.LineBox(urwid.Filler(urwid.BoxAdapter(pile, 10))),
         urwid.LineBox(pile),
         palette = palette,
         screen = screen,

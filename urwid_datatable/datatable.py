@@ -7,6 +7,8 @@ from listbox import ScrollingListBox
 import logging
 logger = logging.getLogger(__name__)
 
+import traceback
+
 from datetime import datetime, date as datetype
 
 class DataTableHeaderLabel(str):
@@ -239,19 +241,23 @@ class DataTable(urwid.WidgetWrap):
 
     columns = []
 
+    limit = None
     index = None
+    query_sort = False
+    sort_by = None
+
     with_header = False
     with_footer = False
     with_scrollbar = None
 
     ui_sort = False
-    limit = None
 
     def __init__(self,
                  index=None,
+                 limit=None,
+                 query_sort=None, sort_by=None,
                  with_header=None, with_footer=None, with_scrollbar=False,
-                 ui_sort=None,
-                 limit=None):
+                 ui_sort=None):
 
         class DataTableListWalker(urwid.listbox.ListWalker):
 
@@ -262,35 +268,57 @@ class DataTable(urwid.WidgetWrap):
                 super(DataTableListWalker, self).__init__()
 
             def __getitem__(self, position):
+                # logger.debug("walker get: %d" %(position))
                 if position < 0 or position >= len(self): raise IndexError
-                return self.table.get_row(position)
+                try:
+                    r = self.table.get_row(position)
+                    return r
+                except IndexError:
+                    logger.error(traceback.format_exc(5))
+                    raise
+                # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
 
             @property
             def focus(self): return self._focus
 
             def next_position(self, position):
                 index = position + 1
-                if position >= len(self): raise IndexError
+                # index = self.table.df.index[position+1]
+                logger.debug("walker next: %d, len: %d" %(position, len(self)))
+                if index > len(self): raise IndexError
                 return index
 
             def prev_position(self, position):
                 index = position-1
-                if position < 0: raise IndexError
+                # index = self.table.df.index[position-1]
+                logger.debug("walker prev: %d, len: %d" %(position, len(self)))
+                if index < 0: raise IndexError
                 return index
 
             def set_focus(self, position):
+                logger.debug("walker set_focus: %d" %(position))
                 self._focus = position
                 self._modified()
 
             def __len__(self): return len(self.table)
 
+            def _modified(self):
+                self.focus_position = 0
+                super(DataTableListWalker, self)._modified()
+
+
         if index: self.index = index
+        if query_sort: self.query_sort = query_sort
+        if sort_by: self.sort_by = sort_by
+
         if with_header: self.with_header = with_header
         if with_footer: self.with_footer = with_footer
         if with_scrollbar: self.with_scrollbar = with_scrollbar
 
         if ui_sort: self.ui_sort = ui_sort
-        if limit: self.limit = limit
+        if limit:
+            self.offset = 0
+            self.limit = limit
 
         self.colnames = [c.name for c in self.columns]
         self.pd_columns = self.colnames + ["_rendered_row"]
@@ -298,9 +326,9 @@ class DataTable(urwid.WidgetWrap):
         self.df = rc.DataFrame(
             columns = self.colnames,
             use_blist=True,
-            # sorted=False,
-            sorted=True,
-            index_name = self.index
+            sorted=False,
+            # sorted=True,
+            index_name = self.index,
         )
         self.df["_rendered_row"] = None
 
@@ -315,6 +343,11 @@ class DataTable(urwid.WidgetWrap):
                             if self.with_scrollbar
                             else None)
             )
+
+        if self.limit:
+            urwid.connect_signal(self.listbox, "load_more", self.load_more)
+            self.offset = 0
+
         if self.with_header:
             self.header = DataTableHeaderRow(self.columns)
             self.pile.contents.insert(0,
@@ -347,6 +380,12 @@ class DataTable(urwid.WidgetWrap):
         )
         super(DataTable, self).__init__(self.attr)
 
+
+    def query(self, sort=None, offset=None):
+        raise Exception("query method must be overriden")
+
+    def query_result_count(self):
+        raise Exception("query_result_count method must be defined")
 
     @classmethod
     def get_palette_entries(cls):
@@ -409,7 +448,6 @@ class DataTable(urwid.WidgetWrap):
                     background_high = header_background_map[suffix][1],
                 )
 
-
         entries.update({
 
             "scroll_pos": PaletteEntry(
@@ -445,14 +483,30 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception(entries)
         return entries
 
+
     def __getitem__(self, index):
+        try:
+            v = self.df[index:index]
+        except IndexError:
+            logger.error(traceback.format_exc(5))
+            logger.error("%d, %s" %(index, self.df.index))
+            raise
+
         return [
             v[0]
             for k, v in self.df[index:index].to_dict(ordered=True).items()
             if k in self.colnames
         ]
 
-    def get_row(self, index):
+
+    def get_row(self, position):
+
+        # index = position
+        index = self.df.index[position]
+        logger.debug("get_row: %d, %d" %(position, index))
+        vals = self[index]
+        return self.render_item(vals)
+
         try:
             item = self.df.get(index, "_rendered_row")
         except ValueError:
@@ -474,16 +528,22 @@ class DataTable(urwid.WidgetWrap):
     #     return self.walker.focus
 
     def render_item(self, item):
+        # logger.debug("render: %s" %(item))
         row = DataTableBodyRow(self.columns, item)
         return row
 
     def sort(self, column):
-        self.listbox.focus_position = 0
-        logger.debug("before:\n%s" %(self.df.head(10)))
+        if isinstance(column, tuple):
+            column = column[0] # FIXME: descending
+        logger.debug(column)
+        logger.debug("before:\n%s" %(self.df.head(5)))
         self.df.sort_columns(column)
-        logger.debug("after:\n%s" %(self.df.head(10)))
-        self.df.index = range(len(self.df))
+        logger.debug("after:\n%s" %(self.df.head(5)))
+        # focus = self.df.index[0]
+        # logger.debug("focus: %d" %(focus))
+        # self.listbox.focus_position = focus
         self.walker._modified()
+        # self.listbox.focus_position = 0
 
     def sort_index(self):
         logger.debug("before:\n%s" %(self.df.head(10)))
@@ -493,23 +553,49 @@ class DataTable(urwid.WidgetWrap):
 
     def requery(self, offset=0, **kwargs):
 
-        orig_offset = offset
+        kwargs = {"sort": self.sort_by}
+        if self.limit:
+            kwargs["offset"] = offset
 
+        colnames = self.colnames + [self.index]
         recs = list(self.query(**kwargs))
+        if not recs:
+            return
         data = dict(
-            zip((r for r in recs[0] if r in self.colnames),
-                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in self.colnames] for d in recs])]
+            zip((r for r in recs[0] if r in colnames),
+                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in recs])]
             )
         )
+        # raise Exception(data["uniqueid"])
+        # raise Exception(self.index)
         newdata = rc.DataFrame(
-            columns = self.colnames,
+            columns = colnames,
             data = data,
             use_blist=True,
-            # sorted=False,
-            sorted=True,
-            index_name = self.index
+            sorted=False,
+            # sorted=True,
+            index = data["uniqueid"],
+            index_name = (self.index)
         )
         newdata["_rendered_row"] = None
-        logger.debug("new:\n%s" %(newdata))
+
+        # logger.debug("orig:\n%s" %(self.df.head(5)))
+        # logger.debug("new:\n%s" %(newdata.head(5)))
+        logger.debug("orig:\n%s, %s" %(self.df.index_name, sorted(self.df.index)))
+        logger.debug("new:\n%s, %s" %(newdata.index_name, sorted(newdata.index)))
         self.df.append(newdata)
+        self.df.sort_index()
+        logger.debug("after sort index:\n%s, %s" %(self.df.index_name, sorted(newdata.index)))
+
         self.walker._modified()
+        # focus = self.df.index[0]
+        # logger.debug("focus: %d" %(focus))
+        # self.listbox.focus_position = focus
+        # if self.sort_by and not self.query_sort:
+        #     self.sort(self.sort_by)
+
+
+    def load_more(self, offset):
+        self.requery(offset)
+        # self._invalidate()
+        # self.listbox._invalidate()
