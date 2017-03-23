@@ -45,7 +45,6 @@ def main():
 
     entries = DataTable.get_palette_entries()
     palette = Palette("default", **entries)
-    # raise Exception(entries)
 
     class ExampleDataTable(DataTable):
 
@@ -107,23 +106,12 @@ def main():
                 kwargs = {}
                 kwargs["key"] = lambda x: (x[sort_field], x[self.index])
                 kwargs["reverse"] = sort_reverse
-                # if not sort_reverse:
-                #     # kwargs["key"] = lambda x: sort_key_natural_none_last(x[sort_field])
-                #     kwargs["key"] = lambda x: sort_key_natural_none_last(get_value(x, sort_field))
-                # else:
-                #     # kwargs["key"] = lambda x: sort_key_reverse_none_last(x[sort_field])
-                #     kwargs["key"] = lambda x: sort_key_reverse_none_last(get_value(x, sort_field))
-                # # logger.debug("query: %s" %(kwargs))
                 self.query_data.sort(**kwargs)
-                # logger.debug("s" %(self.query_data))
-            # print l[0]
             if offset is not None:
                 start = offset
                 end = offset + self.limit
-                # raise Exception(start, end)
                 r = self.query_data[start:end]
                 logger.debug("%s:%s (%s)" %(start, end, len(r)))
-                # print "%s, %s, %d, %d" %(sort_field, sort_reverse, start, end)
             else:
                 r = self.query_data
 
@@ -159,7 +147,7 @@ def main():
                                  index="uniqueid",
                                  limit = 10,
                                  sort_by = ("bar", False),
-                                 query_sort=True,
+                                 # query_sort=True,
                                  with_header=True,
                                  with_footer=True,
                                  with_scrollbar=True
@@ -170,7 +158,6 @@ def main():
         ('weight', 1, datatable),
     ])
 
-
     def global_input(key):
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()
@@ -178,7 +165,6 @@ def main():
             return False
 
     main = urwid.MainLoop(
-        # urwid.LineBox(urwid.Filler(urwid.BoxAdapter(pile, 10))),
         urwid.LineBox(pile),
         palette = palette,
         screen = screen,
