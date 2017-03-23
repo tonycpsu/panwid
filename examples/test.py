@@ -35,12 +35,12 @@ def main():
         fh.setFormatter(formatter)
         if options.verbose > 1:
             logger.setLevel(logging.DEBUG)
-            logging.getLogger("urwid_datatable.datatable").setLevel(logging.DEBUG)
+            logging.getLogger("urwid_datatable").setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
-            logging.getLogger("urwid_datatable.datatable").setLevel(logging.INFO)
+            logging.getLogger("urwid_datatable").setLevel(logging.INFO)
         logger.addHandler(fh)
-        logging.getLogger("urwid_datatable.datatable").addHandler(fh)
+        logging.getLogger("urwid_datatable").addHandler(fh)
         # logging.getLogger("raccoon.dataframe").setLevel(logging.DEBUG)
         # logging.getLogger("raccoon.dataframe").addHandler(fh)
 

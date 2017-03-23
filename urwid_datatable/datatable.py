@@ -554,9 +554,9 @@ class DataTable(urwid.WidgetWrap):
 
             "scroll_pos": PaletteEntry(
                 mono = "white",
-                foreground = "white",
+                foreground = "black",
                 background = "white",
-                foreground_high = "white",
+                foreground_high = "black",
                 background_high = "white"
             ),
             "scroll_marker": PaletteEntry(
@@ -571,14 +571,14 @@ class DataTable(urwid.WidgetWrap):
                 foreground = "black",
                 background = "light gray",
                 foreground_high = "black",
-                background_high = "light gray"
+                background_high = "g50"
             ),
             "scroll_bg": PaletteEntry(
                 mono = "black",
-                foreground = "black",
+                foreground = "light gray",
                 background = "dark gray",
-                foreground_high = "black",
-                background_high = "dark gray"
+                foreground_high = "light gray",
+                background_high = "g23"
             ),
 
         })

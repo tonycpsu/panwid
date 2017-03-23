@@ -1,5 +1,8 @@
 from __future__ import division
 import urwid
+import logging
+logger = logging.getLogger(__name__.split(".")[0])
+
 
 class ListBoxScrollBar(urwid.WidgetWrap):
 
@@ -23,7 +26,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         else:
             scroll_position = -1
 
-        pos_marker = urwid.AttrMap(urwid.Text(u"\N{FULL BLOCK}"),
+        pos_marker = urwid.AttrMap(urwid.Text(u" "),
                                    {None: "scroll_pos"}
         )
 
@@ -43,6 +46,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                                    {None: "scroll_bg"}
         )
 
+
         for i in range(height):
             if abs( i - scroll_position ) <= scroll_marker_height//2:
                 # print self.parent.row_count, self.parent.focus_position
@@ -53,8 +57,9 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                 else:
                     marker = pos_marker
             else:
-                marker = bg_marker
                 if i < scroll_position:
+                    marker = view_marker
+                elif i/height < ( len(self.parent.body) / self.parent.row_count):
                     marker = view_marker
                 else:
                     marker = bg_marker
