@@ -94,7 +94,12 @@ def main():
 
         def query(self, sort=(None, None), offset=None):
 
-            sort_field, sort_reverse = sort
+            try:
+                sort_field, sort_reverse = sort
+            except:
+                sort_field = sort
+                sort_reverse = False
+
             if sort_field:
                 kwargs = {}
                 # kwargs["reverse"] = sort_reverse
@@ -127,16 +132,16 @@ def main():
 
 
         def keypress(self, size, key):
-            if key == "`":
-                datatable.sort_index()
+            # if key == "`":
+            #     datatable.sort_by_column_index()
             if key == "0":
-                datatable.sort("uniqueid")
+                datatable.sort_by_column("uniqueid")
             elif key == "1":
-                datatable.sort("foo")
+                datatable.sort_by_column("foo")
             elif key == "2":
-                datatable.sort("bar")
+                datatable.sort_by_column("bar")
             elif key == "3":
-                datatable.sort("baz")
+                datatable.sort_by_column("baz")
             elif key == "a":
                 self.add_row(self.random_row())
             else:

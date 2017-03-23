@@ -532,7 +532,12 @@ class DataTable(urwid.WidgetWrap):
         row = DataTableBodyRow(self.columns, item)
         return row
 
+    def sort_by_column(self, column):
+        self.sort_by = column
+        self.sort(column)
+
     def sort(self, column):
+        # self.sort_by = column
         if isinstance(column, tuple):
             column = column[0] # FIXME: descending
         logger.debug(column)
@@ -584,8 +589,10 @@ class DataTable(urwid.WidgetWrap):
         logger.debug("orig:\n%s, %s" %(self.df.index_name, sorted(self.df.index)))
         logger.debug("new:\n%s, %s" %(newdata.index_name, sorted(newdata.index)))
         self.df.append(newdata)
-        self.df.sort_index()
-        logger.debug("after sort index:\n%s, %s" %(self.df.index_name, sorted(newdata.index)))
+        if self.sort_by:
+            self.sort(self.sort_by)
+        # self.df.sort_index()
+        # logger.debug("after sort index:\n%s, %s" %(self.df.index_name, sorted(newdata.index)))
 
         self.walker._modified()
         # focus = self.df.index[0]
