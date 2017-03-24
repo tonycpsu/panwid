@@ -12,14 +12,19 @@ import traceback
 
 from datetime import datetime, date as datetype
 
+DEFAULT_CELL_PADDING = 1
+DEFAULT_BORDER_WIDTH = 1
+DEFAULT_BORDER_CHAR = " "
+DEFAULT_BORDER_ATTR = "table_border"
 
+intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
 class DataTableColumn(object):
 
     def __init__(self, name,
                  label=None, width=('weight', 1),
                  align="left", wrap="space",
-                 padding = 1, #margin=1,
+                 padding = DEFAULT_CELL_PADDING, #margin=1,
                  hide=False,
                  format_fn=None,
                  format_record = None, # format_fn is passed full row data
@@ -190,7 +195,10 @@ class DataTableFooterCell(DataTableCell):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    def __init__(self, columns, data, index=None, *args, **kwargs):
+    border_attr_map = { None: "table_border" }
+    border_focus_map = { None: "table_border focused" }
+
+    def __init__(self, columns, data, border=None, index=None, *args, **kwargs):
 
         self.data = data
         self._index = index
@@ -223,6 +231,30 @@ class DataTableRow(urwid.WidgetWrap):
                 (cell, self.columns.options(col.sizing, col.width_with_padding))
             )
 
+        border_width = DEFAULT_BORDER_WIDTH
+        border_char = DEFAULT_BORDER_CHAR
+        border_attr = DEFAULT_BORDER_ATTR
+
+        if isinstance(border, tuple):
+
+            try:
+                border_width, border_char, border_attr = table.border
+            except IndexError:
+                try:
+                    border_width, border_char = table.border
+                except Indexerror:
+                    border_width = table.border
+
+        elif isinstance(border, int):
+            border_width = table.border
+
+        self.columns.contents = intersperse(
+            (urwid.AttrMap(urwid.Divider(border_char),
+                          attr_map = self.border_attr_map,
+                          focus_map = self.border_focus_map),
+             ('given', border_width, False)),
+            self.columns.contents)
+
         self.attr = urwid.AttrMap(
             self.columns,
             attr_map = self.attr_map,
@@ -236,9 +268,9 @@ class DataTableRow(urwid.WidgetWrap):
     # def keypress(self, size, key):
     #     return super(DataTableRow, self).keypress(size, key)
 
+
     def set_focus_column(self, index):
-        self.columns.focus_position = index
-        for i, (cell, options) in enumerate(self.columns.contents):
+        for i, cell in enumerate(self):
             if i == index:
                 cell.highlight()
             else:
@@ -251,7 +283,7 @@ class DataTableRow(urwid.WidgetWrap):
         return len(self.columns.contents)
 
     def __iter__(self):
-        return iter( [c[0] for c in self.columns.contents] )
+        return iter( self.columns[i] for i in range(0, len(self.columns.contents), 2) )
 
 
 class DataTableBodyRow(DataTableRow):
@@ -401,6 +433,8 @@ class DataTable(urwid.WidgetWrap):
     with_footer = False
     with_scrollbar = None
 
+    border = None
+
     ui_sort = False
 
     def __init__(self,
@@ -408,6 +442,7 @@ class DataTable(urwid.WidgetWrap):
                  index=None,
                  sort_by=None, query_sort=None,
                  with_header=None, with_footer=None, with_scrollbar=False,
+                 border=None,
                  ui_sort=None):
 
         class DataTableListWalker(urwid.listbox.ListWalker):
@@ -483,6 +518,7 @@ class DataTable(urwid.WidgetWrap):
         if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
 
+        if border is not None: self.border = border
 
         self.attr_map = {}
         self.focus_map = {}
@@ -762,7 +798,9 @@ class DataTable(urwid.WidgetWrap):
 
     def render_item(self, item):
         # raise Exception(item)
-        row = DataTableBodyRow(self.columns, item, index=item[self.index])
+        row = DataTableBodyRow(self.columns, item,
+                               border=self.border,
+                               index=item[self.index])
         return row
 
 

@@ -54,7 +54,7 @@ def main():
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", label="Foo", width=10, align="right", padding=0),# margin=1),
             DataTableColumn("bar", label="Bar", width=10, align="right", padding=1),# margin=5),
-            # DataTableColumn("baz", label="Baz!", width=("weight", 1)),
+            DataTableColumn("baz", label="Baz!", width=("weight", 1), padding=3),
             # DataTableColumn("zzz", width=("weight", 1)),
         ]
 
@@ -160,39 +160,40 @@ def main():
 
     tables = [
 
+        # ExampleDataTable(
+        #     5,
+        #     limit=5,
+        #     index="uniqueid",
+        #     sort_by = ("bar", False),
+        #     query_sort=True,
+        #     with_header=True,
+        #     with_footer=True,
+        #     with_scrollbar=True
+        # ),
+
         ExampleDataTable(
-            5,
-            limit=5,
+            100
+        ),
+        ExampleDataTable(
+            1000,
+            limit=100,
             index="uniqueid",
             sort_by = ("bar", False),
             query_sort=True,
-            with_header=True,
             with_footer=True,
             with_scrollbar=True
         ),
+        ExampleDataTable(
+            10000,
+            limit=1000,
+            index="uniqueid",
+            sort_by = ("foo", True),
+            query_sort=True,
+            with_scrollbar=True,
+            with_header=False,
+            with_footer=False,
+        ),
 
-    #     ExampleDataTable(
-    #         100
-    #     ),
-    #     ExampleDataTable(
-    #         1000,
-    #         limit=100,
-    #         index="uniqueid",
-    #         sort_by = ("bar", False),
-    #         query_sort=True,
-    #         with_footer=True,
-    #         with_scrollbar=True
-    #     ),
-    #     ExampleDataTable(
-    #         10000,
-    #         limit=1000,
-    #         index="uniqueid",
-    #         sort_by = ("foo", True),
-    #         query_sort=True,
-    #         with_scrollbar=True,
-    #         with_header=False,
-    #         with_footer=False,
-    #     ),
     ]
 
 
@@ -203,7 +204,7 @@ def main():
         )
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 20) for t in tables], 20, 1, 1, "left"
+        [urwid.BoxAdapter(t, 20) for t in tables], 60, 1, 1, "left"
     )
 
 
