@@ -822,6 +822,12 @@ class DataTable(urwid.WidgetWrap):
         return row
 
 
+    @property
+    def selection(self):
+        if len(self.body):
+            # FIXME: make helpers to map positions to indexes
+            return self[self.df.index[self.focus_position]]
+
     def render_item(self, item):
         # raise Exception(item)
         row = DataTableBodyRow(self.columns, item,

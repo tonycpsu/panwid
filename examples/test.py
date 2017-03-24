@@ -137,7 +137,8 @@ def main():
             if key == "ctrl f":
                 self.focus_position = 0
             elif key == "ctrl t":
-                logger.info(self.get_row(0)[0])
+                # logger.info(self.get_row(0)[0])
+                logger.info(self.selection["bar"])
             elif key == "1":
                 self.sort_by_column("foo")
             elif key == "2":
