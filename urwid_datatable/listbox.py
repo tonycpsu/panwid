@@ -59,7 +59,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
             else:
                 if i < scroll_position:
                     marker = view_marker
-                elif i/height < ( len(self.parent.body) / self.parent.row_count):
+                elif self.parent.row_count and i/height < ( len(self.parent.body) / self.parent.row_count):
                     marker = view_marker
                 else:
                     marker = bg_marker

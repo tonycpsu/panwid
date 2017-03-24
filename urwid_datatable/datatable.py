@@ -5,7 +5,7 @@ from urwid_utils.palette import *
 import raccoon as rc
 from listbox import ScrollingListBox
 import logging
-from collections import OrderedDict
+from orderedattrdict import OrderedDict
 import itertools
 logger = logging.getLogger("urwid_datatable")
 
@@ -283,43 +283,81 @@ class DataTableDataFrame(rc.DataFrame):
 
     DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_rendered_row"]
 
-    def __init__(self, data=None, columns=None, index=None, index_name='index', use_blist=False, sorted=None):
+    def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sorted=None):
         if not index_name in columns:
             columns = [index_name] + columns
-        super(DataTableDataFrame, self).__init__(data, columns, index, index_name, use_blist, sorted)
+        super(DataTableDataFrame, self).__init__(
+            data=data,
+            columns=columns,
+            index=index,
+            index_name=index_name,
+            use_blist=use_blist,
+            sorted=sorted
+        )
         for c in self.DATA_TABLE_COLUMNS:
             self[c] = None
 
+    def log_dump(self, n=5):
+        logger.info("index: %s\n%s" %(self.index_name, self.head(n)))
+
     def append_rows(self, rows):
 
+        # logger.info("df.append_rows: %s" %(rows))
         # columns = [self.index_name] + self.DATA_TABLE_COLUMNS + list(self.columns)
         # raise Exception(self.columns)
-        colnames = list(self.columns) #+ self.DATA_TABLE_COLUMNS
+        colnames =  list(self.columns)
+        # colnames = [ c for c in list(self.columns) if c != self.index_name ]
         # data = dict(
         #     zip((r for r in rows[0] if r in colnames),
         #         [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
         #     )
         # )
 
-        data = dict(
-            zip((colnames),
-                [ list(z) for z in zip(*[[ d.get(k, None) for k in colnames] for d in rows])]
-            )
-        )
 
+        if len(rows):
+            columns = rows[0].keys()
+            data = dict(
+                # zip((colnames),
+                zip((columns),
+                    [ list(z) for z in zip(*[[
+                        d.get(k, None) for k in columns ] for d in rows])]
+                )
+            )
+            # raise Exception(data)
+            if self.index_name not in rows[0].keys():
+                logger.info("making new index")
+                index = range(len(self), len(data.values()[0]))
+                data[self.index_name] = index
+            else:
+                index = data[self.index_name]
+        else:
+            columns = list(self.columns)
+            data = { k: [] for k in colnames }
+            index = None
+        # else:
+        #     index = None
         # logger.info(sorted(data.keys()))
         # logger.info(sorted(colnames))
         # columns = [c for c in self.columns if not c.startswith("_")]
         # print "newdata: %s" %(columns)
-        newdata = DataTableDataFrame(
-            columns = list(self.columns),
+        logger.info("df.append_rows data: %s" %(data))
+        kwargs = dict(
+            # columns = list(self.columns),
+            columns = columns,
             data = data,
             use_blist=True,
             sorted=False,
-            # sorted=True,
-            index = data[self.index_name],
-            index_name = self.index_name
+            index=index,
+            index_name = self.index_name,
         )
+        self.log_dump()
+        # if self.index_name in data.keys():
+        #     kwargs["index"] = data[self.index_name]# if self.index_name in data.keys() else None,
+        # else:
+        #     kwargs["index"] = range(len(self), len(data.values()[0]))
+        # raise Exception(kwargs["index"])
+        newdata = DataTableDataFrame(**kwargs)
+        newdata.log_dump()
         self.append(newdata)
 
     def clear(self):
@@ -339,7 +377,7 @@ class DataTable(urwid.WidgetWrap):
     columns = []
 
     limit = None
-    index = None
+    index = "index"
     sort_by = (None, False)
     query_sort = False
 
@@ -413,6 +451,7 @@ class DataTable(urwid.WidgetWrap):
             else:
                 column = sort_by
                 reverse = False
+                self.sort_by = (column, reverse)
 
             self.initial_sort = self.sort_by = (column, reverse)
 
@@ -440,13 +479,16 @@ class DataTable(urwid.WidgetWrap):
         logger.info("columns: %s" %(self.colnames))
         # self.pd_columns = self.colnames + ["_rendered_row"]
 
-        self.df = DataTableDataFrame(
+        kwargs = dict(
             columns = self.colnames,
             use_blist=True,
             sorted=False,
             # sorted=True,
-            index_name = self.index,
         )
+        if self.index:
+            kwargs["index_name"] = self.index
+
+        self.df = DataTableDataFrame(**kwargs)
         # self.df["_rendered_row"] = None
 
         self.walker = DataTableListWalker()
@@ -461,10 +503,16 @@ class DataTable(urwid.WidgetWrap):
                             else None)
             )
 
+        def foo(source, selection):
+            logger.debug("selection: %s, index: %d" %(selection, selection._index))
+            urwid.signals.emit_signal(self, "select", self, self[selection._index])
+
         urwid.connect_signal(
             self.listbox, "select",
-            lambda source, selection: urwid.signals.emit_signal(
-                self, "select", self, self[selection._index])
+            foo
+            # lambda source, selection: logger.error(selection._index)
+            # lambda source, selection: urwid.signals.emit_signal(
+            #     self, "select", self, self[selection._index])
         )
         urwid.connect_signal(
             self.listbox, "drag_start",
@@ -650,14 +698,21 @@ class DataTable(urwid.WidgetWrap):
 
 
     def __getattr__(self, attr):
-        if attr in ["head", "tail", "index_name"]:
+        if attr in ["head", "tail", "index_name", "log_dump"]:
             return getattr(self.df, attr)
         # elif attr == "body":
         #     return self.walker
         raise AttributeError(attr)
 
-    def log_dump(self, n=5):
-        logger.info("index: %s\n%s" %(self.index_name, self.head(n)))
+    @property
+    def focus_position(self):
+        return self.listbox.focus_position
+
+    @focus_position.setter
+    def focus_position(self, value):
+        self.listbox.focus_position = value
+        self.listbox._invalidate()
+
 
     def get_row(self, position):
 
@@ -769,6 +824,8 @@ class DataTable(urwid.WidgetWrap):
         kwargs = {"load_all": load_all}
         if self.query_sort:
             kwargs["sort"] = self.sort_by
+        else:
+            kwargs["sort"] = (None, False)
         if self.limit:
             kwargs["offset"] = offset
 
@@ -778,12 +835,13 @@ class DataTable(urwid.WidgetWrap):
 
 
     def append_rows(self, rows):
+        # logger.info("append_rows: %s" %(rows))
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
         self.df["_dirty"] = True
         if not self.query_sort:
             self.sort_by_column(self.sort_by)
-        # self.walker._modified()
+        self.walker._modified()
 
 
     def add_row(self, data, sorted=True):
