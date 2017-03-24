@@ -20,7 +20,9 @@ class DataTableColumn(object):
     def __init__(self, name, dtype=None,
                  label=None, width=('weight', 1),
                  align="left", wrap="space", padding = None,
-                 format_fn=None, attr = None,
+                 format_fn=None,
+                 format_record = None, # format_fn is passed full row data
+                 attr = None,
                  sort_key = None, sort_fn = None, sort_reverse=False,
                  footer_fn = None):
 
@@ -32,6 +34,7 @@ class DataTableColumn(object):
         self.wrap = wrap
         self.padding = padding
         self.format_fn = format_fn
+        self.format_record = format_record
         self.attr = attr
         self.sort_key = sort_key
         self.sort_fn = sort_fn
@@ -295,17 +298,25 @@ class DataTableDataFrame(rc.DataFrame):
 
         # columns = [self.index_name] + self.DATA_TABLE_COLUMNS + list(self.columns)
         # raise Exception(self.columns)
-        colnames = [self.index_name] + list(self.columns) + self.DATA_TABLE_COLUMNS
+        colnames = list(self.columns) #+ self.DATA_TABLE_COLUMNS
+        # data = dict(
+        #     zip((r for r in rows[0] if r in colnames),
+        #         [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
+        #     )
+        # )
+
         data = dict(
-            zip((r for r in rows[0] if r in colnames),
-                [ list(z) for z in zip(*[[ v for k, v in d.items() if k in colnames] for d in rows])]
+            zip((colnames),
+                [ list(z) for z in zip(*[[ d.get(k, None) for k in colnames] for d in rows])]
             )
         )
-        # raise Exception(data)
-        columns = [c for c in self.columns if not c.startswith("_")]
+
+        # logger.info(sorted(data.keys()))
+        # logger.info(sorted(colnames))
+        # columns = [c for c in self.columns if not c.startswith("_")]
         # print "newdata: %s" %(columns)
         newdata = DataTableDataFrame(
-            columns = columns,
+            columns = list(self.columns),
             data = data,
             use_blist=True,
             sorted=False,
@@ -322,6 +333,10 @@ class DataTableDataFrame(rc.DataFrame):
 
 class DataTable(urwid.WidgetWrap):
 
+
+    signals = ["select", "refresh",
+               # "focus", "unfocus", "row_focus", "row_unfocus",
+               "drag_start", "drag_continue", "drag_stop"]
 
     ATTR = "table"
 
@@ -426,6 +441,7 @@ class DataTable(urwid.WidgetWrap):
         self.sort_reverse = False
 
         self.colnames = [c.name for c in self.columns]
+        logger.info("columns: %s" %(self.colnames))
         # self.pd_columns = self.colnames + ["_rendered_row"]
 
         self.df = DataTableDataFrame(
@@ -651,6 +667,9 @@ class DataTable(urwid.WidgetWrap):
         else:
             reverse = False
 
+        if col is None:
+            return
+
         if isinstance(col, int):
             try:
                 colname = self.columns[col].name
@@ -663,9 +682,11 @@ class DataTable(urwid.WidgetWrap):
                 self.sort_column = self.colnames.index(colname)
             except:
                 raise IndexError("bad column name: %s" %(colname))
+        else:
+            raise Exception(col)
 
         self.sort_by = (colname, reverse)
-
+        logger.debug("sort_by: %s, %s" %(colname, reverse))
         if not self.query_sort:
             self.sort(colname)
 
@@ -701,6 +722,7 @@ class DataTable(urwid.WidgetWrap):
             index = (self.sort_column + step)
             if index < 0: index = len(self.columns)-1
             if index > len(self.columns)-1: index = 0
+        logger.debug("index: %d" %(index))
         self.sort_by_column(index)
 
 

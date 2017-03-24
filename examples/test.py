@@ -55,6 +55,7 @@ def main():
             DataTableColumn("foo", width=10, align="right", padding=1),
             DataTableColumn("bar", width=10, align="right", padding=1),
             DataTableColumn("baz", width=("weight", 1)),
+            DataTableColumn("zzz", width=("weight", 1)),
         ]
 
         index="index"
@@ -106,7 +107,7 @@ def main():
 
             if sort_field:
                 kwargs = {}
-                kwargs["key"] = lambda x: (x[sort_field], x[self.index])
+                kwargs["key"] = lambda x: (x.get(sort_field), x.get(self.index))
                 kwargs["reverse"] = sort_reverse
                 self.query_data.sort(**kwargs)
             if offset is not None:
@@ -156,7 +157,7 @@ def main():
             100,
             # limit=10,
             index="uniqueid",
-            sort_by = ("foo", False),
+            # sort_by = ("foo", False),
             with_header=True,
             with_footer=True,
             with_scrollbar=True
