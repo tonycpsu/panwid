@@ -190,8 +190,10 @@ class DataTableFooterCell(DataTableCell):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    def __init__(self, columns, data, *args, **kwargs):
+    def __init__(self, columns, data, index=None, *args, **kwargs):
 
+        self.data = data
+        self._index = index
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
@@ -206,7 +208,10 @@ class DataTableRow(urwid.WidgetWrap):
             self.attr_highlight: self.attr_highlight_focused
         }
 
-        cells = [self.CELL_CLASS(col, data[i])
+        if isinstance(self.data, list):
+            self.data = dict(zip([c.name for c in columns], self.data))
+
+        cells = [self.CELL_CLASS(col, self.data[col.name])
                  for i, col in enumerate(columns)]
 
 
@@ -228,8 +233,8 @@ class DataTableRow(urwid.WidgetWrap):
     def selectable(self):
         return True
 
-    def keypress(self, size, key):
-        return super(DataTableRow, self).keypress(size, key)
+    # def keypress(self, size, key):
+    #     return super(DataTableRow, self).keypress(size, key)
 
     def set_focus_column(self, index):
         self.columns.focus_position = index
@@ -456,6 +461,27 @@ class DataTable(urwid.WidgetWrap):
                             else None)
             )
 
+        urwid.connect_signal(
+            self.listbox, "select",
+            lambda source, selection: urwid.signals.emit_signal(
+                self, "select", self, self[selection._index])
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_start",
+            lambda source, drag_from: urwid.signals.emit_signal(
+                self, "drag_start", self, drag_from)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_continue",
+            lambda source, drag_from, drag_to: urwid.signals.emit_signal(
+                self, "drag_continue", self, drag_from, drag_to)
+        )
+        urwid.connect_signal(
+            self.listbox, "drag_stop",
+            lambda source, drag_from ,drag_to: urwid.signals.emit_signal(
+                self, "drag_stop", self, drag_from, drag_to)
+        )
+
         if self.limit:
             urwid.connect_signal(self.listbox, "load_more", self.load_more)
             self.offset = 0
@@ -605,6 +631,7 @@ class DataTable(urwid.WidgetWrap):
 
 
     def __getitem__(self, index):
+        logger.debug("__getitem__: %d" %(index))
         try:
             v = self.df[index:index]
         except IndexError:
@@ -614,8 +641,8 @@ class DataTable(urwid.WidgetWrap):
 
         return  OrderedDict(
             (k, v[0])
-            for k, v in self.df[index:index].to_dict(ordered=True).items()
-            if k in self.colnames
+            for k, v in self.df[index:index].to_dict(ordered=True, index=True).items()
+            # if k in self.colnames
         )
 
     def __len__(self):
@@ -657,7 +684,8 @@ class DataTable(urwid.WidgetWrap):
 
 
     def render_item(self, item):
-        row = DataTableBodyRow(self.columns, item.values())
+        # raise Exception(item)
+        row = DataTableBodyRow(self.columns, item, index=item[self.index])
         return row
 
 
@@ -784,3 +812,12 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception(self.sort_by)
         # if not self.query_sort:
         #     self.sort_by_column(self.sort_by)
+
+    # def keypress(self, size, key):
+    #     if key != "enter":
+    #         return key
+    #     urwid.emit_signal(self, "select")
+
+    # def mouse_event(self, size, event, button, col, row, focus):
+    #     if event == 'mouse press':
+    #         urwid.emit_signal(self, "click")

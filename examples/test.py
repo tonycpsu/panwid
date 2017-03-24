@@ -53,8 +53,8 @@ def main():
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", width=10, align="right", padding=0),# margin=1),
-            DataTableColumn("bar", width=30, align="right", padding=1),# margin=5),
-            # DataTableColumn("baz", width=("weight", 1)),
+            DataTableColumn("bar", width=10, align="right", padding=1),# margin=5),
+            DataTableColumn("baz", width=("weight", 1)),
             # DataTableColumn("zzz", width=("weight", 1)),
         ]
 
@@ -186,6 +186,12 @@ def main():
         ),
     ]
 
+
+    for table in tables:
+        urwid.connect_signal(
+            table, "select",
+            lambda source, selection: logger.info("selection: %s" %(selection))
+        )
 
     grid_flow = urwid.GridFlow(
         [urwid.BoxAdapter(t, 40) for t in tables], 60, 1, 1, "left"
