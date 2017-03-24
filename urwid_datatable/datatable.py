@@ -298,7 +298,11 @@ class DataTableDataFrame(rc.DataFrame):
             self[c] = None
 
     def log_dump(self, n=5):
-        logger.info("index: %s\n%s" %(self.index_name, self.head(n)))
+        logger.info("index: %s [%s%s]\n%s" %(
+            self.index_name,
+            ",".join([str(x) for x in self.index[0:min(n, len(self.index))]]),
+            "..." if len(self.index) > n else "",
+            self.head(n)))
 
     def append_rows(self, rows):
 
