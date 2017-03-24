@@ -378,7 +378,7 @@ class DataTable(urwid.WidgetWrap):
 
     limit = None
     index = "index"
-    sort_by = (None, False)
+    initial_sort = (None, False)
     query_sort = False
 
     with_header = False
@@ -453,8 +453,9 @@ class DataTable(urwid.WidgetWrap):
                 reverse = False
                 self.sort_by = (column, reverse)
 
-            self.initial_sort = self.sort_by = (column, reverse)
-
+            self.sort_by = (column, reverse)
+        else:
+            self.sort_by = self.initial_sort
 
         # raise Exception(self.initial_sort)
 
