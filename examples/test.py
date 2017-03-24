@@ -54,7 +54,7 @@ def main():
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", label="Foo", width=10, align="right", padding=0),# margin=1),
             DataTableColumn("bar", label="Bar", width=10, align="right", padding=1),# margin=5),
-            DataTableColumn("baz", label="Baz!", width=("weight", 1), padding=3),
+            DataTableColumn("baz", label="Baz!", width=("weight", 1)),
             # DataTableColumn("zzz", width=("weight", 1)),
         ]
 
@@ -181,13 +181,16 @@ def main():
             sort_by = ("bar", False),
             query_sort=True,
             with_footer=True,
-            with_scrollbar=True
+            with_scrollbar=True,
+            border=(1, u"\N{VERTICAL LINE}"),
+            padding=3,
         ),
         ExampleDataTable(
             10000,
             limit=1000,
             index="uniqueid",
             sort_by = ("foo", True),
+            border=3,
             query_sort=True,
             with_scrollbar=True,
             with_header=False,
