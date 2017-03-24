@@ -102,18 +102,10 @@ class ScrollingListBox(urwid.WidgetWrap):
             self.columns.contents.append(
                 (self.scroll_bar, self.columns.options("given", 1))
             )
-        # self.pile = urwid.Pile([
-        #     ('weight', 1, self.columns)
-        # ])
         super(ScrollingListBox, self).__init__(self.columns)
-        # super(ScrollingListBox, self).__init__(self.listbox)
-
 
     def mouse_event(self, size, event, button, col, row, focus):
-        """Overrides ListBox.mouse_event method.
-
-        Implements mouse scrolling.
-        """
+        SCROLL_WHEEL_HEIGHT_RATIO = 0.5
         if row < 0 or row >= self.height:
             return
         if event == 'mouse press':
@@ -121,12 +113,20 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self.mouse_state = 1
                 self.drag_from = self.drag_last = (col, row)
             elif button == 4:
-                pct = self.focus_position / len(self.body)
-                self.set_focus_valign(('relative', pct - 10))
+                pos = self.listbox.focus_position - int(self.height * SCROLL_WHEEL_HEIGHT_RATIO)
+                if pos < 0:
+                    pos = 0
+                self.listbox.focus_position = pos
+                self.listbox.make_cursor_visible(size)
                 self._invalidate()
             elif button == 5:
-                pct = self.focus_position / len(self.body)
-                self.set_focus_valign(('relative', pct + 5))
+                pos = self.listbox.focus_position + int(self.height * SCROLL_WHEEL_HEIGHT_RATIO)
+                if pos > len(self.listbox.body) - 1:
+                    if self.infinite:
+                        self.requery = True
+                    pos = len(self.listbox.body) - 1
+                self.listbox.focus_position = pos
+                self.listbox.make_cursor_visible(size)
                 self._invalidate()
         elif event == 'mouse drag':
             if self.drag_from is None:
