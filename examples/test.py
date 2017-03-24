@@ -95,7 +95,7 @@ def main():
             )
 
 
-        def query(self, sort=(None, None), offset=None):
+        def query(self, sort=(None, None), offset=None, load_all=False):
 
             logger.info("query: offset=%s, sort=%s" %(offset, sort))
             try:
@@ -110,10 +110,13 @@ def main():
                 kwargs["reverse"] = sort_reverse
                 self.query_data.sort(**kwargs)
             if offset is not None:
-                start = offset
-                end = offset + self.limit
-                r = self.query_data[start:end]
-                logger.debug("%s:%s (%s)" %(start, end, len(r)))
+                if not load_all:
+                    start = offset
+                    end = offset + self.limit
+                    r = self.query_data[start:end]
+                    logger.debug("%s:%s (%s)" %(start, end, len(r)))
+                else:
+                    r = self.query_data[offset:]
             else:
                 r = self.query_data
 
@@ -141,6 +144,9 @@ def main():
                 self.cycle_columns(-1)
             elif key == "shift right":
                 self.cycle_columns(1)
+            elif key == "shift end":
+                self.load_all()
+                self.listbox.focus_position = len(self) -1
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
@@ -169,7 +175,7 @@ def main():
             10000,
             limit=1000,
             index="uniqueid",
-            sort_by = ("baz", False),
+            sort_by = ("baz", True),
             query_sort=True,
             # with_header=True,
             # with_footer=True,

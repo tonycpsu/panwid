@@ -329,7 +329,7 @@ class DataTable(urwid.WidgetWrap):
 
     limit = None
     index = None
-    sort_by = None
+    sort_by = (None, False)
     query_sort = False
 
     with_header = False
@@ -395,7 +395,17 @@ class DataTable(urwid.WidgetWrap):
 
         if index: self.index = index
         if query_sort: self.query_sort = query_sort
-        if sort_by: self.initial_sort = self.sort_by = sort_by
+        if sort_by:
+            if isinstance(sort_by, tuple):
+                column = sort_by[0]
+                reverse = sort_by[1]
+            else:
+                column = sort_by
+                reverse = False
+
+            self.initial_sort = self.sort_by = (column, reverse)
+
+
         # raise Exception(self.initial_sort)
 
         if with_header: self.with_header = with_header
@@ -413,6 +423,7 @@ class DataTable(urwid.WidgetWrap):
             self.limit = limit
 
         self.sort_column = None
+        self.sort_reverse = False
 
         self.colnames = [c.name for c in self.columns]
         # self.pd_columns = self.colnames + ["_rendered_row"]
@@ -606,6 +617,9 @@ class DataTable(urwid.WidgetWrap):
 
     def get_row(self, position):
 
+        # raise Exception(self.sort_by)
+        if self.sort_by[1]:
+            position = -position
         index = self.df.index[position]
         try:
             row = self.df.get(index, "_rendered_row")
@@ -630,26 +644,27 @@ class DataTable(urwid.WidgetWrap):
         return row
 
 
-    def sort_by_column(self, column):
+    def sort_by_column(self, col):
 
-        if isinstance(column, tuple):
-            column = column[0] # FIXME: descending
+        if isinstance(col, tuple):
+            col, reverse = col
+        else:
+            reverse = False
 
-        if isinstance(column, int):
+        if isinstance(col, int):
             try:
-                colname = self.columns[column].name
+                colname = self.columns[col].name
             except IndexError:
-                raise IndexError("bad column number: %d" %(column))
-            self.sort_column = column
-        elif isinstance(column, str):
-            colname = column
+                raise Exception("bad column number: %d" %(column))
+            self.sort_column = col
+        elif isinstance(col, str):
+            colname = col
             try:
                 self.sort_column = self.colnames.index(colname)
             except:
                 raise IndexError("bad column name: %s" %(colname))
 
-        self.sort_by = colname
-
+        self.sort_by = (colname, reverse)
 
         if not self.query_sort:
             self.sort(colname)
@@ -658,7 +673,7 @@ class DataTable(urwid.WidgetWrap):
             self.reset()
 
         self.set_focus_column(self.sort_column)
-
+        logger.info(self.sort_reverse)
 
     def sort(self, column):
         logger.debug(column)
@@ -696,14 +711,15 @@ class DataTable(urwid.WidgetWrap):
         self.walker._modified()
 
 
-    def requery(self, offset=0, **kwargs):
+    def requery(self, offset=0, load_all=False, **kwargs):
 
-        kwargs = {}
+        kwargs = {"load_all": load_all}
         if self.query_sort:
             kwargs["sort"] = self.sort_by
         if self.limit:
             kwargs["offset"] = offset
 
+        logger.debug(kwargs)
         rows = list(self.query(**kwargs))
         self.append_rows(rows)
 
@@ -725,6 +741,12 @@ class DataTable(urwid.WidgetWrap):
         if offset >= self.query_result_count():
             return
         self.requery(offset)
+
+    def load_all(self):
+        if len(self) >= self.query_result_count():
+            return
+        self.requery(len(self), load_all=True)
+        self.listbox._invalidate()
 
     def reset(self, reset_sort=False):
         self.offset = 0
