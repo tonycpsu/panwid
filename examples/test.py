@@ -52,9 +52,9 @@ def main():
 
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-            DataTableColumn("foo", width=10, align="right", padding=0),# margin=1),
-            DataTableColumn("bar", width=10, align="right", padding=1),# margin=5),
-            DataTableColumn("baz", width=("weight", 1)),
+            DataTableColumn("foo", label="Foo", width=10, align="right", padding=0),# margin=1),
+            DataTableColumn("bar", label="Bar", width=10, align="right", padding=1),# margin=5),
+            DataTableColumn("baz", label="Baz!", width=("weight", 1)),
             # DataTableColumn("zzz", width=("weight", 1)),
         ]
 

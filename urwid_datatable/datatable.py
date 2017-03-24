@@ -261,7 +261,7 @@ class DataTableHeaderRow(DataTableRow):
     CELL_CLASS = DataTableHeaderCell
 
     def __init__(self, columns, *args, **kwargs):
-        super(DataTableHeaderRow, self).__init__(columns, [c.name for c in columns])
+        super(DataTableHeaderRow, self).__init__(columns, [c.label for c in columns])
 
     def selectable(self):
         return False
