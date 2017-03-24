@@ -157,22 +157,20 @@ def main():
 
 
     tables = [
-        ExampleDataTable(
-            0,
-            limit=5,
-            index="uniqueid",
-            sort_by = ("bar", False),
-            query_sort=True,
-            with_header=True,
-            with_footer=True,
-            with_scrollbar=True
-        ),
+
+        # ExampleDataTable(
+        #     0,
+        #     limit=5,
+        #     index="uniqueid",
+        #     sort_by = ("bar", False),
+        #     query_sort=True,
+        #     with_header=True,
+        #     with_footer=True,
+        #     with_scrollbar=True
+        # ),
 
         ExampleDataTable(
-            100,
-            with_header=True,
-            with_footer=True,
-            with_scrollbar=True
+            100
         ),
         ExampleDataTable(
             1000,
@@ -180,7 +178,6 @@ def main():
             index="uniqueid",
             sort_by = ("bar", False),
             query_sort=True,
-            with_header=True,
             with_footer=True,
             with_scrollbar=True
         ),
@@ -190,7 +187,9 @@ def main():
             index="uniqueid",
             sort_by = ("foo", True),
             query_sort=True,
-            with_scrollbar=True
+            with_scrollbar=True,
+            with_header=False,
+            with_footer=False,
         ),
     ]
 

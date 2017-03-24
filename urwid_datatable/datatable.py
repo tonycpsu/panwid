@@ -385,7 +385,7 @@ class DataTable(urwid.WidgetWrap):
     initial_sort = (None, False)
     query_sort = False
 
-    with_header = False
+    with_header = True
     with_footer = False
     with_scrollbar = None
 
@@ -463,9 +463,9 @@ class DataTable(urwid.WidgetWrap):
 
         # raise Exception(self.initial_sort)
 
-        if with_header: self.with_header = with_header
-        if with_footer: self.with_footer = with_footer
-        if with_scrollbar: self.with_scrollbar = with_scrollbar
+        if with_header is not None: self.with_header = with_header
+        if with_footer is not None: self.with_footer = with_footer
+        if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
 
 
         self.attr_map = {}
@@ -776,6 +776,7 @@ class DataTable(urwid.WidgetWrap):
             raise Exception(col)
 
         self.sort_by = (colname, reverse)
+        self.log_dump()
         logger.debug("sort_by: %s, %s" %(colname, reverse))
         if not self.query_sort:
             self.sort(colname)
