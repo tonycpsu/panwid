@@ -615,7 +615,6 @@ class DataTable(urwid.WidgetWrap):
                 border = self.border,
                 padding = self.padding
             )
-            logger.info("border: %s, padding: %s" %(self.border, self.padding))
             self.pile.contents.insert(0,
                 (self.header, self.pile.options('pack'))
              )
@@ -767,8 +766,8 @@ class DataTable(urwid.WidgetWrap):
         try:
             v = self.df[index:index]
         except IndexError:
-            logger.error(traceback.format_exc())
-            logger.error("%d, %s" %(index, self.df.index))
+            logger.debug(traceback.format_exc())
+            logger.debug("%d, %s" %(index, self.df.index))
 
         return  OrderedDict(
             (k, v[0])
