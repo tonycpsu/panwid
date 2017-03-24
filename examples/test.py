@@ -52,10 +52,10 @@ def main():
 
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-            DataTableColumn("foo", width=10, align="right", padding=1),
-            DataTableColumn("bar", width=10, align="right", padding=1),
-            DataTableColumn("baz", width=("weight", 1)),
-            DataTableColumn("zzz", width=("weight", 1)),
+            DataTableColumn("foo", width=10, align="right", padding=0),# margin=1),
+            DataTableColumn("bar", width=30, align="right", padding=1),# margin=5),
+            # DataTableColumn("baz", width=("weight", 1)),
+            # DataTableColumn("zzz", width=("weight", 1)),
         ]
 
         index="index"
@@ -132,6 +132,8 @@ def main():
         def keypress(self, size, key):
             if key == "ctrl r":
                 self.reset(reset_sort=True)
+            if key == "ctrl d":
+                self.log_dump(10)
             elif key == "1":
                 self.sort_by_column("foo")
             elif key == "2":
@@ -142,9 +144,9 @@ def main():
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
             elif key == "shift left":
-                self.cycle_columns(-1)
+                self.cycle_sort_column(-1)
             elif key == "shift right":
-                self.cycle_columns(1)
+                self.cycle_sort_column(1)
             elif key == "shift end":
                 self.load_all()
                 self.listbox.focus_position = len(self) -1
@@ -176,7 +178,7 @@ def main():
             10000,
             limit=1000,
             index="uniqueid",
-            sort_by = ("baz", True),
+            sort_by = ("foo", True),
             query_sort=True,
             # with_header=True,
             # with_footer=True,
@@ -186,7 +188,7 @@ def main():
 
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 30) for t in tables], 60, 1, 1, "left"
+        [urwid.BoxAdapter(t, 40) for t in tables], 60, 1, 1, "left"
     )
 
 
