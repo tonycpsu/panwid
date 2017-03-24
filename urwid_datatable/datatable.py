@@ -1,4 +1,3 @@
-#!/usr/bin/python
 from __future__ import division
 import urwid
 from urwid_utils.palette import *
@@ -93,9 +92,6 @@ class DataTableColumn(object):
             v = urwid.Text(v, align=self.align, wrap=self.wrap)
         return v
 
-    # def cell(self, value):
-    #     return DataTableCell(self, value)
-
 
 
 class DataTableCell(urwid.WidgetWrap):
@@ -169,6 +165,10 @@ class DataTableCell(urwid.WidgetWrap):
 
     def _format(self, v):
         return urwid.Text(v)
+
+    def set_attr_map(self, attr_map):
+        self.attr.set_attr_map(attr_map)
+
 
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
@@ -244,6 +244,14 @@ class DataTableRow(urwid.WidgetWrap):
             else:
                 cell.unhighlight()
 
+    def __getitem__(self, position):
+        return self.columns.contents[position][0]
+
+    def __len__(self):
+        return len(self.columns.contents)
+
+    def __iter__(self):
+        return iter( [c[0] for c in self.columns.contents] )
 
 
 class DataTableBodyRow(DataTableRow):
@@ -417,7 +425,7 @@ class DataTable(urwid.WidgetWrap):
                     r = self.table.get_row(position)
                     return r
                 except IndexError:
-                    logger.error(traceback.format_exc(5))
+                    logger.error(traceback.format_exc())
                     raise
                 # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
 
@@ -696,9 +704,8 @@ class DataTable(urwid.WidgetWrap):
         try:
             v = self.df[index:index]
         except IndexError:
-            logger.error(traceback.format_exc(5))
+            logger.error(traceback.format_exc())
             logger.error("%d, %s" %(index, self.df.index))
-            raise
 
         return  OrderedDict(
             (k, v[0])
@@ -713,6 +720,8 @@ class DataTable(urwid.WidgetWrap):
     def __getattr__(self, attr):
         if attr in ["head", "tail", "index_name", "log_dump"]:
             return getattr(self.df, attr)
+        elif attr in ["body"]:
+            return getattr(self.listbox, attr)
         # elif attr == "body":
         #     return self.walker
         raise AttributeError(attr)

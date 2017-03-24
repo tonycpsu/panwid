@@ -54,7 +54,7 @@ def main():
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", label="Foo", width=10, align="right", padding=0),# margin=1),
             DataTableColumn("bar", label="Bar", width=10, align="right", padding=1),# margin=5),
-            DataTableColumn("baz", label="Baz!", width=("weight", 1)),
+            # DataTableColumn("baz", label="Baz!", width=("weight", 1)),
             # DataTableColumn("zzz", width=("weight", 1)),
         ]
 
@@ -136,6 +136,8 @@ def main():
                 self.log_dump(10)
             if key == "ctrl f":
                 self.focus_position = 0
+            elif key == "ctrl t":
+                logger.info(self.get_row(0)[0])
             elif key == "1":
                 self.sort_by_column("foo")
             elif key == "2":
@@ -158,39 +160,39 @@ def main():
 
     tables = [
 
-        # ExampleDataTable(
-        #     0,
-        #     limit=5,
-        #     index="uniqueid",
-        #     sort_by = ("bar", False),
-        #     query_sort=True,
-        #     with_header=True,
-        #     with_footer=True,
-        #     with_scrollbar=True
-        # ),
-
         ExampleDataTable(
-            100
-        ),
-        ExampleDataTable(
-            1000,
-            limit=100,
+            5,
+            limit=5,
             index="uniqueid",
             sort_by = ("bar", False),
             query_sort=True,
+            with_header=True,
             with_footer=True,
             with_scrollbar=True
         ),
-        ExampleDataTable(
-            10000,
-            limit=1000,
-            index="uniqueid",
-            sort_by = ("foo", True),
-            query_sort=True,
-            with_scrollbar=True,
-            with_header=False,
-            with_footer=False,
-        ),
+
+    #     ExampleDataTable(
+    #         100
+    #     ),
+    #     ExampleDataTable(
+    #         1000,
+    #         limit=100,
+    #         index="uniqueid",
+    #         sort_by = ("bar", False),
+    #         query_sort=True,
+    #         with_footer=True,
+    #         with_scrollbar=True
+    #     ),
+    #     ExampleDataTable(
+    #         10000,
+    #         limit=1000,
+    #         index="uniqueid",
+    #         sort_by = ("foo", True),
+    #         query_sort=True,
+    #         with_scrollbar=True,
+    #         with_header=False,
+    #         with_footer=False,
+    #     ),
     ]
 
 
@@ -201,7 +203,7 @@ def main():
         )
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 40) for t in tables], 60, 1, 1, "left"
+        [urwid.BoxAdapter(t, 20) for t in tables], 20, 1, 1, "left"
     )
 
 
