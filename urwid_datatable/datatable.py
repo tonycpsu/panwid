@@ -278,6 +278,10 @@ class DataTableFooterRow(DataTableRow):
     def selectable(self):
         return False
 
+    def update(self):
+        # FIXME
+        pass
+
 
 class DataTableDataFrame(rc.DataFrame):
 
@@ -298,7 +302,7 @@ class DataTableDataFrame(rc.DataFrame):
             self[c] = None
 
     def log_dump(self, n=5):
-        logger.info("index: %s [%s%s]\n%s" %(
+        logger.debug("index: %s [%s%s]\n%s" %(
             self.index_name,
             ",".join([str(x) for x in self.index[0:min(n, len(self.index))]]),
             "..." if len(self.index) > n else "",
@@ -329,7 +333,7 @@ class DataTableDataFrame(rc.DataFrame):
             )
             # raise Exception(data)
             if self.index_name not in rows[0].keys():
-                logger.info("making new index")
+                # logger.debug("making new index")
                 index = range(len(self), len(data.values()[0]))
                 data[self.index_name] = index
             else:
@@ -344,7 +348,7 @@ class DataTableDataFrame(rc.DataFrame):
         # logger.info(sorted(colnames))
         # columns = [c for c in self.columns if not c.startswith("_")]
         # print "newdata: %s" %(columns)
-        logger.info("df.append_rows data: %s" %(data))
+        logger.debug("df.append_rows data: %s" %(data))
         kwargs = dict(
             # columns = list(self.columns),
             columns = columns,
@@ -448,6 +452,10 @@ class DataTable(urwid.WidgetWrap):
 
         if index: self.index = index
         if query_sort: self.query_sort = query_sort
+
+        if not isinstance(self.initial_sort, tuple):
+            self.initial_sort = (self.initial_sort, False)
+
         if sort_by:
             if isinstance(sort_by, tuple):
                 column = sort_by[0]
@@ -481,7 +489,7 @@ class DataTable(urwid.WidgetWrap):
         self.sort_reverse = False
 
         self.colnames = [c.name for c in self.columns]
-        logger.info("columns: %s" %(self.colnames))
+        logger.debug("columns: %s" %(self.colnames))
         # self.pd_columns = self.colnames + ["_rendered_row"]
 
         kwargs = dict(
@@ -785,7 +793,7 @@ class DataTable(urwid.WidgetWrap):
             self.reset()
 
         self.set_focus_column(self.sort_column)
-        logger.info(self.sort_reverse)
+        # logger.info(self.sort_reverse)
 
     def sort(self, column):
         logger.debug(column)
