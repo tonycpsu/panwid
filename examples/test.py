@@ -208,7 +208,7 @@ def main():
         )
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 20) for t in tables], 60, 1, 1, "left"
+        [urwid.BoxAdapter(t, 50) for t in tables], 60, 1, 1, "left"
     )
 
 
