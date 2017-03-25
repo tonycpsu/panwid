@@ -9,6 +9,7 @@ import itertools
 logger = logging.getLogger("urwid_datatable")
 
 import traceback
+from datetime import datetime, date as datetype
 
 from datetime import datetime, date as datetype
 
@@ -736,9 +737,9 @@ class DataTable(urwid.WidgetWrap):
             ),
             "scroll_marker": PaletteEntry(
                 mono = "white,bold",
-                foreground = "black",
+                foreground = "black,bold",
                 background = "white",
-                foreground_high = "black",
+                foreground_high = "black,bold",
                 background_high = "white"
             ),
             "scroll_view": PaletteEntry(
