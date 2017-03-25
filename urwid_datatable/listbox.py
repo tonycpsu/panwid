@@ -26,6 +26,9 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         else:
             scroll_position = -1
 
+        # LOZENGE DIVIDED BY HORIZONTAL RULE
+        # BLACK UP-POINTING TRIANGLE
+        # BLACK DOWN-POINTING TRIANGLE
         pos_marker = urwid.AttrMap(urwid.Text(u" "),
                                    {None: "scroll_pos"}
         )
