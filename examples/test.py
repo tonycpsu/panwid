@@ -53,7 +53,7 @@ def main():
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
             DataTableColumn("foo", label="Foo", width=10, align="right", padding=0),# margin=1),
-            DataTableColumn("bar", label="Bar", width=10, align="right", padding=1),# margin=5),
+            DataTableColumn("bar", label="Bar", width=10, align="right", sort_reverse=True, padding=1),# margin=5),
             DataTableColumn("baz", label="Baz!", width=("weight", 1)),
             # DataTableColumn("zzz", width=("weight", 1)),
         ]
@@ -103,7 +103,7 @@ def main():
                 sort_field, sort_reverse = sort
             except:
                 sort_field = sort
-                sort_reverse = False
+                sort_reverse = None
 
             if sort_field:
                 kwargs = {}
@@ -139,12 +139,9 @@ def main():
             elif key == "ctrl t":
                 # logger.info(self.get_row(0)[0])
                 logger.info(self.selection["bar"])
-            elif key == "1":
-                self.sort_by_column("foo")
-            elif key == "2":
-                self.sort_by_column("bar")
-            elif key == "3":
-                self.sort_by_column("baz")
+            elif key.isdigit() and int(key)-1 in range(len(self.columns)):
+                col = int(key)-1
+                self.sort_by_column(col, toggle=True)
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
@@ -176,19 +173,19 @@ def main():
             100
         ),
         ExampleDataTable(
-            1000,
-            limit=100,
+            500,
+            limit=25,
             index="uniqueid",
-            sort_by = ("bar", False),
-            query_sort=True,
+            sort_by = ("bar"),
+            query_sort=False,
             with_footer=True,
             with_scrollbar=True,
             border=(1, u"\N{VERTICAL LINE}"),
             padding=3,
         ),
         ExampleDataTable(
-            10000,
-            limit=1000,
+            5000,
+            limit=500,
             index="uniqueid",
             sort_by = ("foo", True),
             border=3,
@@ -208,13 +205,8 @@ def main():
         )
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 50) for t in tables], 60, 1, 1, "left"
+        [urwid.BoxAdapter(t, 40) for t in tables], 60, 1, 1, "left"
     )
-
-
-    pile = urwid.Pile([
-        ('weight', 1, urwid.Filler(grid_flow)),
-    ])
 
     def global_input(key):
         if key in ('q', 'Q'):
@@ -223,7 +215,7 @@ def main():
             return False
 
     main = urwid.MainLoop(
-        urwid.LineBox(pile),
+        urwid.Frame(urwid.Filler(urwid.LineBox(grid_flow), valign="top")),
         palette = palette,
         screen = screen,
         unhandled_input=global_input
