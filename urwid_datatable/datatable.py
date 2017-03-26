@@ -276,7 +276,8 @@ class DataTable(urwid.WidgetWrap):
             self.header = DataTableHeaderRow(
                 self.columns,
                 border = self.border,
-                padding = self.padding
+                padding = self.padding,
+                sort = self.sort_by
             )
             self.pile.contents.insert(0,
                 (self.header, self.pile.options('pack'))

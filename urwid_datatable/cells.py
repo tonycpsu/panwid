@@ -89,7 +89,7 @@ class DataTableCell(urwid.WidgetWrap):
         # return super(DataTableCell, self).keypress(size, key)
 
     def _format(self, v):
-        return urwid.Text(v)
+        return self.column._format(v)
 
     def set_attr_map(self, attr_map):
         self.attr.set_attr_map(attr_map)
@@ -98,9 +98,6 @@ class DataTableCell(urwid.WidgetWrap):
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
     PADDING_ATTR = "table_row_body_padding"
-
-    def _format(self, v):
-        return self.column._format(v)
 
 
 class DataTableHeaderCell(DataTableCell):
