@@ -18,7 +18,7 @@ class DataTableCell(urwid.WidgetWrap):
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, column, value, padding=0):
+    def __init__(self, column, value, padding=0, *args, **kwargs):
 
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
@@ -104,6 +104,24 @@ class DataTableHeaderCell(DataTableCell):
     ATTR = "table_row_header"
     PADDING_ATTR = "table_row_header_padding"
 
+    ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
+    DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
+
+    def __init__(self, column, value, sort=None, *args, **kwargs):
+        self.column = column
+        self.columns = urwid.Columns([
+            ("weight", 1, urwid.Text(value)),
+            (1, urwid.Text(""))
+        ])
+        super(DataTableHeaderCell, self).__init__(column, self.columns, *args, **kwargs)
+        self.update_sort(sort)
+
+    def update_sort(self, sort):
+        if sort and sort[0] == self.column.name:
+            direction = self.DESCENDING_SORT_MARKER if sort[1] else self.ASCENDING_SORT_MARKER
+            self.columns.contents[1][0].set_text(direction)
+        else:
+            self.columns.contents[1][0].set_text("")
 
 class DataTableFooterCell(DataTableCell):
     ATTR = "table_row_footer"

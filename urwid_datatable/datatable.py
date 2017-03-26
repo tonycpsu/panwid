@@ -231,7 +231,6 @@ class DataTable(urwid.WidgetWrap):
 
         self.walker = DataTableListWalker()
 
-
         self.pile = urwid.Pile([])
         self.listbox = ScrollingListBox(
             self.walker, infinite=self.limit,
@@ -241,16 +240,10 @@ class DataTable(urwid.WidgetWrap):
                             else None)
             )
 
-        def foo(source, selection):
-            logger.debug("selection: %s, index: %d" %(selection, selection._index))
-            urwid.signals.emit_signal(self, "select", self, self[selection._index])
-
         urwid.connect_signal(
             self.listbox, "select",
-            foo
-            # lambda source, selection: logger.error(selection._index)
-            # lambda source, selection: urwid.signals.emit_signal(
-            #     self, "select", self, self[selection._index])
+            lambda source, selection: urwid.signals.emit_signal(
+                self, "select", self, self[selection._index])
         )
         urwid.connect_signal(
             self.listbox, "drag_start",
@@ -544,8 +537,10 @@ class DataTable(urwid.WidgetWrap):
         if self.query_sort:
             self.reset()
 
-        self.set_focus_column(self.sort_column)
         self.sort_by = sort_by
+        self.set_focus_column(self.sort_column)
+        if self.with_header:
+            self.header.update_sort(self.sort_by)
         # logger.info(self.sort_reverse)
 
     def sort(self, column):

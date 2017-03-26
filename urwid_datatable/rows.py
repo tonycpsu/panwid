@@ -9,6 +9,7 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, columns, data, index=None,
                  border=None, padding=None,
+                 sort=None,
                  *args, **kwargs):
 
         self.data = data
@@ -30,13 +31,12 @@ class DataTableRow(urwid.WidgetWrap):
         if isinstance(self.data, list):
             self.data = dict(zip([c.name for c in columns], self.data))
 
-        cells = [self.CELL_CLASS(col, self.data[col.name])
+        self.cells = [self.CELL_CLASS(col, self.data[col.name], sort=sort)
                  for i, col in enumerate(columns)]
-
 
         self.columns = urwid.Columns([])
 
-        for i, cell in enumerate(cells):
+        for i, cell in enumerate(self.cells):
             col = columns[i]
             self.columns.contents.append(
                 (cell, self.columns.options(col.sizing, col.width_with_padding(padding)))
@@ -111,12 +111,24 @@ class DataTableHeaderRow(DataTableRow):
     ATTR = "table_row_header"
     CELL_CLASS = DataTableHeaderCell
 
-    def __init__(self, columns, *args, **kwargs):
-        super(DataTableHeaderRow, self).__init__(columns, [c.label for c in columns])
+    def __init__(self, columns,
+                 border=None, padding=None, sort=None,
+                 *args, **kwargs):
+
+        super(DataTableHeaderRow, self).__init__(
+            columns, [c.label for c in columns],
+            border=border,
+            padding=padding,
+            sort = sort
+        )
 
     def selectable(self):
         return False
 
+    def update_sort(self, sort):
+        for c in self.cells:
+            # raise Exception(c)
+            c.update_sort(sort)
 
 class DataTableFooterRow(DataTableRow):
 
