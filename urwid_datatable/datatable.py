@@ -497,7 +497,7 @@ class DataTable(urwid.WidgetWrap):
 
     def sort_by_column(self, col, toggle=False):
         reverse = None
-        logger.debug("sort_by_column: " + repr(col))
+        logger.info("sort_by_column: " + repr(col))
 
         if isinstance(col, tuple):
             col, reverse = col
@@ -531,13 +531,15 @@ class DataTable(urwid.WidgetWrap):
         sort_by = (colname, reverse)
         # sort_by = (colname, reverse)
         self.log_dump()
+
         if not self.query_sort:
             self.sort(colname)
+
+        self.sort_by = sort_by
 
         if self.query_sort:
             self.reset()
 
-        self.sort_by = sort_by
         self.set_focus_column(self.sort_column)
         if self.with_header:
             self.header.update_sort(self.sort_by)
