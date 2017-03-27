@@ -23,7 +23,7 @@ class DataTableColumn(object):
                  format_record = None, # format_fn is passed full row data
                  attr = None,
                  sort_key = None, sort_fn = None, sort_reverse=False,
-                 sort_icon=True,
+                 sort_icon = None,
                  footer_fn = None):
 
         self.name = name
@@ -107,12 +107,14 @@ class DataTable(urwid.WidgetWrap):
 
     limit = None
     index = "index"
-    sort_by = (None, None)
-    query_sort = False
 
     with_header = True
     with_footer = False
-    with_scrollbar = None
+    with_scrollbar = False
+
+    sort_by = (None, None)
+    query_sort = False
+    sort_icons = True
 
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
@@ -122,8 +124,8 @@ class DataTable(urwid.WidgetWrap):
     def __init__(self,
                  limit=None,
                  index=None,
-                 sort_by=None, query_sort=None,
-                 with_header=None, with_footer=None, with_scrollbar=False,
+                 with_header=None, with_footer=None, with_scrollbar=None,
+                 sort_by=None, query_sort=None, sort_icons=None,
                  border=None, padding=None,
                  ui_sort=None):
 
@@ -195,6 +197,8 @@ class DataTable(urwid.WidgetWrap):
         #     self.sort_by = self.initial_sort
 
         # raise Exception(self.initial_sort)
+
+        if sort_icons is not None: self.sort_icons = sort_icons
 
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
@@ -272,7 +276,8 @@ class DataTable(urwid.WidgetWrap):
                 self.columns,
                 border = self.border,
                 padding = self.padding,
-                sort = self.sort_by
+                sort = self.sort_by,
+                sort_icons = self.sort_icons
             )
             self.pile.contents.insert(0,
                 (self.header, self.pile.options('pack'))

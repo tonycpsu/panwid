@@ -9,7 +9,7 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, columns, data, index=None,
                  border=None, padding=None,
-                 sort=None,
+                 sort=None, sort_icons=None,
                  *args, **kwargs):
 
         self.data = data
@@ -18,7 +18,6 @@ class DataTableRow(urwid.WidgetWrap):
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
         self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
-
         self.attr_map =  {
             None: self.attr,
         }
@@ -31,7 +30,11 @@ class DataTableRow(urwid.WidgetWrap):
         if isinstance(self.data, list):
             self.data = dict(zip([c.name for c in columns], self.data))
 
-        self.cells = [self.CELL_CLASS(col, self.data[col.name], sort=sort, attr=self.data.get(col.attr, None))
+        self.cells = [
+            self.CELL_CLASS(col, self.data[col.name],
+                            sort=sort,
+                            sort_icon=sort_icons,
+                            attr=self.data.get(col.attr, None))
                  for i, col in enumerate(columns)]
 
         self.columns = urwid.Columns([])
@@ -119,7 +122,9 @@ class DataTableHeaderRow(DataTableRow):
             columns, [c.label for c in columns],
             border=border,
             padding=padding,
-            sort = sort
+            sort = sort,
+            *args,
+            **kwargs
         )
 
     def selectable(self):

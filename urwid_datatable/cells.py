@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger("urwid_datatable")
+
 import urwid
 
 DEFAULT_CELL_PADDING = 0
@@ -117,16 +120,19 @@ class DataTableHeaderCell(DataTableCell):
     ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
     DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
 
-    def __init__(self, column, value, sort=None, *args, **kwargs):
+    def __init__(self, column, value, sort=None, sort_icon=None, *args, **kwargs):
         self.column = column
+        if self.column.sort_icon is not None:
+            self.sort_icon = self.column.sort_icon
+        else:
+            self.sort_icon = sort_icon
         self.columns = urwid.Columns([
             ('weight', 1, urwid.Text(value, align=self.column.align))
         ])
-        if self.column.sort_icon:
+        if sort_icon:
             self.columns.contents.append(
                 (urwid.Text(""), self.columns.options("given", 1))
             )
-
         super(DataTableHeaderCell, self).__init__(column, self.columns, *args, **kwargs)
         self.update_sort(sort)
 
@@ -134,7 +140,7 @@ class DataTableHeaderCell(DataTableCell):
         return self.column.format(v)
 
     def update_sort(self, sort):
-        if not self.column.sort_icon: return
+        if not self.sort_icon: return
 
         if sort and sort[0] == self.column.name:
             direction = self.DESCENDING_SORT_MARKER if sort[1] else self.ASCENDING_SORT_MARKER

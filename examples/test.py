@@ -213,6 +213,7 @@ def main():
             limit=25,
             index="uniqueid",
             sort_by = ("bar", True),
+            sort_icons = False,
             query_sort=True,
             with_footer=True,
             with_scrollbar=True,
