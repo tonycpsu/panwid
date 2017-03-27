@@ -150,6 +150,11 @@ def main():
                 self.cycle_sort_column(-1)
             elif key == "shift right":
                 self.cycle_sort_column(1)
+            elif self.ui_sort and key == "shift up":
+                self.sort_by_column(reverse=True)
+            elif self.ui_sort and key == "shift down":
+                self.sort_by_column(reverse=False)
+
             elif key == "shift end":
                 self.load_all()
                 self.listbox.focus_position = len(self) -1

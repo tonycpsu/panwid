@@ -115,7 +115,7 @@ class DataTable(urwid.WidgetWrap):
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
 
-    ui_sort = False
+    ui_sort = True
 
     def __init__(self,
                  limit=None,
@@ -495,15 +495,17 @@ class DataTable(urwid.WidgetWrap):
         return row
 
 
-    def sort_by_column(self, col, toggle=False):
+    def sort_by_column(self, col=None, reverse=None, toggle=False):
         column_name = None
         column_number = None
-        reverse = None
 
         logger.info("sort_by_column: " + repr(col))
 
         if isinstance(col, tuple):
             col, reverse = col
+
+        elif col is None:
+            col = self.sort_column
 
         if isinstance(col, int):
             try:
