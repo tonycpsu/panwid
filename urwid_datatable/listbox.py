@@ -96,6 +96,8 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.requery = False
         self.height = 0
 
+        self.queued_keypress = None
+
         self.listbox = urwid.ListBox(body)
         self.columns = urwid.Columns([
             ('weight', 1, self.listbox)
@@ -183,6 +185,7 @@ class ScrollingListBox(urwid.WidgetWrap):
             and len(self.body)
             and self.focus_position == len(self.body)-1):
                 self.requery = True
+                self.queued_keypress = key
 
             if key == "home":
                 self.focus_position = 0
@@ -224,6 +227,10 @@ class ScrollingListBox(urwid.WidgetWrap):
             self.requery = False
             urwid.signals.emit_signal(
                 self, "load_more", len(self.body))
+            if self.queued_keypress:
+                self.keypress(size, self.queued_keypress)
+                self.queued_keypress = None
+
         if self.with_scrollbar and len(self.body):
             self.scroll_bar.update(size)
 
