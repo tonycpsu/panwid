@@ -98,7 +98,7 @@ def main():
 
         def query(self, sort=(None, None), offset=None, load_all=False):
 
-            logger.info("query: offset=%s, sort=%s" %(offset, sort))
+            logger.info("query: offset=%s, limit=%s, sort=%s" %(offset, self.limit, sort))
             try:
                 sort_field, sort_reverse = sort
             except:
@@ -108,7 +108,8 @@ def main():
             if sort_field:
                 kwargs = {}
                 kwargs["key"] = lambda x: (x.get(sort_field), x.get(self.index))
-                kwargs["reverse"] = sort_reverse
+                if sort_reverse:
+                    kwargs["reverse"] = sort_reverse
                 self.query_data.sort(**kwargs)
             if offset is not None:
                 if not load_all:
@@ -170,30 +171,51 @@ def main():
         # ),
 
         ExampleDataTable(
-            100
-        ),
-        ExampleDataTable(
             500,
             limit=25,
             index="uniqueid",
-            sort_by = ("bar"),
-            query_sort=False,
+            sort_by = ("bar", True),
+            query_sort=True,
             with_footer=True,
             with_scrollbar=True,
             border=(1, u"\N{VERTICAL LINE}"),
             padding=3,
         ),
-        ExampleDataTable(
-            5000,
-            limit=500,
-            index="uniqueid",
-            sort_by = ("foo", True),
-            border=3,
-            query_sort=True,
-            with_scrollbar=True,
-            with_header=False,
-            with_footer=False,
-        ),
+
+
+        # ExampleDataTable(
+        #     100
+        # ),
+        # ExampleDataTable(
+        #     1000,
+        #     index="uniqueid",
+        #     sort_by = "bar",
+        #     query_sort=False,
+        #     with_footer=True,
+        #     with_scrollbar=True
+        # ),
+        # ExampleDataTable(
+        #     500,
+        #     limit=25,
+        #     index="uniqueid",
+        #     sort_by = ("bar", True),
+        #     query_sort=True,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     border=(1, u"\N{VERTICAL LINE}"),
+        #     padding=3,
+        # ),
+        # ExampleDataTable(
+        #     5000,
+        #     limit=500,
+        #     index="uniqueid",
+        #     sort_by = ("foo", True),
+        #     border=3,
+        #     query_sort=True,
+        #     with_scrollbar=True,
+        #     with_header=False,
+        #     with_footer=False,
+        # ),
 
     ]
 
@@ -205,7 +227,7 @@ def main():
         )
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 40) for t in tables], 60, 1, 1, "left"
+        [urwid.BoxAdapter(t, 40) for t in tables], 50, 1, 1, "left"
     )
 
     def global_input(key):
