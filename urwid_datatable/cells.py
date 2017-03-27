@@ -115,7 +115,7 @@ class DataTableHeaderCell(DataTableCell):
     def __init__(self, column, value, sort=None, *args, **kwargs):
         self.column = column
         self.columns = urwid.Columns([
-            ('weight', 1, urwid.Text(value))
+            ('weight', 1, urwid.Text(value, align=self.column.align))
         ])
         if self.column.sort_icon:
             self.columns.contents.append(
