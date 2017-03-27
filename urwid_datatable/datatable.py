@@ -23,6 +23,7 @@ class DataTableColumn(object):
                  format_record = None, # format_fn is passed full row data
                  attr = None,
                  sort_key = None, sort_fn = None, sort_reverse=False,
+                 sort_icon=True,
                  footer_fn = None):
 
         self.name = name
@@ -38,6 +39,7 @@ class DataTableColumn(object):
         self.sort_key = sort_key
         self.sort_fn = sort_fn
         self.sort_reverse = sort_reverse
+        self.sort_icon = sort_icon
         self.footer_fn = footer_fn
 
         if isinstance(self.width, tuple):

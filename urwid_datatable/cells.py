@@ -115,9 +115,13 @@ class DataTableHeaderCell(DataTableCell):
     def __init__(self, column, value, sort=None, *args, **kwargs):
         self.column = column
         self.columns = urwid.Columns([
-            ("weight", 1, urwid.Text(value)),
-            (1, urwid.Text(""))
+            ('weight', 1, urwid.Text(value))
         ])
+        if self.column.sort_icon:
+            self.columns.contents.append(
+                (urwid.Text(""), self.columns.options("given", 1))
+            )
+
         super(DataTableHeaderCell, self).__init__(column, self.columns, *args, **kwargs)
         self.update_sort(sort)
 
@@ -125,6 +129,8 @@ class DataTableHeaderCell(DataTableCell):
         return self.column.format(v)
 
     def update_sort(self, sort):
+        if not self.column.sort_icon: return
+
         if sort and sort[0] == self.column.name:
             direction = self.DESCENDING_SORT_MARKER if sort[1] else self.ASCENDING_SORT_MARKER
             self.columns.contents[1][0].set_text(direction)

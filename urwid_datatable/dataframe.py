@@ -69,7 +69,7 @@ class DataTableDataFrame(rc.DataFrame):
         # logger.info(sorted(colnames))
         # columns = [c for c in self.columns if not c.startswith("_")]
         # print "newdata: %s" %(columns)
-        logger.debug("df.append_rows data: %s" %(data))
+        # logger.debug("df.append_rows data: %s" %(data))
         kwargs = dict(
             # columns = list(self.columns),
             columns = columns,
