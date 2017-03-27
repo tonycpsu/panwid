@@ -68,9 +68,9 @@ class DataTableCell(urwid.WidgetWrap):
 
         if attr:
             self.normal_attr_map.update({None: attr})
-            self.normal_focus_map.update({None: attr})
-            self.highlight_attr_map.update({None: attr})
-            self.highlight_focus_map.update({None: attr})
+            self.normal_focus_map.update({None: "%s focused" %(attr)})
+            self.highlight_attr_map.update({None: "%s highlight" %(attr)})
+            self.highlight_focus_map.update({None: "%s highlight focused" %(attr)})
 
         self.attr = urwid.AttrMap(
             self.padding,

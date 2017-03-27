@@ -45,13 +45,14 @@ def main():
         # logging.getLogger("raccoon.dataframe").addHandler(fh)
 
 
-    entries = DataTable.get_palette_entries()
+    attr_entries = {}
     for attr in ["dark red", "dark green", "dark blue"]:
-        entries[attr] = PaletteEntry(
+        attr_entries[attr] = PaletteEntry(
             mono = "white",
             foreground = attr,
             background = "black"
         )
+    entries = DataTable.get_palette_entries(user_entries=attr_entries)
     palette = Palette("default", **entries)
 
     class ExampleDataTable(DataTable):
