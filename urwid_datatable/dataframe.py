@@ -43,8 +43,8 @@ class DataTableDataFrame(rc.DataFrame):
         # )
 
 
-        if len(rows):
-            columns = rows[0].keys()
+        try:
+            columns = list(set().union(*(d.keys() for d in rows)))
             data = dict(
                 # zip((colnames),
                 zip((columns),
@@ -53,13 +53,13 @@ class DataTableDataFrame(rc.DataFrame):
                 )
             )
             # raise Exception(data)
-            if self.index_name not in rows[0].keys():
+            if self.index_name not in columns:
                 # logger.debug("making new index")
                 index = range(len(self), len(data.values()[0]))
                 data[self.index_name] = index
             else:
                 index = data[self.index_name]
-        else:
+        except IndexError:
             columns = list(self.columns)
             data = { k: [] for k in colnames }
             index = None

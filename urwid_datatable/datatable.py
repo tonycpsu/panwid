@@ -609,13 +609,13 @@ class DataTable(urwid.WidgetWrap):
             kwargs["offset"] = offset
 
         rows = list(self.query(**kwargs))
-        logger.debug("requery: %d, %s (%d rows)" %(offset, load_all, len(rows)))
+        # logger.debug("requery: %d, %s (%d rows)" %(offset, load_all, len(rows)))
         self.append_rows(rows)
 
 
     def append_rows(self, rows):
-        if not len(rows):
-            return
+        # if not len(rows):
+        #     return
         # logger.info("append_rows: %s" %(rows))
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
