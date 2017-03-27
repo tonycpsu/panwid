@@ -15,6 +15,8 @@ intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
 class DataTableCell(urwid.WidgetWrap):
 
+    signals = ["click"]
+
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
@@ -94,6 +96,9 @@ class DataTableCell(urwid.WidgetWrap):
     def set_attr_map(self, attr_map):
         self.attr.set_attr_map(attr_map)
 
+    def mouse_event(self, size, event, button, col, row, focus):
+        if event == 'mouse press':
+            urwid.emit_signal(self, "click")
 
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
@@ -115,6 +120,9 @@ class DataTableHeaderCell(DataTableCell):
         ])
         super(DataTableHeaderCell, self).__init__(column, self.columns, *args, **kwargs)
         self.update_sort(sort)
+
+    def _format(self, v):
+        return self.column.format(v)
 
     def update_sort(self, sort):
         if sort and sort[0] == self.column.name:
