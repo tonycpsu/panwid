@@ -20,7 +20,7 @@ class DataTableCell(urwid.WidgetWrap):
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, column, value, padding=0, *args, **kwargs):
+    def __init__(self, column, value, padding=0, attr=None, *args, **kwargs):
 
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
@@ -39,7 +39,6 @@ class DataTableCell(urwid.WidgetWrap):
         self.normal_attr_map = {
             None: self.attr,
         }
-
 
         self.highlight_attr_map = {
             None: self.attr_highlight,
@@ -66,6 +65,12 @@ class DataTableCell(urwid.WidgetWrap):
         #     [self.padding], dividechars=self.column.margin or 0
         # )
         # logger.info(self.columns.dividechars)
+
+        if attr:
+            self.normal_attr_map.update({None: attr})
+            self.normal_focus_map.update({None: attr})
+            self.highlight_attr_map.update({None: attr})
+            self.highlight_focus_map.update({None: attr})
 
         self.attr = urwid.AttrMap(
             self.padding,

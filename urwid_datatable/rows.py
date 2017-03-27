@@ -31,7 +31,7 @@ class DataTableRow(urwid.WidgetWrap):
         if isinstance(self.data, list):
             self.data = dict(zip([c.name for c in columns], self.data))
 
-        self.cells = [self.CELL_CLASS(col, self.data[col.name], sort=sort)
+        self.cells = [self.CELL_CLASS(col, self.data[col.name], sort=sort, attr=self.data.get(col.attr, None))
                  for i, col in enumerate(columns)]
 
         self.columns = urwid.Columns([])

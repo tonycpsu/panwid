@@ -46,13 +46,20 @@ def main():
 
 
     entries = DataTable.get_palette_entries()
+    for attr in ["dark red", "dark green", "dark blue"]:
+        entries[attr] = PaletteEntry(
+            mono = "white",
+            foreground = attr,
+            background = "black"
+        )
     palette = Palette("default", **entries)
 
     class ExampleDataTable(DataTable):
 
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-            DataTableColumn("foo", label="Foo", width=10, align="right", padding=0),# margin=1),
+            DataTableColumn("foo", label="Foo", width=10, align="right",
+                            attr="color", padding=0),# margin=1),
             DataTableColumn("bar", label="BarBar!!", width=10, align="right",
                             sort_reverse=True, sort_icon=False, padding=1),# margin=5),
             DataTableColumn("baz", label="Baz!", width=("weight", 1)),
@@ -92,7 +99,8 @@ def main():
                                else None),
                         xyzzy = random.randint(10, 100),
                         a = dict(b=dict(c=random.randint(0, 100))),
-                        d = dict(e=dict(f=random.randint(0, 100)))
+                        d = dict(e=dict(f=random.randint(0, 100))),
+                        color = ["dark red", "dark green", "dark blue"][random.randrange(3)]
 
             )
 
