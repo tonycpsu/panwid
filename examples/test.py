@@ -170,30 +170,6 @@ def main():
         #     with_scrollbar=True
         # ),
 
-        ExampleDataTable(
-            500,
-            limit=25,
-            index="uniqueid",
-            sort_by = ("bar", True),
-            query_sort=True,
-            with_footer=True,
-            with_scrollbar=True,
-            border=(1, u"\N{VERTICAL LINE}"),
-            padding=3,
-        ),
-
-
-        # ExampleDataTable(
-        #     100
-        # ),
-        # ExampleDataTable(
-        #     1000,
-        #     index="uniqueid",
-        #     sort_by = "bar",
-        #     query_sort=False,
-        #     with_footer=True,
-        #     with_scrollbar=True
-        # ),
         # ExampleDataTable(
         #     500,
         #     limit=25,
@@ -205,17 +181,40 @@ def main():
         #     border=(1, u"\N{VERTICAL LINE}"),
         #     padding=3,
         # ),
-        # ExampleDataTable(
-        #     5000,
-        #     limit=500,
-        #     index="uniqueid",
-        #     sort_by = ("foo", True),
-        #     border=3,
-        #     query_sort=True,
-        #     with_scrollbar=True,
-        #     with_header=False,
-        #     with_footer=False,
-        # ),
+
+        ExampleDataTable(
+            100
+        ),
+        ExampleDataTable(
+            1000,
+            index="uniqueid",
+            sort_by = "bar",
+            query_sort=False,
+            with_footer=True,
+            with_scrollbar=True
+        ),
+        ExampleDataTable(
+            500,
+            limit=25,
+            index="uniqueid",
+            sort_by = ("bar", True),
+            query_sort=True,
+            with_footer=True,
+            with_scrollbar=True,
+            border=(1, u"\N{VERTICAL LINE}"),
+            padding=3,
+        ),
+        ExampleDataTable(
+            5000,
+            limit=500,
+            index="uniqueid",
+            sort_by = ("foo", True),
+            border=3,
+            query_sort=True,
+            with_scrollbar=True,
+            with_header=False,
+            with_footer=False,
+        ),
 
     ]
 
