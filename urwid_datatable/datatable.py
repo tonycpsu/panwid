@@ -319,7 +319,7 @@ class DataTable(urwid.WidgetWrap):
         raise Exception("query_result_count method must be defined")
 
     @classmethod
-    def get_palette_entries(cls, user_entries=[]):
+    def get_palette_entries(cls, user_entries={}):
 
         foreground_map = {
             "table_row_body": [ "light gray", "light gray" ],
