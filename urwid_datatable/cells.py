@@ -23,7 +23,7 @@ class DataTableCell(urwid.WidgetWrap):
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, column, value, padding=0, attr=None, *args, **kwargs):
+    def __init__(self, column, value=None, padding=0, attr=None, *args, **kwargs):
 
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)

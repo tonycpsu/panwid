@@ -7,7 +7,7 @@ class DataTableRow(urwid.WidgetWrap):
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
 
-    def __init__(self, table, data, index=None, row_number=None,
+    def __init__(self, table, data=None, index=None, row_number=None,
                  border=None, padding=None,
                  sort=None, sort_icons=None,
                  *args, **kwargs):
@@ -134,27 +134,13 @@ class DataTableHeaderRow(DataTableRow):
 
     ATTR = "table_row_header"
 
-    def __init__(self, table,
-                 border=None, padding=None, sort=None,
-                 *args, **kwargs):
-
-        super(DataTableHeaderRow, self).__init__(
-            table,
-            [c.label if c.label else c.name for c in table.columns],
-            border=border,
-            padding=padding,
-            sort = sort,
-            *args,
-            **kwargs
-        )
-
     def make_cells(self):
         return [
             DataTableHeaderCell(
                 col,
                 sort=self.sort,
-                sort_icon=self.sort_icons,
-                attr=self.data.get(col.attr, None))
+                sort_icon=self.sort_icons
+            )
             for i, col in enumerate(self.table.columns)]
 
 
@@ -171,20 +157,13 @@ class DataTableFooterRow(DataTableRow):
 
     ATTR = "table_row_footer"
 
-    def __init__(self, table, *args, **kwargs):
-        super(DataTableFooterRow, self).__init__(
-            table,
-            ["footer" for n in range(len(table.columns))]
-        )
-
     def make_cells(self):
         return [
             DataTableFooterCell(
                 col,
-                self.data.get(col.name),
                 sort=self.sort,
-                sort_icon=self.sort_icons,
-                attr=self.data.get(col.attr, None))
+                sort_icon=self.sort_icons
+            )
             for i, col in enumerate(self.table.columns)]
 
     def selectable(self):
