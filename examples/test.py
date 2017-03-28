@@ -155,6 +155,14 @@ def main():
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
+            elif key == "A":
+                name = "".join( random.choice(
+                            string.ascii_uppercase
+                            + string.lowercase
+                            + string.digits
+                        ) for _ in range(3) )
+                col = DataTableColumn(name, label=name, width=5, padding=0)
+                self.add_column(col)
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
@@ -163,7 +171,6 @@ def main():
                 self.sort_by_column(reverse=True)
             elif self.ui_sort and key == "shift down":
                 self.sort_by_column(reverse=False)
-
             elif key == "shift end":
                 self.load_all()
                 self.listbox.focus_position = len(self) -1

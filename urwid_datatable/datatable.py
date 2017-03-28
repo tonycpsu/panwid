@@ -23,7 +23,6 @@ def make_value_function(template):
     return inner
 
 
-
 class DataTableColumn(object):
 
     def __init__(self, name,
@@ -537,6 +536,7 @@ class DataTable(urwid.WidgetWrap):
 
 
     def sort_by_column(self, col=None, reverse=None, toggle=False):
+
         column_name = None
         column_number = None
 
@@ -638,6 +638,8 @@ class DataTable(urwid.WidgetWrap):
         # logger.debug("requery: %d, %s (%d rows)" %(offset, load_all, len(rows)))
         self.append_rows(rows)
 
+    def invalidate(self):
+        self.df["_dirty"] = True
 
     def append_rows(self, rows):
         # if not len(rows):
@@ -645,10 +647,17 @@ class DataTable(urwid.WidgetWrap):
         # logger.info("append_rows: %s" %(rows))
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
-        self.df["_dirty"] = True
+        self.invalidate()
         # if not self.query_sort:
         #     self.sort_by_column(self.sort_by)
         self.walker._modified()
+
+    def add_column(self, column):
+
+        self.columns.append(column)
+        self.df.add_column(column.name)
+        # self.invalidate()
+        self.reset()
 
 
     def add_row(self, data, sorted=True):

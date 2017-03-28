@@ -131,7 +131,7 @@ class DataTableHeaderRow(DataTableRow):
 
         super(DataTableHeaderRow, self).__init__(
             table,
-            [c.label for c in table.columns],
+            [c.label if c.label else c.name for c in table.columns],
             border=border,
             padding=padding,
             sort = sort,
