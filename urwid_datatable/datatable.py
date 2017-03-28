@@ -662,6 +662,22 @@ class DataTable(urwid.WidgetWrap):
             self.footer.update()
         self.invalidate()
 
+    def delete_column(self, column):
+
+        if isinstance(column, int):
+            try:
+                column = self.columns[column].name
+            except IndexError:
+                raise Exception("bad column number: %d" %(column))
+
+        self.columns = [ c for c in self.columns if c.name != column ]
+        self.df.delete_columns(column)
+        if self.with_header:
+            self.header.update()
+        if self.with_footer:
+            self.footer.update()
+        self.invalidate()
+
 
     def add_row(self, data, sorted=True):
         # raise Exception(data)

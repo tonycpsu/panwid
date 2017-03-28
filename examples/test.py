@@ -168,6 +168,8 @@ def main():
                         ) for _ in range(5)) for _ in range(len(self)) ]
                 col = DataTableColumn(name, label=name, width=5, padding=0)
                 self.add_column(col, data=data)
+            elif key == "D":
+                self.delete_column(len(self.columns)-1)
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
