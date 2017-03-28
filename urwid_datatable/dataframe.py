@@ -63,10 +63,8 @@ class DataTableDataFrame(rc.DataFrame):
         newdata.log_dump()
         self.append(newdata)
 
-    def add_column(self, column, data=None):
-        self.log_dump()
-        self[column] = data
-        self.log_dump()
+    # def add_column(self, column, data=None):
+    #     self[column] = data
 
     def clear(self):
         self.delete_rows(self.index)

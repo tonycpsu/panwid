@@ -636,49 +636,54 @@ class DataTable(urwid.WidgetWrap):
             kwargs["offset"] = offset
 
         rows = list(self.query(**kwargs))
-        # logger.debug("requery: %d, %s (%d rows)" %(offset, load_all, len(rows)))
         self.append_rows(rows)
 
     def invalidate(self):
         self.df["_dirty"] = True
         self.walker._modified()
+        if self.with_header:
+            self.header.update()
+        if self.with_footer:
+            self.footer.update()
 
     def append_rows(self, rows):
-        # if not len(rows):
-        #     return
-        # logger.info("append_rows: %s" %(rows))
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
         self.invalidate()
-        # if not self.query_sort:
-        #     self.sort_by_column(self.sort_by)
         self.walker._modified()
 
-    def add_column(self, column, data=None):
+    def add_columns(self, columns, data=None):
 
-        self.columns.append(column)
-        self.df.add_column(column.name, data=data)
-        if self.with_header:
-            self.header.update()
-        if self.with_footer:
-            self.footer.update()
+        if not isinstance(columns, list):
+            columns = [columns]
+            if data:
+                data = [data]
+
+        self.columns += columns
+        for i, column in enumerate(columns):
+            self.df[column.name] = data=data[i] if data else None
+
         self.invalidate()
 
-    def remove_column(self, column):
 
-        if isinstance(column, int):
-            try:
-                column = self.columns[column].name
-            except IndexError:
-                raise Exception("bad column number: %d" %(column))
+    def remove_columns(self, columns):
 
-        self.columns = [ c for c in self.columns if c.name != column ]
-        self.df.delete_columns(column)
-        if self.with_header:
-            self.header.update()
-        if self.with_footer:
-            self.footer.update()
+        if not isinstance(columns, list):
+            columns = [columns]
+
+        columns = [ self.columns[column].name
+                    if isinstance(column, int)
+                    else column for column in columns ]
+
+        self.columns = [ c for c in self.columns if c.name not in columns ]
+        self.df.delete_columns(columns)
         self.invalidate()
+
+
+    def set_columns(self, columns):
+        self.remove_columns([c.name for c in self.columns])
+        self.add_columns(columns)
+        self.reset()
 
     def toggle_columns(self, columns, show=None):
 
@@ -701,10 +706,6 @@ class DataTable(urwid.WidgetWrap):
                 column.hide = not column.hide
             else:
                 column.hide = show
-        if self.with_header:
-            self.header.update()
-        if self.with_footer:
-            self.footer.update()
         self.invalidate()
 
     def show_columns(self, columns):
@@ -742,6 +743,7 @@ class DataTable(urwid.WidgetWrap):
         if reset_sort:
             self.sort_by_column(self.initial_sort)
         self.walker.set_focus(0)
+        self.invalidate()
 
     # def keypress(self, size, key):
     #     if key != "enter":

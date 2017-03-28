@@ -55,17 +55,20 @@ def main():
     entries = DataTable.get_palette_entries(user_entries=attr_entries)
     palette = Palette("default", **entries)
 
+
+    COLUMNS = [
+        # DataTableColumn("uniqueid", width=10, align="right", padding=1),
+        DataTableColumn("foo", label="Foo", width=4, align="right",
+                        attr="color", padding=0),# margin=1),
+        DataTableColumn("bar", label="Bar", width=10, align="right",
+                        sort_reverse=True, sort_icon=False, padding=1),# margin=5),
+        DataTableColumn("baz", label="Baz!", width=("weight", 1)),
+        DataTableColumn("qux", label="qux", width=5, hide=True),
+    ]
+
     class ExampleDataTable(DataTable):
 
-        columns = [
-            # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-            DataTableColumn("foo", label="Foo", width=4, align="right",
-                            attr="color", padding=0),# margin=1),
-            DataTableColumn("bar", label="Bar", width=10, align="right",
-                            sort_reverse=True, sort_icon=False, padding=1),# margin=5),
-            DataTableColumn("baz", label="Baz!", width=("weight", 1)),
-            DataTableColumn("qux", label="qux", width=5, hide=True),
-        ]
+        columns = COLUMNS[:]
 
         index="index"
 
@@ -168,13 +171,15 @@ def main():
                             + string.digits
                         ) for _ in range(5)) for _ in range(len(self)) ]
                 col = DataTableColumn(name, label=name, width=6, padding=0)
-                self.add_column(col, data=data)
+                self.add_columns(col, data=data)
+            elif key == "r":
+                self.set_columns(COLUMNS)
             elif key == "t":
                 self.toggle_columns("qux")
             elif key == "T":
                 self.toggle_columns(["foo", "baz"])
             elif key == "D":
-                self.remove_column(len(self.columns)-1)
+                self.remove_columns(len(self.columns)-1)
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
