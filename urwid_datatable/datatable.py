@@ -528,9 +528,7 @@ class DataTable(urwid.WidgetWrap):
 
         if self.df.get(index, "_dirty") or not row:
             # logger.debug("render %d" %(position))
-            for col in self.columns:
-                if col.value_fn:
-                    self.df.set(index, col.name, col.value_fn(self, self[index]))
+            self.refresh_calculated_fields(index)
             vals = self[index]
             row = self.render_item(vals)
             focus = self.df.get(index, "_focus_position")
@@ -556,6 +554,12 @@ class DataTable(urwid.WidgetWrap):
                                padding = self.padding,
                                index=item[self.index])
         return row
+
+    def refresh_calculated_fields(self, index):
+        for col in self.columns:
+            if col.value_fn:
+                self.df.set(index, col.name, col.value_fn(self, self[index]))
+
 
     def visible_column_index(self, column_name):
         try:
@@ -675,6 +679,14 @@ class DataTable(urwid.WidgetWrap):
             self.footer.update()
         self.walker._modified()
 
+    def invalidate_rows(self, indexes):
+        if not isinstance(indexes, list):
+            indexes = [indexes]
+        for index in indexes:
+            self.refresh_calculated_fields(index)
+        self.df[indexes, "_dirty"] = True
+        # FIXME: update header / footer if dynamic
+
     def append_rows(self, rows):
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
@@ -779,7 +791,7 @@ class DataTable(urwid.WidgetWrap):
             if k != field and k != self.index:
                 # logger.info("%s, %s=%s" %(i0, k, v))
                 self.df.set(i0, k, v)
-        self.invalidate()
+        self.invalidate_rows([i0, i1])
 
     def swap_rows(self, p0, p1, field=None):
         r0 = self[self.position_to_index(p0)]
