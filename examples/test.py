@@ -169,8 +169,10 @@ def main():
                         ) for _ in range(5)) for _ in range(len(self)) ]
                 col = DataTableColumn(name, label=name, width=6, padding=0)
                 self.add_column(col, data=data)
-            elif key == "s":
-                self.toggle_column("qux")
+            elif key == "t":
+                self.toggle_columns("qux")
+            elif key == "T":
+                self.toggle_columns(["foo", "baz"])
             elif key == "D":
                 self.remove_column(len(self.columns)-1)
             elif key == "shift left":

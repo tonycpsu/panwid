@@ -680,34 +680,38 @@ class DataTable(urwid.WidgetWrap):
             self.footer.update()
         self.invalidate()
 
-    def toggle_column(self, column, show=None):
+    def toggle_columns(self, columns, show=None):
 
-        if isinstance(column, int):
-            try:
-                column = self.columns[column]
-            except IndexError:
-                raise Exception("bad column number: %d" %(column))
-        else:
-            try:
-                column = ( c for c in self.columns if c.name == column).next()
-            except IndexError:
-                raise Exception("column %s not found" %(column))
+        if not isinstance(columns, list):
+            columns = [columns]
 
-        if show is None:
-            column.hide = not column.hide
-        else:
-            column.hide = show
+        for column in columns:
+            if isinstance(column, int):
+                try:
+                    column = self.columns[column]
+                except IndexError:
+                    raise Exception("bad column number: %d" %(column))
+            else:
+                try:
+                    column = ( c for c in self.columns if c.name == column).next()
+                except IndexError:
+                    raise Exception("column %s not found" %(column))
+
+            if show is None:
+                column.hide = not column.hide
+            else:
+                column.hide = show
         if self.with_header:
             self.header.update()
         if self.with_footer:
             self.footer.update()
         self.invalidate()
 
-    def show_column(self, column):
-        self.toggle_column(column, True)
+    def show_columns(self, columns):
+        self.toggle_columns(columns, True)
 
-    def hide_column(self, column):
-        self.show_column(column, False)
+    def hide_columns(self, columns):
+        self.show_column(columns, False)
 
 
     @property
