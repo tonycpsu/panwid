@@ -59,12 +59,11 @@ def main():
 
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-            DataTableColumn("foo", label="Foo", width=10, align="right",
+            DataTableColumn("foo", label="Foo", width=6, align="right",
                             attr="color", padding=0),# margin=1),
-            DataTableColumn("bar", label="BarBar!!", width=10, align="right",
+            DataTableColumn("bar", label="Bar", width=10, align="right",
                             sort_reverse=True, sort_icon=False, padding=1),# margin=5),
             DataTableColumn("baz", label="Baz!", width=("weight", 1)),
-            # DataTableColumn("zzz", width=("weight", 1)),
         ]
 
         index="index"
@@ -210,6 +209,7 @@ def main():
         ),
         ExampleDataTable(
             500,
+            columns = [DataTableColumn("row", width=7, value="{row}/{rows}")] + ExampleDataTable.columns,
             limit=25,
             index="uniqueid",
             sort_by = ("bar", True),

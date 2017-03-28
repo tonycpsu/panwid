@@ -12,10 +12,24 @@ from .dataframe import *
 from .rows import *
 
 
+def make_value_function(template):
+
+    def inner(row):
+        return template.format(
+            row=row.row_number,
+            rows=len(row.table),
+        )
+
+    return inner
+
+
+
 class DataTableColumn(object):
 
     def __init__(self, name,
-                 label=None, width=('weight', 1),
+                 label=None,
+                 value=None,
+                 width=('weight', 1),
                  align="left", wrap="space",
                  padding = DEFAULT_CELL_PADDING, #margin=1,
                  hide=False,
@@ -28,6 +42,10 @@ class DataTableColumn(object):
 
         self.name = name
         self.label = label if label else name
+        if value:
+            self.value_fn = make_value_function(value)
+        else:
+            self.value_fn = None
         self.width = width
         self.align = align
         self.wrap = wrap
@@ -122,6 +140,7 @@ class DataTable(urwid.WidgetWrap):
     ui_sort = True
 
     def __init__(self,
+                 columns = None,
                  limit=None,
                  index=None,
                  with_header=None, with_footer=None, with_scrollbar=None,
@@ -173,6 +192,7 @@ class DataTable(urwid.WidgetWrap):
                 super(DataTableListWalker, self)._modified()
 
 
+        if columns is not None: self.columns = columns
         if index: self.index = index
         if query_sort: self.query_sort = query_sort
 
@@ -249,7 +269,7 @@ class DataTable(urwid.WidgetWrap):
         urwid.connect_signal(
             self.listbox, "select",
             lambda source, selection: urwid.signals.emit_signal(
-                self, "select", self, self[selection._index])
+                self, "select", self, self[selection.index])
         )
         urwid.connect_signal(
             self.listbox, "drag_start",
@@ -273,7 +293,7 @@ class DataTable(urwid.WidgetWrap):
 
         if self.with_header:
             self.header = DataTableHeaderRow(
-                self.columns,
+                self,
                 border = self.border,
                 padding = self.padding,
                 sort = self.sort_by,
@@ -295,7 +315,7 @@ class DataTable(urwid.WidgetWrap):
 
         if self.with_footer:
             self.footer = DataTableFooterRow(
-                self.columns,
+                self,
                 border = self.border,
                 padding = self.padding
             )
@@ -489,7 +509,7 @@ class DataTable(urwid.WidgetWrap):
         if self.df.get(index, "_dirty") or not row:
             # logger.debug("render %d" %(position))
             vals = self[index]
-            row = self.render_item(vals)
+            row = self.render_item(vals, row_number = position+1)
             focus = self.df.get(index, "_focus_position")
             if focus is not None:
                 row.set_focus_column(focus)
@@ -506,12 +526,13 @@ class DataTable(urwid.WidgetWrap):
             return self[self.df.index[self.focus_position]]
 
 
-    def render_item(self, item):
+    def render_item(self, item, row_number):
         # raise Exception(item)
-        row = DataTableBodyRow(self.columns, item,
+        row = DataTableBodyRow(self, item,
                                border = self.border,
                                padding = self.padding,
-                               index=item[self.index])
+                               index=item[self.index],
+                               row_number=row_number)
         return row
 
 

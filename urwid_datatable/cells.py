@@ -108,6 +108,7 @@ class DataTableCell(urwid.WidgetWrap):
         if event == 'mouse press':
             urwid.emit_signal(self, "click")
 
+
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
     PADDING_ATTR = "table_row_body_padding"
@@ -120,14 +121,14 @@ class DataTableHeaderCell(DataTableCell):
     ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
     DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
 
-    def __init__(self, column, value, sort=None, sort_icon=None, *args, **kwargs):
+    def __init__(self, column, sort=None, sort_icon=None, *args, **kwargs):
         self.column = column
         if self.column.sort_icon is not None:
             self.sort_icon = self.column.sort_icon
         else:
             self.sort_icon = sort_icon
         self.columns = urwid.Columns([
-            ('weight', 1, urwid.Text(value, align=self.column.align))
+            ('weight', 1, urwid.Text(column.label, align=self.column.align))
         ])
         if sort_icon:
             self.columns.contents.append(

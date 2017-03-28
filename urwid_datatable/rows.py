@@ -7,13 +7,17 @@ class DataTableRow(urwid.WidgetWrap):
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
 
-    def __init__(self, columns, data, index=None,
+    def __init__(self, table, data, index=None, row_number=None,
                  border=None, padding=None,
                  sort=None, sort_icons=None,
                  *args, **kwargs):
 
+        self.table = table
         self.data = data
-        self._index = index
+        self.index = index
+        self._row_number = row_number
+        self.sort = sort
+        self.sort_icons = sort_icons
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
@@ -28,19 +32,14 @@ class DataTableRow(urwid.WidgetWrap):
         }
 
         if isinstance(self.data, list):
-            self.data = dict(zip([c.name for c in columns], self.data))
+            self.data = dict(zip([c.name for c in self.table.columns], self.data))
 
-        self.cells = [
-            self.CELL_CLASS(col, self.data[col.name],
-                            sort=sort,
-                            sort_icon=sort_icons,
-                            attr=self.data.get(col.attr, None))
-                 for i, col in enumerate(columns)]
+        self.cells = self.make_cells()
 
         self.columns = urwid.Columns([])
 
         for i, cell in enumerate(self.cells):
-            col = columns[i]
+            col = self.table.columns[i]
             self.columns.contents.append(
                 (cell, self.columns.options(col.sizing, col.width_with_padding(padding)))
             )
@@ -99,12 +98,25 @@ class DataTableRow(urwid.WidgetWrap):
     def __iter__(self):
         return iter( self.columns[i] for i in range(0, len(self.columns.contents), 2) )
 
+    @property
+    def row_number(self):
+        return self._row_number
+
 
 class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
 
-    CELL_CLASS = DataTableBodyCell
+    def make_cells(self):
+        return [
+            DataTableBodyCell(
+                col,
+                self.data[col.name] if not col.value_fn else col.value_fn(self),
+                sort=self.sort,
+                sort_icon=self.sort_icons,
+                attr=self.data.get(col.attr, None))
+            for i, col in enumerate(self.table.columns)]
+
 
 
 class DataTableHeaderRow(DataTableRow):
@@ -112,20 +124,30 @@ class DataTableHeaderRow(DataTableRow):
     signals = ['column_click']
 
     ATTR = "table_row_header"
-    CELL_CLASS = DataTableHeaderCell
 
-    def __init__(self, columns,
+    def __init__(self, table,
                  border=None, padding=None, sort=None,
                  *args, **kwargs):
 
         super(DataTableHeaderRow, self).__init__(
-            columns, [c.label for c in columns],
+            table,
+            [c.label for c in table.columns],
             border=border,
             padding=padding,
             sort = sort,
             *args,
             **kwargs
         )
+
+    def make_cells(self):
+        return [
+            DataTableHeaderCell(
+                col,
+                sort=self.sort,
+                sort_icon=self.sort_icons,
+                attr=self.data.get(col.attr, None))
+            for i, col in enumerate(self.table.columns)]
+
 
     def selectable(self):
         return False
@@ -138,10 +160,22 @@ class DataTableHeaderRow(DataTableRow):
 class DataTableFooterRow(DataTableRow):
 
     ATTR = "table_row_footer"
-    CELL_CLASS = DataTableFooterCell
 
-    def __init__(self, columns, *args, **kwargs):
-        super(DataTableFooterRow, self).__init__(columns, ["footer" for n in range(len(columns))])
+    def __init__(self, table, *args, **kwargs):
+        super(DataTableFooterRow, self).__init__(
+            table,
+            ["footer" for n in range(len(table.columns))]
+        )
+
+    def make_cells(self):
+        return [
+            DataTableFooterCell(
+                col,
+                self.data[col.name],
+                sort=self.sort,
+                sort_icon=self.sort_icons,
+                attr=self.data.get(col.attr, None))
+            for i, col in enumerate(self.table.columns)]
 
     def selectable(self):
         return False
