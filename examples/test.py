@@ -197,76 +197,77 @@ def main():
             elif key == "ctrl up":
                 if self.focus_position > 0:
                     self.swap_rows(self.focus_position, self.focus_position-1, "foo")
-                    # self.focus_position -= 1
+                    self.focus_position -= 1
             elif key == "ctrl down":
                 if self.focus_position < len(self)-1:
                     self.swap_rows(self.focus_position, self.focus_position+1, "foo")
-                    # self.focus_position += 1
+                    self.focus_position += 1
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
 
     tables = [
 
-        ExampleDataTable(
-            5,
-            limit=5,
-            index="uniqueid",
-            columns = [DataTableColumn("uniqueid", width=7)] + ExampleDataTable.columns,
-            sort_by = ("foo", False),
-            query_sort=True,
-            with_header=True,
-            with_footer=True,
-            with_scrollbar=True
-        ),
-
         # ExampleDataTable(
-        #     500,
-        #     limit=25,
+        #     5,
+        #     limit=5,
         #     index="uniqueid",
-        #     sort_by = ("bar", True),
+        #     columns = [DataTableColumn("uniqueid", width=7)] + ExampleDataTable.columns,
+        #     sort_by = ("foo", False),
         #     query_sort=True,
-        #     with_footer=True,
-        #     with_scrollbar=True,
-        #     border=(1, u"\N{VERTICAL LINE}"),
-        #     padding=3,
-        # ),
-
-        # ExampleDataTable(
-        #     100
-        # ),
-        # ExampleDataTable(
-        #     1000,
-        #     index="uniqueid",
-        #     sort_by = "bar",
-        #     query_sort=False,
+        #     with_header=True,
         #     with_footer=True,
         #     with_scrollbar=True
         # ),
+
         # ExampleDataTable(
         #     500,
-        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows}")] + ExampleDataTable.columns,
         #     limit=25,
         #     index="uniqueid",
         #     sort_by = ("bar", True),
-        #     sort_icons = False,
         #     query_sort=True,
         #     with_footer=True,
         #     with_scrollbar=True,
         #     border=(1, u"\N{VERTICAL LINE}"),
         #     padding=3,
         # ),
-        # ExampleDataTable(
-        #     5000,
-        #     limit=500,
-        #     index="uniqueid",
-        #     sort_by = ("foo", True),
-        #     border=3,
-        #     query_sort=True,
-        #     with_scrollbar=True,
-        #     with_header=False,
-        #     with_footer=False,
-        # ),
+
+
+        ExampleDataTable(
+            100
+        ),
+        ExampleDataTable(
+            1000,
+            index="uniqueid",
+            sort_by = "foo",
+            query_sort=False,
+            with_footer=True,
+            with_scrollbar=True
+        ),
+        ExampleDataTable(
+            500,
+            columns = [DataTableColumn("row", width=7, value="{row}/{rows}")] + ExampleDataTable.columns,
+            limit=25,
+            index="uniqueid",
+            sort_by = ("bar", True),
+            sort_icons = False,
+            query_sort=True,
+            with_footer=True,
+            with_scrollbar=True,
+            border=(1, u"\N{VERTICAL LINE}"),
+            padding=3,
+        ),
+        ExampleDataTable(
+            5000,
+            limit=500,
+            index="uniqueid",
+            sort_by = ("foo", True),
+            border=3,
+            query_sort=True,
+            with_scrollbar=True,
+            with_header=False,
+            with_footer=False,
+        ),
 
     ]
 

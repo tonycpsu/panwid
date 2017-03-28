@@ -635,8 +635,8 @@ class DataTable(urwid.WidgetWrap):
             index = 0
         else:
             index = (self.sort_column + step)
-            if index < 0: index = len(self.columns)-1
-            if index > len(self.columns)-1: index = 0
+            if index < 0: index = len(self.visible_columns)-1
+            if index > len(self.visible_columns)-1: index = 0
         logger.debug("index: %d" %(index))
         self.sort_by_column(index)
 
@@ -764,13 +764,13 @@ class DataTable(urwid.WidgetWrap):
 
         for k, v in r0.items():
             if k != field and k != self.index:
-                logger.info("%s, %s=%s" %(i1, k, v))
+                # logger.info("%s, %s=%s" %(i1, k, v))
                 self.df.set(i1, k, v)
 
 
         for k, v in r1.items():
             if k != field and k != self.index:
-                logger.info("%s, %s=%s" %(i0, k, v))
+                # logger.info("%s, %s=%s" %(i0, k, v))
                 self.df.set(i0, k, v)
         self.invalidate()
 
