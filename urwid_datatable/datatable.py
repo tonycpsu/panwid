@@ -484,15 +484,16 @@ class DataTable(urwid.WidgetWrap):
         #     return self.walker
         raise AttributeError(attr)
 
+
     @property
     def focus_position(self):
         return self.listbox.focus_position
+
 
     @focus_position.setter
     def focus_position(self, value):
         self.listbox.focus_position = value
         self.listbox._invalidate()
-
 
     def get_row(self, position):
 
@@ -640,6 +641,7 @@ class DataTable(urwid.WidgetWrap):
 
     def invalidate(self):
         self.df["_dirty"] = True
+        self.walker._modified()
 
     def append_rows(self, rows):
         # if not len(rows):
@@ -662,7 +664,7 @@ class DataTable(urwid.WidgetWrap):
             self.footer.update()
         self.invalidate()
 
-    def delete_column(self, column):
+    def remove_column(self, column):
 
         if isinstance(column, int):
             try:
@@ -677,6 +679,11 @@ class DataTable(urwid.WidgetWrap):
         if self.with_footer:
             self.footer.update()
         self.invalidate()
+
+
+    @property
+    def visible_columns(self):
+        return [ c for c in self.columns if not c.hide ]
 
 
     def add_row(self, data, sorted=True):

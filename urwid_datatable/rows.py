@@ -52,7 +52,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.columns = urwid.Columns([])
 
         for i, cell in enumerate(self.cells):
-            col = self.table.columns[i]
+            col = self.table.visible_columns[i]
             self.columns.contents.append(
                 (cell, self.columns.options(col.sizing, col.width_with_padding(self.padding)))
             )
@@ -124,7 +124,7 @@ class DataTableBodyRow(DataTableRow):
                 sort=self.sort,
                 sort_icon=self.sort_icons,
                 attr=self.data.get(col.attr, None))
-            for i, col in enumerate(self.table.columns)]
+            for i, col in enumerate(self.table.visible_columns)]
 
 
 
@@ -141,7 +141,7 @@ class DataTableHeaderRow(DataTableRow):
                 sort=self.sort,
                 sort_icon=self.sort_icons
             )
-            for i, col in enumerate(self.table.columns)]
+            for i, col in enumerate(self.table.visible_columns)]
 
 
     def selectable(self):
@@ -164,7 +164,7 @@ class DataTableFooterRow(DataTableRow):
                 sort=self.sort,
                 sort_icon=self.sort_icons
             )
-            for i, col in enumerate(self.table.columns)]
+            for i, col in enumerate(self.table.visible_columns)]
 
     def selectable(self):
         return False

@@ -59,11 +59,12 @@ def main():
 
         columns = [
             # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-            DataTableColumn("foo", label="Foo", width=6, align="right",
+            DataTableColumn("foo", label="Foo", width=4, align="right",
                             attr="color", padding=0),# margin=1),
             DataTableColumn("bar", label="Bar", width=10, align="right",
                             sort_reverse=True, sort_icon=False, padding=1),# margin=5),
             DataTableColumn("baz", label="Baz!", width=("weight", 1)),
+            DataTableColumn("qux", label="qux", width=5, hide=True),
         ]
 
         index="index"
@@ -90,11 +91,11 @@ def main():
                         baz =(''.join(random.choice(
                             string.ascii_uppercase
                             + string.lowercase
-                            + string.digits + ' ' * 20
+                            + string.digits + ' ' * 10
                         ) for _ in range(20))
                               if random.randint(0, 5)
                               else None),
-                        qux = (random.uniform(0, 200)
+                        qux = ( "%0.1f" %(random.uniform(0, 100))
                                if random.randint(0, 5)
                                else None),
                         xyzzy = random.randint(10, 100),
@@ -166,10 +167,10 @@ def main():
                             + string.lowercase
                             + string.digits
                         ) for _ in range(5)) for _ in range(len(self)) ]
-                col = DataTableColumn(name, label=name, width=5, padding=0)
+                col = DataTableColumn(name, label=name, width=6, padding=0)
                 self.add_column(col, data=data)
             elif key == "D":
-                self.delete_column(len(self.columns)-1)
+                self.remove_column(len(self.columns)-1)
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
@@ -256,7 +257,7 @@ def main():
         )
 
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 40) for t in tables], 50, 1, 1, "left"
+        [urwid.BoxAdapter(t, 30) for t in tables], 60, 1, 1, "left"
     )
 
     def global_input(key):
