@@ -652,12 +652,15 @@ class DataTable(urwid.WidgetWrap):
         #     self.sort_by_column(self.sort_by)
         self.walker._modified()
 
-    def add_column(self, column):
+    def add_column(self, column, data=None):
 
         self.columns.append(column)
-        self.df.add_column(column.name)
-        # self.invalidate()
-        self.reset()
+        self.df.add_column(column.name, data=data)
+        if self.with_header:
+            self.header.update()
+        if self.with_footer:
+            self.footer.update()
+        self.invalidate()
 
 
     def add_row(self, data, sorted=True):

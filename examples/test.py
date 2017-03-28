@@ -160,9 +160,14 @@ def main():
                             string.ascii_uppercase
                             + string.lowercase
                             + string.digits
-                        ) for _ in range(3) )
+                        ) for _ in range(5) )
+                data = [ "".join( random.choice(
+                            string.ascii_uppercase
+                            + string.lowercase
+                            + string.digits
+                        ) for _ in range(5)) for _ in range(len(self)) ]
                 col = DataTableColumn(name, label=name, width=5, padding=0)
-                self.add_column(col)
+                self.add_column(col, data=data)
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":

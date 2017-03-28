@@ -16,6 +16,8 @@ class DataTableRow(urwid.WidgetWrap):
         self.data = data
         self.index = index
         self._row_number = row_number
+        self.border = border
+        self.padding = padding
         self.sort = sort
         self.sort_icons = sort_icons
         self.attr = self.ATTR
@@ -34,6 +36,17 @@ class DataTableRow(urwid.WidgetWrap):
         if isinstance(self.data, list):
             self.data = dict(zip([c.name for c in self.table.columns], self.data))
 
+        self.columns_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
+        self.attr = urwid.AttrMap(
+            self.columns_placeholder,
+            attr_map = self.attr_map,
+            focus_map = self.focus_map,
+        )
+        self.update()
+        super(DataTableRow, self).__init__(self.attr)
+
+    def update(self):
+
         self.cells = self.make_cells()
 
         self.columns = urwid.Columns([])
@@ -41,25 +54,25 @@ class DataTableRow(urwid.WidgetWrap):
         for i, cell in enumerate(self.cells):
             col = self.table.columns[i]
             self.columns.contents.append(
-                (cell, self.columns.options(col.sizing, col.width_with_padding(padding)))
+                (cell, self.columns.options(col.sizing, col.width_with_padding(self.padding)))
             )
 
         border_width = DEFAULT_TABLE_BORDER_WIDTH
         border_char = DEFAULT_TABLE_BORDER_CHAR
         border_attr = DEFAULT_TABLE_BORDER_ATTR
 
-        if isinstance(border, tuple):
+        if isinstance(self.border, tuple):
 
             try:
-                border_width, border_char, border_attr = border
+                border_width, border_char, border_attr = self.border
             except ValueError:
                 try:
-                    border_width, border_char = border
+                    border_width, border_char = self.border
                 except ValueError:
-                    border_width = border
+                    border_width = self.border
 
-        elif isinstance(border, int):
-            border_width = border
+        elif isinstance(self.border, int):
+            border_width = self.border
 
         self.columns.contents = intersperse(
             (urwid.AttrMap(urwid.Divider(border_char),
@@ -68,12 +81,8 @@ class DataTableRow(urwid.WidgetWrap):
              ('given', border_width, False)),
             self.columns.contents)
 
-        self.attr = urwid.AttrMap(
-            self.columns,
-            attr_map = self.attr_map,
-            focus_map = self.focus_map,
-        )
-        super(DataTableRow, self).__init__(self.attr)
+        self.columns_placeholder.original_widget = self.columns
+
 
     def selectable(self):
         return True
@@ -157,6 +166,7 @@ class DataTableHeaderRow(DataTableRow):
             # raise Exception(c)
             c.update_sort(sort)
 
+
 class DataTableFooterRow(DataTableRow):
 
     ATTR = "table_row_footer"
@@ -171,7 +181,7 @@ class DataTableFooterRow(DataTableRow):
         return [
             DataTableFooterCell(
                 col,
-                self.data[col.name],
+                self.data.get(col.name),
                 sort=self.sort,
                 sort_icon=self.sort_icons,
                 attr=self.data.get(col.attr, None))
@@ -179,7 +189,3 @@ class DataTableFooterRow(DataTableRow):
 
     def selectable(self):
         return False
-
-    def update(self):
-        # FIXME
-        pass
