@@ -177,14 +177,6 @@ def main():
                 self.add_columns(col, data=data)
             elif key == "r":
                 self.set_columns(COLUMNS)
-            elif key == "ctrl up":
-                if self.focus_position > 0:
-                    self.swap_rows(self.focus_position-1, self.focus_position)
-                    self.focus_position -= 1
-            elif key == "ctrl down":
-                if self.focus_position < len(self)-1:
-                    self.swap_rows(self.focus_position, self.focus_position+1)
-                    self.focus_position += 1
             elif key == "t":
                 self.toggle_columns("qux")
             elif key == "T":
@@ -202,6 +194,14 @@ def main():
             elif key == "shift end":
                 self.load_all()
                 self.listbox.focus_position = len(self) -1
+            elif key == "ctrl up":
+                if self.focus_position > 0:
+                    self.swap_rows(self.focus_position, self.focus_position-1, "foo")
+                    # self.focus_position -= 1
+            elif key == "ctrl down":
+                if self.focus_position < len(self)-1:
+                    self.swap_rows(self.focus_position, self.focus_position+1, "foo")
+                    # self.focus_position += 1
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
@@ -213,7 +213,7 @@ def main():
             limit=5,
             index="uniqueid",
             columns = [DataTableColumn("uniqueid", width=7)] + ExampleDataTable.columns,
-            sort_by = ("uniqueid", False),
+            sort_by = ("foo", False),
             query_sort=True,
             with_header=True,
             with_footer=True,
