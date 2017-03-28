@@ -246,7 +246,7 @@ def main():
         ),
         ExampleDataTable(
             500,
-            columns = [DataTableColumn("row", width=7, value="{row}/{rows}")] + ExampleDataTable.columns,
+            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
             limit=25,
             index="uniqueid",
             sort_by = ("bar", True),

@@ -7,7 +7,7 @@ class DataTableRow(urwid.WidgetWrap):
     border_attr_map = { None: "table_border" }
     border_focus_map = { None: "table_border focused" }
 
-    def __init__(self, table, data=None, index=None, row_number=None,
+    def __init__(self, table, data=None, index=None,
                  border=None, padding=None,
                  sort=None, sort_icons=None,
                  *args, **kwargs):
@@ -15,7 +15,6 @@ class DataTableRow(urwid.WidgetWrap):
         self.table = table
         self.data = data
         self.index = index
-        self._row_number = row_number
         self.border = border
         self.padding = padding
         self.sort = sort
@@ -107,10 +106,6 @@ class DataTableRow(urwid.WidgetWrap):
     def __iter__(self):
         return iter( self.columns[i] for i in range(0, len(self.columns.contents), 2) )
 
-    @property
-    def row_number(self):
-        return self._row_number
-
 
 class DataTableBodyRow(DataTableRow):
 
@@ -120,7 +115,8 @@ class DataTableBodyRow(DataTableRow):
         return [
             DataTableBodyCell(
                 col,
-                self.data[col.name] if not col.value_fn else col.value_fn(self),
+                self.data[col.name],
+                # self.data[col.name] if not col.value_fn else col.value_fn(self),
                 sort=self.sort,
                 sort_icon=self.sort_icons,
                 attr=self.data.get(col.attr, None))

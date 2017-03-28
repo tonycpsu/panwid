@@ -14,10 +14,13 @@ from .rows import *
 
 def make_value_function(template):
 
-    def inner(row):
+    def inner(table, row):
         return template.format(
-            row=row.row_number,
-            rows=len(row.table),
+            row=table.index_to_position(
+                row.get(table.index)
+            )+1,
+            rows_loaded = len(table),
+            rows_total = table.query_result_count()
         )
 
     return inner
@@ -512,7 +515,8 @@ class DataTable(urwid.WidgetWrap):
         return self.df.index[position]
 
     def index_to_position(self, index):
-        return self.index.index(index)
+        # raise Exception(index, self.df.index)
+        return self.df.index.index(index)
 
     def get_row(self, position):
         index = self.position_to_index(position)
@@ -524,8 +528,11 @@ class DataTable(urwid.WidgetWrap):
 
         if self.df.get(index, "_dirty") or not row:
             # logger.debug("render %d" %(position))
+            for col in self.columns:
+                if col.value_fn:
+                    self.df.set(index, col.name, col.value_fn(self, self[index]))
             vals = self[index]
-            row = self.render_item(vals, row_number = position+1)
+            row = self.render_item(vals)
             focus = self.df.get(index, "_focus_position")
             if focus is not None:
                 row.set_focus_column(focus)
@@ -542,13 +549,12 @@ class DataTable(urwid.WidgetWrap):
             return self[self.df.index[self.focus_position]]
 
 
-    def render_item(self, item, row_number):
+    def render_item(self, item):
         # raise Exception(item)
         row = DataTableBodyRow(self, item,
                                border = self.border,
                                padding = self.padding,
-                               index=item[self.index],
-                               row_number=row_number)
+                               index=item[self.index])
         return row
 
     def visible_column_index(self, column_name):
@@ -659,6 +665,7 @@ class DataTable(urwid.WidgetWrap):
 
         rows = list(self.query(**kwargs))
         self.append_rows(rows)
+
 
     def invalidate(self):
         self.df["_dirty"] = True
