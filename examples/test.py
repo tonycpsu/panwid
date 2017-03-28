@@ -157,7 +157,8 @@ def main():
                 col = int(key)-1
                 self.sort_by_column(col, toggle=True)
             elif key == "0":
-                self.sort_by_column(self.index, toggle=True)
+                # self.sort_by_column(self.index, toggle=True)
+                self.sort_index()
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
@@ -176,6 +177,14 @@ def main():
                 self.add_columns(col, data=data)
             elif key == "r":
                 self.set_columns(COLUMNS)
+            elif key == "ctrl up":
+                if self.focus_position > 0:
+                    self.swap_rows(self.focus_position-1, self.focus_position)
+                    self.focus_position -= 1
+            elif key == "ctrl down":
+                if self.focus_position < len(self)-1:
+                    self.swap_rows(self.focus_position, self.focus_position+1)
+                    self.focus_position += 1
             elif key == "t":
                 self.toggle_columns("qux")
             elif key == "T":
@@ -199,16 +208,17 @@ def main():
 
     tables = [
 
-        # ExampleDataTable(
-        #     5,
-        #     limit=5,
-        #     index="uniqueid",
-        #     sort_by = ("bar", False),
-        #     query_sort=True,
-        #     with_header=True,
-        #     with_footer=True,
-        #     with_scrollbar=True
-        # ),
+        ExampleDataTable(
+            5,
+            limit=5,
+            index="uniqueid",
+            columns = [DataTableColumn("uniqueid", width=7)] + ExampleDataTable.columns,
+            sort_by = ("uniqueid", False),
+            query_sort=True,
+            with_header=True,
+            with_footer=True,
+            with_scrollbar=True
+        ),
 
         # ExampleDataTable(
         #     500,
@@ -222,41 +232,41 @@ def main():
         #     padding=3,
         # ),
 
-        ExampleDataTable(
-            100
-        ),
-        ExampleDataTable(
-            1000,
-            index="uniqueid",
-            sort_by = "bar",
-            query_sort=False,
-            with_footer=True,
-            with_scrollbar=True
-        ),
-        ExampleDataTable(
-            500,
-            columns = [DataTableColumn("row", width=7, value="{row}/{rows}")] + ExampleDataTable.columns,
-            limit=25,
-            index="uniqueid",
-            sort_by = ("bar", True),
-            sort_icons = False,
-            query_sort=True,
-            with_footer=True,
-            with_scrollbar=True,
-            border=(1, u"\N{VERTICAL LINE}"),
-            padding=3,
-        ),
-        ExampleDataTable(
-            5000,
-            limit=500,
-            index="uniqueid",
-            sort_by = ("foo", True),
-            border=3,
-            query_sort=True,
-            with_scrollbar=True,
-            with_header=False,
-            with_footer=False,
-        ),
+        # ExampleDataTable(
+        #     100
+        # ),
+        # ExampleDataTable(
+        #     1000,
+        #     index="uniqueid",
+        #     sort_by = "bar",
+        #     query_sort=False,
+        #     with_footer=True,
+        #     with_scrollbar=True
+        # ),
+        # ExampleDataTable(
+        #     500,
+        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows}")] + ExampleDataTable.columns,
+        #     limit=25,
+        #     index="uniqueid",
+        #     sort_by = ("bar", True),
+        #     sort_icons = False,
+        #     query_sort=True,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     border=(1, u"\N{VERTICAL LINE}"),
+        #     padding=3,
+        # ),
+        # ExampleDataTable(
+        #     5000,
+        #     limit=500,
+        #     index="uniqueid",
+        #     sort_by = ("foo", True),
+        #     border=3,
+        #     query_sort=True,
+        #     with_scrollbar=True,
+        #     with_header=False,
+        #     with_footer=False,
+        # ),
 
     ]
 

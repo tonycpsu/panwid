@@ -506,12 +506,14 @@ class DataTable(urwid.WidgetWrap):
         self.listbox.focus_position = value
         self.listbox._invalidate()
 
-    def get_row(self, position):
-
-        # raise Exception(self.sort_by)
+    def position_to_index(self, position):
         if not self.query_sort and self.sort_by[1]:
             position = -(position + 1)
-        index = self.df.index[position]
+        return self.df.index[position]
+
+    def get_row(self, position):
+        index = self.position_to_index(position)
+        # raise Exception(self.sort_by)
         try:
             row = self.df.get(index, "_rendered_row")
         except:
@@ -740,6 +742,30 @@ class DataTable(urwid.WidgetWrap):
     def add_row(self, data, sorted=True):
         # raise Exception(data)
         self.append_rows([data])
+
+    def swap_rows_by_index(self, r0, r1):
+
+        i0 = r0.get(self.index)
+        i1 = r1.get(self.index)
+        if i0 is None or i1 is None:
+            raise Exception
+        r0 = { k: v[0] for k, v in self.df[i0, None].to_dict(index=False).items() }
+        r1 = { k: v[0] for k, v in self.df[i1, None].to_dict(index=False).items() }
+        r0.update({self.index: i1})
+        r1.update({self.index: i0})
+        self.df.delete_rows([i0, i1])
+        self.df.append_row(i0, r1)
+        self.df.append_row(i1, r0)
+        self.df.log_dump()
+        self.sort_index()
+        self.invalidate()
+
+    def swap_rows(self, p0, p1):
+        # r0 = self[self.position_to_index(p0)]
+        # r1 = self[self.position_to_index(p1)]
+        r0 = self[p0]
+        r1 = self[p1]
+        self.swap_rows_by_index(r0, r1)
 
     def load_more(self, offset):
         if offset >= self.query_result_count():

@@ -22,7 +22,7 @@ class DataTableDataFrame(rc.DataFrame):
 
 
     def log_dump(self, n=5):
-        logger.debug("index: %s [%s%s]\n%s" %(
+        logger.info("index: %s [%s%s]\n%s" %(
             self.index_name,
             ",".join([str(x) for x in self.index[0:min(n, len(self.index))]]),
             "..." if len(self.index) > n else "",
