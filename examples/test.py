@@ -156,6 +156,8 @@ def main():
             elif key.isdigit() and int(key)-1 in range(len(self.columns)):
                 col = int(key)-1
                 self.sort_by_column(col, toggle=True)
+            elif key == "0":
+                self.sort_by_column(self.index, toggle=True)
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
