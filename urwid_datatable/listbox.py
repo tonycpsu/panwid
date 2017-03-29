@@ -273,6 +273,8 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     @focus_position.setter
     def focus_position(self, value):
+        if not len(self.body):
+            return
         self.listbox.focus_position = value
         self.listbox._invalidate()
 
