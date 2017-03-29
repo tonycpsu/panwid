@@ -64,6 +64,7 @@ def main():
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
         DataTableColumn("baz", label="Baz!", width=("weight", 1)),
         DataTableColumn("qux", label="qux", width=5, hide=True),
+        # DataTableColumn("empty", label="empty", width=5),
     ]
 
     class ExampleDataTable(DataTable):
@@ -102,6 +103,7 @@ def main():
                                if random.randint(0, 5)
                                else None),
                         xyzzy = random.randint(10, 100),
+                        empty = None,
                         a = dict(b=dict(c=random.randint(0, 100))),
                         d = dict(e=dict(f=random.randint(0, 100))),
                         color = ["dark red", "dark green", "dark blue"][random.randrange(3)]
@@ -148,11 +150,16 @@ def main():
                 self.reset(reset_sort=True)
             if key == "ctrl d":
                 self.log_dump(10)
+            if key == "meta d":
+                self.log_dump(10, columns=["foo", "baz"])
             if key == "ctrl f":
                 self.focus_position = 0
             elif key == "ctrl t":
                 # logger.info(self.get_row(0)[0])
                 logger.info(self.selection["bar"])
+            elif key == "meta i":
+                logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
+                                                    self.selection.get("baz")))
             elif key.isdigit() and int(key)-1 in range(len(self.columns)):
                 col = int(key)-1
                 self.sort_by_column(col, toggle=True)
@@ -212,24 +219,22 @@ def main():
         #     5,
         #     limit=5,
         #     index="uniqueid",
-        #     columns = [DataTableColumn("uniqueid", width=7)] + ExampleDataTable.columns,
         #     sort_by = ("foo", False),
-        #     query_sort=True,
+        #     query_sort=False,
         #     with_header=True,
         #     with_footer=True,
         #     with_scrollbar=True
         # ),
 
         # ExampleDataTable(
-        #     500,
-        #     limit=25,
+        #     5,
+        #     limit=5,
         #     index="uniqueid",
-        #     sort_by = ("bar", True),
+        #     sort_by = ("foo", False),
         #     query_sort=True,
+        #     with_header=True,
         #     with_footer=True,
-        #     with_scrollbar=True,
-        #     border=(1, u"\N{VERTICAL LINE}"),
-        #     padding=3,
+        #     with_scrollbar=True
         # ),
 
 

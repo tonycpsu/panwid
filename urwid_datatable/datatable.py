@@ -11,6 +11,8 @@ from datetime import datetime, date as datetype
 from .dataframe import *
 from .rows import *
 
+class NoSuchColumnException(Exception):
+    pass
 
 def make_value_function(template):
 
@@ -467,12 +469,11 @@ class DataTable(urwid.WidgetWrap):
 
 
     def __getitem__(self, index):
-        logger.debug("__getitem__: %d" %(index))
+        logger.debug("__getitem__: %s" %(index))
         try:
             v = self.df[index:index]
         except IndexError:
             logger.debug(traceback.format_exc())
-            logger.debug("%d, %s" %(index, self.df.index))
 
         return  OrderedDict(
             (k, v[0])
@@ -528,7 +529,7 @@ class DataTable(urwid.WidgetWrap):
 
         if self.df.get(index, "_dirty") or not row:
             # logger.debug("render %d" %(position))
-            self.refresh_calculated_fields(index)
+            self.refresh_calculated_fields([index])
             vals = self[index]
             row = self.render_item(vals)
             focus = self.df.get(index, "_focus_position")
@@ -555,10 +556,16 @@ class DataTable(urwid.WidgetWrap):
                                index=item[self.index])
         return row
 
-    def refresh_calculated_fields(self, index):
+    def refresh_calculated_fields(self, indexes=None):
+        if not indexes:
+            indexes = self.df.index[:]
+        if not hasattr(indexes, "__len__"):
+            indexes = [indexes]
         for col in self.columns:
-            if col.value_fn:
-                self.df.set(index, col.name, col.value_fn(self, self[index]))
+            if not col.value_fn: continue
+            for index in indexes:
+                if self.df[index, "_dirty"]:
+                    self.df.set(index, col.name, col.value_fn(self, self[index]))
 
 
     def visible_column_index(self, column_name):
@@ -597,7 +604,11 @@ class DataTable(urwid.WidgetWrap):
 
         if not column_name:
             return
-        column = (c for c in self.columns if c.name == column_name).next()
+        try:
+            column = (c for c in self.columns if c.name == column_name).next()
+        except:
+            return # FIXME
+            # raise NoSuchColumnException("column %s not found (%s)" %(column_name, [c.name for c in self.columns]))
         # reverse = column.sort_reverse
 
         if reverse is None and column.sort_reverse is not None:
@@ -609,14 +620,15 @@ class DataTable(urwid.WidgetWrap):
         # sort_by = (column_name, reverse)
         # self.log_dump()
 
-        if not self.query_sort:
-            self.sort(column_name)
+        # if not self.query_sort:
 
         self.sort_by = sort_by
-
-        self.set_focus_column(self.sort_column)
         if self.query_sort:
             self.reset()
+        # else:
+        self.sort(column_name)
+
+        self.set_focus_column(self.sort_column)
 
         if self.with_header:
             self.header.update_sort(self.sort_by)
@@ -669,23 +681,11 @@ class DataTable(urwid.WidgetWrap):
 
         rows = list(self.query(**kwargs))
         self.append_rows(rows)
+        self.refresh_calculated_fields()
+        # for r in rows:
+        #     self.refresh_calculated_fields(r[self.index])
 
 
-    def invalidate(self):
-        self.df["_dirty"] = True
-        if self.with_header:
-            self.header.update()
-        if self.with_footer:
-            self.footer.update()
-        self.walker._modified()
-
-    def invalidate_rows(self, indexes):
-        if not isinstance(indexes, list):
-            indexes = [indexes]
-        for index in indexes:
-            self.refresh_calculated_fields(index)
-        self.df[indexes, "_dirty"] = True
-        # FIXME: update header / footer if dynamic
 
     def append_rows(self, rows):
         self.df.append_rows(rows)
@@ -765,40 +765,50 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception(data)
         self.append_rows([data])
 
-    def swap_rows_by_field(self, r0, r1, field=None):
+    def invalidate(self):
+        self.df["_dirty"] = True
+        if self.with_header:
+            self.header.update()
+        if self.with_footer:
+            self.footer.update()
+        self.walker._modified()
+
+    def invalidate_rows(self, indexes):
+        if not isinstance(indexes, list):
+            indexes = [indexes]
+        for index in indexes:
+            self.refresh_calculated_fields(index)
+
+        self.df[indexes, "_dirty"] = True
+        self.walker._modified()
+        # FIXME: update header / footer if dynamic
+
+    def swap_rows_by_field(self, p0, p1, field=None):
 
         if not field:
             field=self.index
 
-        i0 = r0.get(self.index)
-        i1 = r1.get(self.index)
+        i0 = self.position_to_index(p0)
+        i1 = self.position_to_index(p1)
 
-        if i0 is None or i1 is None:
-            raise Exception
-
-        f0 = r0.get(field)
-        f1 = r1.get(field)
-        r0 = { k: v[0] for k, v in self.df[i0, None].to_dict(index=False).items() }
-        r1 = { k: v[0] for k, v in self.df[i1, None].to_dict(index=False).items() }
+        r0 = { k: v[0] for k, v in self.df[i0, None].to_dict().items() }
+        r1 = { k: v[0] for k, v in self.df[i1, None].to_dict().items() }
 
         for k, v in r0.items():
-            if k != field and k != self.index:
-                # logger.info("%s, %s=%s" %(i1, k, v))
+            if k != field:
                 self.df.set(i1, k, v)
 
-
         for k, v in r1.items():
-            if k != field and k != self.index:
-                # logger.info("%s, %s=%s" %(i0, k, v))
+            if k != field:
                 self.df.set(i0, k, v)
+        self.df.set(i0, "_dirty", True)
+
         self.invalidate_rows([i0, i1])
 
     def swap_rows(self, p0, p1, field=None):
-        r0 = self[self.position_to_index(p0)]
-        r1 = self[self.position_to_index(p1)]
-        # r0 = self[p0]
-        # r1 = self[p1]
-        self.swap_rows_by_field(r0, r1, field=field)
+        # r0 = self[self.position_to_index(p0)]
+        # r1 = self[self.position_to_index(p1)]
+        self.swap_rows_by_field(p0, p1, field=field)
 
     def load_more(self, offset):
         if offset >= self.query_result_count():

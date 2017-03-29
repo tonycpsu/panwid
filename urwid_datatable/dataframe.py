@@ -21,12 +21,17 @@ class DataTableDataFrame(rc.DataFrame):
             self[c] = None
 
 
-    def log_dump(self, n=5):
+    def log_dump(self, n=5, columns=None):
+        df = self
+        if columns:
+            if not isinstance(columns, list):
+                columns = [columns]
+            df = df[columns]
         logger.info("index: %s [%s%s]\n%s" %(
             self.index_name,
             ",".join([str(x) for x in self.index[0:min(n, len(self.index))]]),
             "..." if len(self.index) > n else "",
-            self.head(n)))
+            df.head(n)))
 
 
     def append_rows(self, rows):
