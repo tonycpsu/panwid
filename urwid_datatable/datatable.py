@@ -116,7 +116,7 @@ class DataTableColumn(object):
         return v
 
 
-class DataTable(urwid.WidgetWrap):
+class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
     signals = ["select", "refresh",
@@ -152,50 +152,7 @@ class DataTable(urwid.WidgetWrap):
                  border=None, padding=None,
                  ui_sort=None):
 
-        class DataTableListWalker(urwid.listbox.ListWalker):
-
-            table = self
-
-            def __init__(self):
-                self._focus = 0
-                super(DataTableListWalker, self).__init__()
-
-            def __getitem__(self, position):
-                # logger.debug("walker get: %d" %(position))
-                if position < 0 or position >= len(self): raise IndexError
-                try:
-                    r = self.table.get_row(position)
-                    return r
-                except IndexError:
-                    logger.error(traceback.format_exc())
-                    raise
-                # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
-
-            @property
-            def focus(self): return self._focus
-
-            def next_position(self, position):
-                index = position + 1
-                if index > len(self): raise IndexError
-                return index
-
-            def prev_position(self, position):
-                index = position-1
-                if index < 0: raise IndexError
-                return index
-
-            def set_focus(self, position):
-                # logger.debug("walker set_focus: %d" %(position))
-                self._focus = position
-                self._modified()
-
-            def __len__(self): return len(self.table)
-
-            def _modified(self):
-                self.focus_position = 0
-                super(DataTableListWalker, self)._modified()
-
-
+        self._focus = 0
         if columns is not None: self.columns = columns
         if index: self.index = index
 
@@ -206,9 +163,6 @@ class DataTable(urwid.WidgetWrap):
             )
 
         if query_sort: self.query_sort = query_sort
-
-        # if not isinstance(self.initial_sort, tuple):
-        #     self.initial_sort = (self.initial_sort, None)
 
         if sort_by:
             if isinstance(sort_by, tuple):
@@ -222,12 +176,6 @@ class DataTable(urwid.WidgetWrap):
             self.sort_by = (column, reverse)
 
         self.initial_sort = self.sort_by
-        # raise Exception(self.sort_by)
-
-        # else:
-        #     self.sort_by = self.initial_sort
-
-        # raise Exception(self.initial_sort)
 
         if sort_icons is not None: self.sort_icons = sort_icons
 
@@ -248,10 +196,8 @@ class DataTable(urwid.WidgetWrap):
             self.limit = limit
 
         self.sort_column = None
-        # self.sort_reverse = None
 
         logger.debug("columns: %s" %(self.column_names))
-        # self.pd_columns = self.column_names + ["_rendered_row"]
 
         kwargs = dict(
             columns = self.column_names,
@@ -263,13 +209,11 @@ class DataTable(urwid.WidgetWrap):
             kwargs["index_name"] = self.index
 
         self.df = DataTableDataFrame(**kwargs)
-        # self.df["_rendered_row"] = None
 
-        self.walker = DataTableListWalker()
 
         self.pile = urwid.Pile([])
         self.listbox = ScrollingListBox(
-            self.walker, infinite=self.limit,
+            self, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
             row_count_fn = (self.query_result_count
                             if self.with_scrollbar
@@ -468,22 +412,42 @@ class DataTable(urwid.WidgetWrap):
         return entries
 
 
-    def __getitem__(self, index):
-        logger.debug("__getitem__: %s" %(index))
-        try:
-            v = self.df[index:index]
-        except IndexError:
-            logger.debug(traceback.format_exc())
+    @property
+    def focus(self): return self._focus
 
-        return  OrderedDict(
-            (k, v[0])
-            for k, v in self.df[index:index].to_dict(ordered=True, index=True).items()
-            # if k in self.column_names
-        )
+
+    def next_position(self, position):
+        index = position + 1
+        if index > len(self): raise IndexError
+        return index
+
+    def prev_position(self, position):
+        index = position-1
+        if index < 0: raise IndexError
+        return index
+
+    def set_focus(self, position):
+        # logger.debug("walker set_focus: %d" %(position))
+        self._focus = position
+        self._modified()
+
+    def _modified(self):
+        # self.focus_position = 0
+        urwid.listbox.ListWalker._modified(self)
+
+    def __getitem__(self, position):
+        # logger.debug("walker get: %d" %(position))
+        if position < 0 or position >= len(self): raise IndexError
+        try:
+            r = self.get_row(position)
+            return r
+        except IndexError:
+            logger.error(traceback.format_exc())
+            raise
+        # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
 
     def __len__(self):
         return len(self.df)
-
 
     def __getattr__(self, attr):
         if attr in ["head", "tail", "index_name", "log_dump"]:
@@ -494,16 +458,13 @@ class DataTable(urwid.WidgetWrap):
         #     return self.walker
         raise AttributeError(attr)
 
-
     @property
     def column_names(self):
         return [c.name for c in self.columns]
 
-
     @property
     def focus_position(self):
         return self.listbox.focus_position
-
 
     @focus_position.setter
     def focus_position(self, value):
@@ -519,6 +480,19 @@ class DataTable(urwid.WidgetWrap):
         # raise Exception(index, self.df.index)
         return self.df.index.index(index)
 
+    def get_dataframe_row(self, index):
+        logger.debug("__getitem__: %s" %(index))
+        try:
+            v = self.df[index:index]
+        except IndexError:
+            logger.debug(traceback.format_exc())
+
+        return  OrderedDict(
+            (k, v[0])
+            for k, v in self.df[index:index].to_dict(ordered=True, index=True).items()
+            # if k in self.column_names
+        )
+
     def get_row(self, position):
         index = self.position_to_index(position)
         # raise Exception(self.sort_by)
@@ -530,7 +504,8 @@ class DataTable(urwid.WidgetWrap):
         if self.df.get(index, "_dirty") or not row:
             # logger.debug("render %d" %(position))
             self.refresh_calculated_fields([index])
-            vals = self[index]
+            # vals = self[index]
+            vals = self.get_dataframe_row(index)
             row = self.render_item(vals)
             focus = self.df.get(index, "_focus_position")
             if focus is not None:
@@ -540,13 +515,11 @@ class DataTable(urwid.WidgetWrap):
             self.df.set(index, "_dirty", False)
         return row
 
-
     @property
     def selection(self):
         if len(self.body):
             # FIXME: make helpers to map positions to indexes
             return self[self.df.index[self.focus_position]]
-
 
     def render_item(self, item):
         # raise Exception(item)
@@ -565,8 +538,7 @@ class DataTable(urwid.WidgetWrap):
             if not col.value_fn: continue
             for index in indexes:
                 if self.df[index, "_dirty"]:
-                    self.df.set(index, col.name, col.value_fn(self, self[index]))
-
+                    self.df.set(index, col.name, col.value_fn(self, self.get_dataframe_row(index)))
 
     def visible_column_index(self, column_name):
         try:
@@ -575,7 +547,6 @@ class DataTable(urwid.WidgetWrap):
 
         except StopIteration:
             return None
-
 
     def sort_by_column(self, col=None, reverse=None, toggle=False):
 
@@ -636,7 +607,7 @@ class DataTable(urwid.WidgetWrap):
     def sort(self, column):
         logger.debug(column)
         self.df.sort_columns(column)
-        self.walker._modified()
+        self._modified()
 
 
     def set_focus_column(self, index):
@@ -650,7 +621,6 @@ class DataTable(urwid.WidgetWrap):
         self.df["_focus_position"] = index
         self.df["_dirty"] = True
 
-
     def cycle_sort_column(self, step):
 
         if self.sort_column is None:
@@ -662,11 +632,9 @@ class DataTable(urwid.WidgetWrap):
         logger.debug("index: %d" %(index))
         self.sort_by_column(index)
 
-
     def sort_index(self):
         self.df.sort_index()
-        self.walker._modified()
-
+        self._modified()
 
     def requery(self, offset=0, load_all=False, **kwargs):
 
@@ -691,7 +659,7 @@ class DataTable(urwid.WidgetWrap):
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
         self.invalidate()
-        self.walker._modified()
+        self._modified()
 
     def add_columns(self, columns, data=None):
 
@@ -706,7 +674,6 @@ class DataTable(urwid.WidgetWrap):
 
         self.invalidate()
 
-
     def remove_columns(self, columns):
 
         if not isinstance(columns, list):
@@ -719,7 +686,6 @@ class DataTable(urwid.WidgetWrap):
         self.columns = [ c for c in self.columns if c.name not in columns ]
         self.df.delete_columns(columns)
         self.invalidate()
-
 
     def set_columns(self, columns):
         self.remove_columns([c.name for c in self.columns])
@@ -771,7 +737,7 @@ class DataTable(urwid.WidgetWrap):
             self.header.update()
         if self.with_footer:
             self.footer.update()
-        self.walker._modified()
+        self._modified()
 
     def invalidate_rows(self, indexes):
         if not isinstance(indexes, list):
@@ -780,7 +746,7 @@ class DataTable(urwid.WidgetWrap):
             self.refresh_calculated_fields(index)
 
         self.df[indexes, "_dirty"] = True
-        self.walker._modified()
+        self._modified()
         # FIXME: update header / footer if dynamic
 
     def swap_rows_by_field(self, p0, p1, field=None):
@@ -828,7 +794,7 @@ class DataTable(urwid.WidgetWrap):
         self.requery()
         if reset_sort:
             self.sort_by_column(self.initial_sort)
-        self.walker.set_focus(0)
+        self.focus_position = 0
         self.invalidate()
 
     # def keypress(self, size, key):
