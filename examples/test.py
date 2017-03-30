@@ -156,7 +156,7 @@ def main():
                 self.focus_position = 0
             elif key == "ctrl t":
                 # logger.info(self.get_row(0)[0])
-                logger.info(self.selection["bar"])
+                logger.info(self.selection.data["bar"])
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
                                                     self.selection.get("baz")))

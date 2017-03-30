@@ -526,7 +526,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def selection(self):
         if len(self.body):
             # FIXME: make helpers to map positions to indexes
-            return self[self.df.index[self.focus_position]]
+            return self[self.focus_position]
+
 
     def render_item(self, item):
         # raise Exception(item)
