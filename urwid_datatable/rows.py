@@ -2,10 +2,18 @@ import urwid
 
 from .cells import *
 
-class DataTableRow(urwid.WidgetWrap):
 
-    border_attr_map = { None: "table_border" }
-    border_focus_map = { None: "table_border focused" }
+DEFAULT_CELL_PADDING = 0
+DEFAULT_TABLE_BORDER_WIDTH = 1
+DEFAULT_TABLE_BORDER_CHAR = " "
+DEFAULT_TABLE_BORDER_ATTR = None
+
+DEFAULT_TABLE_BORDER = (
+    DEFAULT_TABLE_BORDER_WIDTH,
+    DEFAULT_TABLE_BORDER_CHAR,
+)
+
+class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, table, data=None, index=None,
                  border=None, padding=None,
@@ -61,12 +69,14 @@ class DataTableRow(urwid.WidgetWrap):
 
         border_width = DEFAULT_TABLE_BORDER_WIDTH
         border_char = DEFAULT_TABLE_BORDER_CHAR
-        border_attr = DEFAULT_TABLE_BORDER_ATTR
+        border_attr_map = self.attr_map.copy()
 
         if isinstance(self.border, tuple):
 
             try:
                 border_width, border_char, border_attr = self.border
+                border_attr_map.update({None: border_attr})
+                # border_focus_map.update({None: "%s focused" %(border_attr)})
             except ValueError:
                 try:
                     border_width, border_char = self.border
@@ -77,9 +87,8 @@ class DataTableRow(urwid.WidgetWrap):
             border_width = self.border
 
         self.columns.contents = intersperse(
-            (urwid.AttrMap(urwid.Divider(border_char),
-                          attr_map = self.border_attr_map,
-                          focus_map = self.border_focus_map),
+            (urwid.AttrMap(urwid.Text(border_char),
+                           attr_map = border_attr_map),
              ('given', border_width, False)),
             self.columns.contents)
 

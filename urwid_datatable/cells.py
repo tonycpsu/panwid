@@ -3,17 +3,6 @@ logger = logging.getLogger("urwid_datatable")
 
 import urwid
 
-DEFAULT_CELL_PADDING = 0
-DEFAULT_TABLE_BORDER_WIDTH = 1
-DEFAULT_TABLE_BORDER_CHAR = " "
-DEFAULT_TABLE_BORDER_ATTR = "table_border"
-
-DEFAULT_TABLE_BORDER = (
-    DEFAULT_TABLE_BORDER_WIDTH,
-    DEFAULT_TABLE_BORDER_CHAR,
-    DEFAULT_TABLE_BORDER_ATTR
-)
-
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
 class DataTableCell(urwid.WidgetWrap):

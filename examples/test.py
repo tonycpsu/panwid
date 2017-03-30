@@ -259,7 +259,7 @@ def main():
             query_sort=True,
             with_footer=True,
             with_scrollbar=True,
-            border=(1, u"\N{VERTICAL LINE}"),
+            border=(1, u"\N{VERTICAL LINE}", "blue"),
             padding=3,
         ),
         ExampleDataTable(
