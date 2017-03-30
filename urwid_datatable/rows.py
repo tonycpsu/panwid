@@ -1,7 +1,7 @@
 import urwid
 
 from .cells import *
-
+import functools
 
 DEFAULT_CELL_PADDING = 0
 DEFAULT_TABLE_BORDER_WIDTH = 1
@@ -103,6 +103,7 @@ class DataTableRow(urwid.WidgetWrap):
 
 
     def set_focus_column(self, index):
+        # self.columns.focus_position = index
         for i, cell in enumerate(self):
             if i == index:
                 cell.highlight()
@@ -144,7 +145,7 @@ class DataTableHeaderRow(DataTableRow):
     ATTR = "table_row_header"
 
     def make_cells(self):
-        return [
+        cells = [
             DataTableHeaderCell(
                 self.table,
                 col,
@@ -153,9 +154,26 @@ class DataTableHeaderRow(DataTableRow):
             )
             for i, col in enumerate(self.table.visible_columns)]
 
+        def sort_by_index(source, index):
+            urwid.emit_signal(self, "column_click", index)
+
+        if self.table.ui_sort:
+            for i, cell in enumerate(cells):
+                urwid.connect_signal(
+                    cell,
+                    'click',
+                    functools.partial(sort_by_index, index=i)
+                )
+                urwid.connect_signal(
+                    cell,
+                    "select",
+                    functools.partial(sort_by_index, index=i)
+                )
+
+        return cells
 
     def selectable(self):
-        return False
+        return self.table.ui_sort
 
     def update_sort(self, sort):
         for c in self.cells:

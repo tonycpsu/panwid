@@ -246,6 +246,7 @@ def main():
             index="uniqueid",
             sort_by = "foo",
             query_sort=False,
+            ui_sort=False,
             with_footer=True,
             with_scrollbar=True
         ),

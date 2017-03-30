@@ -192,7 +192,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if padding is not None: self.padding = padding
 
 
-        if ui_sort: self.ui_sort = ui_sort
+        if ui_sort is not None: self.ui_sort = ui_sort
         if limit:
             self.offset = 0
             self.limit = limit
@@ -255,9 +255,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 sort = self.sort_by,
                 sort_icons = self.sort_icons
             )
+
             self.pile.contents.insert(0,
                 (self.header, self.pile.options('pack'))
              )
+
             if self.ui_sort:
                 urwid.connect_signal(
                     self.header, "column_click",
@@ -313,27 +315,62 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             None: [ "black", "black" ],
             "focused": [ "dark gray", "g15" ],
             "highlight": ["light gray", "g15"],
-            "highlight focused": ["light gray", "g23"],
+            "highlight focused": ["light gray", "g23"],#"g23"],
         }
 
         entries = dict()
 
-        for row_attr in [
-                "table_row_body", "table_row_header", "table_row_footer",
-        ]:
-            for suffix in [None, "focused",
-                           "highlight", "highlight focused"]:
+        row_attr = "table_row_body"
+        for suffix in [None, "focused",
+                       "highlight", "highlight focused"]:
+            if suffix:
+                attr = ' '.join([row_attr, suffix])
+            else:
+                attr = row_attr
+            entries[attr] = PaletteEntry(
+                mono = "white",
+                foreground = foreground_map[row_attr][0],
+                background = background_map[suffix][0],
+                foreground_high = foreground_map[row_attr][1],
+                background_high = background_map[suffix][1],
+            )
+
+        header_foreground_map = {
+            None: ["white,bold", "white,bold"],
+            "focused": ["dark gray", "white,bold"],
+            "column_focused": ["black", "black"],
+            "highlight": ["yellow,bold", "yellow,bold"],
+            "highlight focused": ["yellow", "yellow"],
+            "highlight column_focused": ["yellow", "yellow"],
+        }
+
+        header_background_map = {
+            None: ["light gray", "g23"],
+            "focused": ["light gray", "g50"],
+            "column_focused": ["white", "g70"],#"g23"],
+            "highlight": ["light gray", "g38"],
+            "highlight focused": ["light gray", "g50"],
+            "highlight column_focused": ["white", "g70"],
+        }
+
+        for prefix in ["table_row_header", "table_row_footer"]:
+            for suffix in [
+                    None, "focused", "column_focused",
+                    "highlight", "highlight focused",
+                    "highlight column_focused"
+            ]:
                 if suffix:
-                    attr = ' '.join([row_attr, suffix])
+                    attr = ' '.join([prefix, suffix])
                 else:
-                    attr = row_attr
+                    attr = prefix
                 entries[attr] = PaletteEntry(
                     mono = "white",
-                    foreground = foreground_map[row_attr][0],
-                    background = background_map[suffix][0],
-                    foreground_high = foreground_map[row_attr][1],
-                    background_high = background_map[suffix][1],
+                    foreground = header_foreground_map[suffix][0],
+                    background = header_background_map[suffix][0],
+                    foreground_high = header_foreground_map[suffix][1],
+                    background_high = header_background_map[suffix][1],
                 )
+
 
         for name, entry in user_entries.items():
             DataTable.focus_map[name] = "%s focused" %(name)
@@ -352,35 +389,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     foreground_high = entry.foreground_high or entry.foreground,
                     background_high = background_map[suffix][1],
                 )
-
-        header_foreground_map = {
-            None: ["white,bold", "white,bold"],
-            "focused": ["white,bold", "yellow,bold"],
-            "highlight": ["yellow,bold", "yellow,bold"],
-            "highlight focused": ["yellow,bold", "yellow,bold"],
-        }
-
-        header_background_map = {
-            None: ["light gray", "g40"],
-            "focused": ["light gray", "g40"],
-            "highlight": ["light gray", "g40"],
-            "highlight focused": ["light gray", "g40"],
-        }
-
-        for prefix in ["table_row_header", "table_row_footer"]:
-            for suffix in [None, "focused", "highlight", "highlight focused"]:
-                if suffix:
-                    attr = ' '.join([prefix, suffix])
-                else:
-                    attr = prefix
-                entries[attr] = PaletteEntry(
-                    mono = "white",
-                    foreground = header_foreground_map[suffix][0],
-                    background = header_background_map[suffix][0],
-                    foreground_high = header_foreground_map[suffix][1],
-                    background_high = header_background_map[suffix][1],
-                )
-
 
         entries.update({
 
@@ -562,8 +570,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         column_name = None
         column_number = None
 
-        logger.info("sort_by_column: " + repr(col))
-
         if isinstance(col, tuple):
             col, reverse = col
 
@@ -603,6 +609,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # if not self.query_sort:
 
         self.sort_by = sort_by
+        logger.info("sort_by: %s (%s), %s" %(column_name, self.sort_column, reverse))
         if self.query_sort:
             self.reset()
         # else:
@@ -632,6 +639,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def cycle_sort_column(self, step):
 
+        if not self.ui_sort:
+            return
         if self.sort_column is None:
             index = 0
         else:

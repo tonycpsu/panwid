@@ -7,7 +7,7 @@ intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
 class DataTableCell(urwid.WidgetWrap):
 
-    signals = ["click"]
+    signals = ["click", "select"]
 
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
@@ -16,10 +16,13 @@ class DataTableCell(urwid.WidgetWrap):
                  attr=None, *args, **kwargs):
 
 
+        self.table = table
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
+        self.attr_column_focused = "%s column_focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
         self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
+        self.attr_highlight_column_focused = "%s column_focused" %(self.attr_highlight)
 
         self.column = column
         self.value = value
@@ -39,12 +42,12 @@ class DataTableCell(urwid.WidgetWrap):
         }
 
         self.normal_focus_map = {
-            None: self.attr_focused,
+            None: self.attr_column_focused,
             self.attr: self.attr_focused,
         }
 
         self.highlight_focus_map = {
-            None: self.attr_highlight,
+            None: self.attr_highlight_column_focused,
             self.attr_highlight: self.attr_highlight_focused,
         }
 
@@ -129,6 +132,18 @@ class DataTableHeaderCell(DataTableCell):
 
     def _format(self, v):
         return self.column.format(v)
+
+    def selectable(self):
+        return self.table.ui_sort
+
+    def keypress(self, size, key):
+        if key != "enter":
+            return key
+        urwid.emit_signal(self, "select", self)
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        if event == 'mouse press':
+            urwid.emit_signal(self, "click", self)
 
     def update_sort(self, sort):
         if not self.sort_icon: return
