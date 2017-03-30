@@ -47,14 +47,13 @@ def main():
 
     attr_entries = {}
     for attr in ["dark red", "dark green", "dark blue"]:
-        attr_entries[attr] = PaletteEntry(
+        attr_entries[attr.split()[1]] = PaletteEntry(
             mono = "white",
             foreground = attr,
             background = "black"
         )
     entries = DataTable.get_palette_entries(user_entries=attr_entries)
     palette = Palette("default", **entries)
-
 
     COLUMNS = [
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
@@ -99,14 +98,15 @@ def main():
                         ) for _ in range(20))
                               if random.randint(0, 5)
                               else None),
-                        qux = ( "%0.1f" %(random.uniform(0, 100))
+                        qux = urwid.Text([("red", "1"),("green", "2"), ("blue", "3")]),
+                        xyzzy = ( "%0.1f" %(random.uniform(0, 100))
                                if random.randint(0, 5)
                                else None),
-                        xyzzy = random.randint(10, 100),
+                        # xyzzy = random.randint(10, 100),
                         empty = None,
                         a = dict(b=dict(c=random.randint(0, 100))),
                         d = dict(e=dict(f=random.randint(0, 100))),
-                        color = ["dark red", "dark green", "dark blue"][random.randrange(3)]
+                        color = ["red", "green", "blue"][random.randrange(3)],
 
             )
 

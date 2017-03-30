@@ -23,7 +23,9 @@ class DataTableCell(urwid.WidgetWrap):
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, column, value=None, padding=0, attr=None, *args, **kwargs):
+    def __init__(self, table, column, value=None, padding=0,
+                 attr=None, *args, **kwargs):
+
 
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
@@ -37,7 +39,7 @@ class DataTableCell(urwid.WidgetWrap):
         else:
             self.padding = padding
 
-        self.attr_map =  {}
+        # self.attr_map =  {}
 
         self.normal_attr_map = {
             None: self.attr,
@@ -48,14 +50,16 @@ class DataTableCell(urwid.WidgetWrap):
         }
 
         self.normal_focus_map = {
-            None: self.attr_focused,
+            self.attr: self.attr_focused,
         }
 
         self.highlight_focus_map = {
-            None: self.attr_highlight,
+            # None: self.attr_highlight,
             self.attr_highlight: self.attr_highlight_focused,
         }
 
+        self.highlight_attr_map.update(table.highlight_map)
+        self.highlight_focus_map.update(table.highlight_focus_map)
         self.contents = self._format(value)
 
         self.padding = urwid.Padding(
@@ -63,11 +67,6 @@ class DataTableCell(urwid.WidgetWrap):
             left=self.padding,
             right=self.padding
         )
-
-        # self.columns = urwid.Columns(
-        #     [self.padding], dividechars=self.column.margin or 0
-        # )
-        # logger.info(self.columns.dividechars)
 
         if attr:
             self.normal_attr_map.update({None: attr})
@@ -121,7 +120,8 @@ class DataTableHeaderCell(DataTableCell):
     ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
     DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
 
-    def __init__(self, column, sort=None, sort_icon=None, *args, **kwargs):
+    def __init__(self, table, column, sort=None, sort_icon=None, *args, **kwargs):
+        self.table = table
         self.column = column
         if self.column.sort_icon is not None:
             self.sort_icon = self.column.sort_icon
@@ -134,7 +134,7 @@ class DataTableHeaderCell(DataTableCell):
             self.columns.contents.append(
                 (urwid.Text(""), self.columns.options("given", 1))
             )
-        super(DataTableHeaderCell, self).__init__(column, self.columns, *args, **kwargs)
+        super(DataTableHeaderCell, self).__init__(self.table, column, self.columns, *args, **kwargs)
         self.update_sort(sort)
 
     def _format(self, v):

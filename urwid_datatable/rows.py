@@ -32,6 +32,9 @@ class DataTableRow(urwid.WidgetWrap):
             self.attr_highlight: self.attr_highlight_focused
         }
 
+        self.focus_map.update(table.focus_map)
+        self.focus_map.update(table.highlight_focus_map)
+
         if isinstance(self.data, list):
             self.data = dict(zip([c.name for c in self.table.columns], self.data))
 
@@ -114,6 +117,7 @@ class DataTableBodyRow(DataTableRow):
     def make_cells(self):
         return [
             DataTableBodyCell(
+                self.table,
                 col,
                 self.data[col.name],
                 # self.data[col.name] if not col.value_fn else col.value_fn(self),
@@ -133,6 +137,7 @@ class DataTableHeaderRow(DataTableRow):
     def make_cells(self):
         return [
             DataTableHeaderCell(
+                self.table,
                 col,
                 sort=self.sort,
                 sort_icon=self.sort_icons
@@ -156,6 +161,7 @@ class DataTableFooterRow(DataTableRow):
     def make_cells(self):
         return [
             DataTableFooterCell(
+                self.table,
                 col,
                 sort=self.sort,
                 sort_icon=self.sort_icons

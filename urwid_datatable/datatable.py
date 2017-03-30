@@ -143,6 +143,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     ui_sort = True
 
+    attr_map = {}
+    focus_map = {}
+    highlight_map = {}
+    highlight_focus_map = {}
+
+
     def __init__(self,
                  columns = None,
                  limit=None,
@@ -185,9 +191,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if border is not None: self.border = border
         if padding is not None: self.padding = padding
-
-        self.attr_map = {}
-        self.focus_map = {}
 
 
         if ui_sort: self.ui_sort = ui_sort
@@ -277,6 +280,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 (self.footer, self.pile.options('pack'))
              )
 
+
         self.reset()
 
         if self.sort_by:
@@ -286,7 +290,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.attr = urwid.AttrMap(
             self.pile,
             attr_map = self.attr_map,
-            focus_map = self.focus_map
+            # focus_map = self.focus_map
         )
         super(DataTable, self).__init__(self.attr)
 
@@ -333,6 +337,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 )
 
         for name, entry in user_entries.items():
+            DataTable.focus_map[name] = "%s focused" %(name)
+            DataTable.highlight_map[name] = "%s highlight" %(name)
+            DataTable.highlight_focus_map["%s highlight" %(name)] = "%s highlight focused" %(name)
             for suffix in [None, "focused",
                            "highlight", "highlight focused"]:
                 if suffix:
