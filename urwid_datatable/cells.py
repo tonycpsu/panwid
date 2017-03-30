@@ -39,11 +39,12 @@ class DataTableCell(urwid.WidgetWrap):
         }
 
         self.normal_focus_map = {
+            None: self.attr_focused,
             self.attr: self.attr_focused,
         }
 
         self.highlight_focus_map = {
-            # None: self.attr_highlight,
+            None: self.attr_highlight,
             self.attr_highlight: self.attr_highlight_focused,
         }
 

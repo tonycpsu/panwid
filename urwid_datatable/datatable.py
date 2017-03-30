@@ -89,9 +89,9 @@ class DataTableColumn(object):
         if self.format_fn:
             try:
                 v = self.format_fn(v)
-            except TypeError, e:
-                # logger.debug("format function raised exception: %s" %e)
-                return urwid.Text("", align=self.align, wrap=self.wrap)
+            # except TypeError, e:
+            #     # logger.debug("format function raised exception: %s" %e)
+            #     return urwid.Text("", align=self.align, wrap=self.wrap)
             except:
                 raise
         return self.format(v)
