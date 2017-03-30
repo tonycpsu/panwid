@@ -89,11 +89,10 @@ class DataTableColumn(object):
         if self.format_fn:
             try:
                 v = self.format_fn(v)
-            # except TypeError, e:
-            #     # logger.debug("format function raised exception: %s" %e)
-            #     return urwid.Text("", align=self.align, wrap=self.wrap)
-            except:
-                raise
+            except Exception, e:
+                logger.error("%s format exception: %s" %(self.name, v))
+                logger.exception(e)
+                raise e
         return self.format(v)
 
 
@@ -226,7 +225,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         urwid.connect_signal(
             self.listbox, "select",
             lambda source, selection: urwid.signals.emit_signal(
-                self, "select", self, self[selection.index])
+                self, "select", self, self.get_dataframe_row(selection.index))
         )
         urwid.connect_signal(
             self.listbox, "drag_start",
@@ -471,11 +470,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     @property
     def focus_position(self):
-        return self.listbox.focus_position
+        return self._focus
+        # return self.listbox.focus_position
 
     @focus_position.setter
     def focus_position(self, value):
-        self.listbox.focus_position = value
+        self._focus = value
+        # self.listbox.focus_position = value
         self.listbox._invalidate()
 
     def position_to_index(self, position):
@@ -524,7 +525,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     @property
     def selection(self):
-        if len(self.body):
+        if len(self.body) and self.focus_position is not None:
             # FIXME: make helpers to map positions to indexes
             return self[self.focus_position]
 
