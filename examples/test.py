@@ -226,6 +226,34 @@ def main():
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
 
+    class ExampleDataTableBox(urwid.WidgetWrap):
+
+        def __init__(self, *args, **kwargs):
+
+            self.table = ExampleDataTable(*args, **kwargs)
+            urwid.connect_signal(
+                self.table, "select",
+                lambda source, selection: logger.info("selection: %s" %(selection))
+            )
+            label = "size:%d page:%s sort:%s%s hdr:%s ftr:%s sortable:%s" %(
+                self.table.query_result_count(),
+                self.table.limit if self.table.limit else "-",
+                "-" if self.table.sort_by[1]
+                else "+",
+                self.table.sort_by[0],
+
+                "y" if self.table.with_header else "n",
+                "y" if self.table.with_footer else "n",
+                "y" if self.table.ui_sort else "n",
+            )
+            self.pile = urwid.Pile([
+                ("pack", urwid.Text(label)),
+                ("pack", urwid.Divider(u"\N{HORIZONTAL BAR}")),
+                ("weight", 1, self.table)
+            ])
+            self.box = urwid.BoxAdapter(urwid.LineBox(self.pile), 25)
+            super(ExampleDataTableBox, self).__init__(self.box)
+
     def detail_fn(data):
 
         return urwid.Padding(urwid.Columns([
@@ -234,9 +262,9 @@ def main():
         ]))
 
 
-    tables = [
+    boxes = [
 
-        # ExampleDataTable(
+        # ExampleDataTableBox(
         #     5,
         #     limit=5,
         #     index="uniqueid",
@@ -247,7 +275,7 @@ def main():
         #     with_scrollbar=True
         # ),
 
-        # ExampleDataTable(
+        # ExampleDataTableBox(
         #     5,
         #     limit=5,
         #     index="uniqueid",
@@ -259,13 +287,13 @@ def main():
         # ),
 
 
-        ExampleDataTable(
+        ExampleDataTableBox(
             10,
             index="uniqueid",
             detail_fn=detail_fn,
             detail_column="bar"
         ),
-        ExampleDataTable(
+        ExampleDataTableBox(
             1000,
             index="uniqueid",
             sort_by = "foo",
@@ -274,7 +302,7 @@ def main():
             with_footer=True,
             with_scrollbar=True,
         ),
-        ExampleDataTable(
+        ExampleDataTableBox(
             500,
             columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
             limit=25,
@@ -287,7 +315,7 @@ def main():
             border=(1, u"\N{VERTICAL LINE}", "blue"),
             padding=3,
         ),
-        ExampleDataTable(
+        ExampleDataTableBox(
             5000,
             limit=500,
             index="uniqueid",
@@ -302,14 +330,8 @@ def main():
     ]
 
 
-    for table in tables:
-        urwid.connect_signal(
-            table, "select",
-            lambda source, selection: logger.info("selection: %s" %(selection))
-        )
-
     grid_flow = urwid.GridFlow(
-        [urwid.BoxAdapter(t, 30) for t in tables], 60, 1, 1, "left"
+        boxes, 60, 1, 1, "left"
     )
 
     def global_input(key):

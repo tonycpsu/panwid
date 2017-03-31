@@ -539,7 +539,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             focus = self.df.get(index, "_focus_position")
             if focus is not None:
                 row.set_focus_column(focus)
-            logger.debug("render: %d, %d, %s" %(position, index, row))
+            # logger.debug("render: %d, %d, %s" %(position, index, row))
             self.df.set(index, "_rendered_row", row)
             self.df.set(index, "_dirty", False)
         return row
