@@ -172,6 +172,9 @@ def main():
             elif key == "A":
                 self.add_row(self.random_row(self.last_rec), sort=False)
                 self.last_rec += 1
+            elif key == "d":
+                if len(self):
+                    self.delete_rows(self.df.index[0])
             elif key == "meta a":
                 name = "".join( random.choice(
                             string.ascii_uppercase
@@ -242,7 +245,8 @@ def main():
 
 
         ExampleDataTable(
-            100
+            10,
+            index="uniqueid",
         ),
         ExampleDataTable(
             1000,

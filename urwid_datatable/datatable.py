@@ -464,7 +464,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return len(self.df)
 
     def __getattr__(self, attr):
-        if attr in ["head", "tail", "index_name", "log_dump"]:
+        if attr in [
+                "head",
+                "tail",
+                "index_name",
+                "log_dump",
+        ]:
             return getattr(self.df, attr)
         elif attr in ["body"]:
             return getattr(self.listbox, attr)
@@ -530,6 +535,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.df.set(index, "_rendered_row", row)
             self.df.set(index, "_dirty", False)
         return row
+
+
+    def delete_rows(self, indexes):
+        self.df.delete_rows(indexes)
+        self._modified()
 
     @property
     def selection(self):
