@@ -108,7 +108,6 @@ class DataTableColumn(object):
             v = v.strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(v, datetype):
             v = v.strftime("%Y-%m-%d")
-
         if not isinstance(v, urwid.Widget):
             v = urwid.Text(v, align=self.align, wrap=self.wrap)
         return v
@@ -146,6 +145,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     highlight_map = {}
     highlight_focus_map = {}
 
+    detail_fn = None
+    detail_column = None
+    auto_expand_details = False
 
     def __init__(self,
                  columns = None,
@@ -154,6 +156,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  with_header=None, with_footer=None, with_scrollbar=None,
                  sort_by=None, query_sort=None, sort_icons=None,
                  border=None, padding=None,
+                 detail_fn = None, detail_column = None,
+                 auto_expand_details = False,
                  ui_sort=None):
 
         self._focus = 0
@@ -192,6 +196,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
         if ui_sort is not None: self.ui_sort = ui_sort
+
+        if detail_fn is not None: self.detail_fn = detail_fn
+        if detail_column is not None: self.detail_column = detail_column
+        if auto_expand_details: self.auto_expand_details = auto_expand_details
+
         if limit:
             self.offset = 0
             self.limit = limit
@@ -748,6 +757,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def hide_columns(self, columns):
         self.show_column(columns, False)
 
+    def toggle_details(self):
+        self.selection.toggle_details()
 
     @property
     def visible_columns(self):

@@ -55,13 +55,15 @@ def main():
     entries = DataTable.get_palette_entries(user_entries=attr_entries)
     palette = Palette("default", **entries)
 
+
+
     COLUMNS = [
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-        DataTableColumn("bar", label="Bar", width=10, align="right",
-                        sort_reverse=True, sort_icon=False, padding=1),# margin=5),
         DataTableColumn("foo", label="Foo", width=4, align="right",
                         sort_key = lambda v: (v is None, v),
                         attr="color", padding=0),# margin=1),
+        DataTableColumn("bar", label="Bar", width=10, align="right",
+                        sort_reverse=True, sort_icon=False, padding=1),# margin=5),
         DataTableColumn("baz", label="Baz!", width=("weight", 1)),
         DataTableColumn(
             "qux",
@@ -200,6 +202,8 @@ def main():
                 self.toggle_columns(["foo", "baz"])
             elif key == "D":
                 self.remove_columns(len(self.columns)-1)
+            elif key == ".":
+                self.toggle_details()
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
@@ -221,6 +225,13 @@ def main():
                     self.focus_position += 1
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
+
+    def detail_fn(data):
+
+        return urwid.Padding(urwid.Columns([
+            ("weight", 1, data.get("qux")),
+            ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
+        ]))
 
 
     tables = [
@@ -251,6 +262,8 @@ def main():
         ExampleDataTable(
             10,
             index="uniqueid",
+            detail_fn=detail_fn,
+            detail_column="bar"
         ),
         ExampleDataTable(
             1000,
@@ -259,7 +272,7 @@ def main():
             query_sort=False,
             ui_sort=False,
             with_footer=True,
-            with_scrollbar=True
+            with_scrollbar=True,
         ),
         ExampleDataTable(
             500,

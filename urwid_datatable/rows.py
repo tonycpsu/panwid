@@ -92,7 +92,10 @@ class DataTableRow(urwid.WidgetWrap):
              ('given', border_width, False)),
             self.columns.contents)
 
-        self.columns_placeholder.original_widget = self.columns
+        self.pile = urwid.Pile([
+            ('weight', 1, self.columns)
+        ])
+        self.columns_placeholder.original_widget = self.pile
 
 
     def selectable(self):
@@ -123,6 +126,55 @@ class DataTableRow(urwid.WidgetWrap):
 class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
+
+    def __init__(self, *args, **kwargs):
+        self.details_open = False
+        super(DataTableBodyRow, self).__init__(*args, **kwargs)
+
+    def open_details(self):
+
+        if not self.table.detail_fn or self.details_open:
+            return
+        content = self.table.detail_fn(self.data)
+        if self.table.detail_column:
+            col_index = self.table.visible_column_index(self.table.detail_column)
+        else:
+            col_index = 0
+
+        v = [ None for n in range(len(self.table.header.columns.contents)+1) ]
+        row = DataTableBodyRow(self.table, v)
+
+        for i in range(0, len(row.columns.contents)):
+            if i/2 == col_index:
+                row.columns.contents[i] = (content, row.columns.options("weight", 1))
+            else:
+                row.columns.contents[i] = (urwid.Text(""), row.columns.contents[i][1])
+        if col_index*2 < len(self.table.header.columns.contents):
+            del row.columns.contents[(col_index*2)+1:]
+        self.pile.contents.insert(0,
+            (urwid.Filler(urwid.Text("")), self.pile.options("given", 1))
+        )
+        row.selectable = lambda: False
+        self.pile.contents.append(
+            (row, self.pile.options("pack"))
+        )
+        self.pile.focus_position = 1
+        self.details_open = True
+
+    def close_details(self):
+        if not self.table.detail_fn or not self.details_open:
+            return
+        self.details_open = False
+        del self.pile.contents[0]
+        del self.pile.contents[1]
+
+    def toggle_details(self):
+
+        if self.details_open:
+            self.close_details()
+        else:
+            self.open_details()
+
 
     def make_cells(self):
         return [
