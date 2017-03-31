@@ -12,8 +12,10 @@ class DataTableCell(urwid.WidgetWrap):
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, table, column, value=None, padding=0,
-                 attr=None, *args, **kwargs):
+    def __init__(self, table, column,
+                 value=None, value_attr=None,
+                 padding=0,
+                 *args, **kwargs):
 
 
         self.table = table
@@ -26,33 +28,13 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.column = column
         self.value = value
+        self.value_attr = value_attr
+
         if column.padding:
             self.padding = column.padding
         else:
             self.padding = padding
 
-        # self.attr_map =  {}
-
-        self.normal_attr_map = {
-            None: self.attr,
-        }
-
-        self.highlight_attr_map = {
-            None: self.attr_highlight,
-        }
-
-        self.normal_focus_map = {
-            None: self.attr_column_focused,
-            self.attr: self.attr_focused,
-        }
-
-        self.highlight_focus_map = {
-            None: self.attr_highlight_column_focused,
-            self.attr_highlight: self.attr_highlight_focused,
-        }
-
-        self.highlight_attr_map.update(table.highlight_map)
-        self.highlight_focus_map.update(table.highlight_focus_map)
         self.contents = self._format(value)
 
         self.padding = urwid.Padding(
@@ -61,11 +43,16 @@ class DataTableCell(urwid.WidgetWrap):
             right=self.padding
         )
 
-        if attr:
-            self.normal_attr_map.update({None: attr})
-            self.normal_focus_map.update({None: "%s focused" %(attr)})
-            self.highlight_attr_map.update({None: "%s highlight" %(attr)})
-            self.highlight_focus_map.update({None: "%s highlight focused" %(attr)})
+        self.normal_attr_map = {}
+        self.highlight_attr_map = {}
+
+        self.normal_focus_map = {}
+        self.highlight_focus_map = {}
+
+        self.set_attr_maps()
+
+        self.highlight_attr_map.update(self.table.highlight_map)
+        self.highlight_focus_map.update(self.table.highlight_focus_map)
 
         self.attr = urwid.AttrMap(
             self.padding,
@@ -73,6 +60,20 @@ class DataTableCell(urwid.WidgetWrap):
             focus_map = self.normal_focus_map
         )
         super(DataTableCell, self).__init__(self.attr)
+
+    def set_attr_maps(self):
+
+        self.normal_attr_map[None] = self.attr
+        self.highlight_attr_map [None] = self.attr_highlight
+        self.normal_focus_map[None] = self.attr_focused
+        self.highlight_focus_map[None] = self.attr_highlight
+
+        if self.value_attr:
+            self.normal_attr_map.update({None: self.value_attr})
+            self.normal_focus_map.update({None: "%s focused" %(self.value_attr)})
+            self.highlight_attr_map.update({None: "%s highlight" %(self.value_attr)})
+            self.highlight_focus_map.update({None: "%s highlight focused" %(self.value_attr)})
+
 
     def highlight(self):
         self.attr.set_attr_map(self.highlight_attr_map)
@@ -106,6 +107,7 @@ class DataTableBodyCell(DataTableCell):
     PADDING_ATTR = "table_row_body_padding"
 
 
+
 class DataTableHeaderCell(DataTableCell):
     ATTR = "table_row_header"
     PADDING_ATTR = "table_row_header_padding"
@@ -129,6 +131,14 @@ class DataTableHeaderCell(DataTableCell):
             )
         super(DataTableHeaderCell, self).__init__(self.table, column, self.columns, *args, **kwargs)
         self.update_sort(sort)
+
+    def set_attr_maps(self):
+
+        self.normal_attr_map[None] = self.attr
+        self.highlight_attr_map [None] = self.attr_highlight
+        self.normal_focus_map[None] = self.attr_column_focused
+        self.highlight_focus_map[None] = self.attr_highlight_column_focused
+
 
     def _format(self, v):
         return self.column.format(v)

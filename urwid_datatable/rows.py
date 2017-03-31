@@ -133,7 +133,7 @@ class DataTableBodyRow(DataTableRow):
                 # self.data[col.name] if not col.value_fn else col.value_fn(self),
                 sort=self.sort,
                 sort_icon=self.sort_icons,
-                attr=self.data.get(col.attr, None))
+                value_attr=self.data.get(col.attr, None))
             for i, col in enumerate(self.table.visible_columns)]
 
 

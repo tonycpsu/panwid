@@ -222,16 +222,16 @@ def main():
 
     tables = [
 
-        # ExampleDataTable(
-        #     5,
-        #     limit=5,
-        #     index="uniqueid",
-        #     sort_by = ("foo", False),
-        #     query_sort=False,
-        #     with_header=True,
-        #     with_footer=True,
-        #     with_scrollbar=True
-        # ),
+        ExampleDataTable(
+            5,
+            limit=5,
+            index="uniqueid",
+            # sort_by = ("foo", False),
+            query_sort=False,
+            with_header=True,
+            with_footer=True,
+            with_scrollbar=True
+        ),
 
         # ExampleDataTable(
         #     5,
@@ -245,43 +245,43 @@ def main():
         # ),
 
 
-        ExampleDataTable(
-            10,
-            index="uniqueid",
-        ),
-        ExampleDataTable(
-            1000,
-            index="uniqueid",
-            sort_by = "foo",
-            query_sort=False,
-            ui_sort=False,
-            with_footer=True,
-            with_scrollbar=True
-        ),
-        ExampleDataTable(
-            500,
-            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
-            limit=25,
-            index="uniqueid",
-            sort_by = ("bar", True),
-            sort_icons = False,
-            query_sort=True,
-            with_footer=True,
-            with_scrollbar=True,
-            border=(1, u"\N{VERTICAL LINE}", "blue"),
-            padding=3,
-        ),
-        ExampleDataTable(
-            5000,
-            limit=500,
-            index="uniqueid",
-            sort_by = ("foo", True),
-            border=3,
-            query_sort=True,
-            with_scrollbar=True,
-            with_header=False,
-            with_footer=False,
-        ),
+        # ExampleDataTable(
+        #     10,
+        #     index="uniqueid",
+        # ),
+        # ExampleDataTable(
+        #     1000,
+        #     index="uniqueid",
+        #     sort_by = "foo",
+        #     query_sort=False,
+        #     ui_sort=False,
+        #     with_footer=True,
+        #     with_scrollbar=True
+        # ),
+        # ExampleDataTable(
+        #     500,
+        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
+        #     limit=25,
+        #     index="uniqueid",
+        #     sort_by = ("bar", True),
+        #     sort_icons = False,
+        #     query_sort=True,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     border=(1, u"\N{VERTICAL LINE}", "blue"),
+        #     padding=3,
+        # ),
+        # ExampleDataTable(
+        #     5000,
+        #     limit=500,
+        #     index="uniqueid",
+        #     sort_by = ("foo", True),
+        #     border=3,
+        #     query_sort=True,
+        #     with_scrollbar=True,
+        #     with_header=False,
+        #     with_footer=False,
+        # ),
 
     ]
 
