@@ -57,10 +57,11 @@ def main():
 
     COLUMNS = [
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-        DataTableColumn("foo", label="Foo", width=4, align="right",
-                        attr="color", padding=0),# margin=1),
         DataTableColumn("bar", label="Bar", width=10, align="right",
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
+        DataTableColumn("foo", label="Foo", width=4, align="right",
+                        sort_key = lambda v: (v is None, v),
+                        attr="color", padding=0),# margin=1),
         DataTableColumn("baz", label="Baz!", width=("weight", 1)),
         DataTableColumn("qux", label="qux", width=5, hide=True),
         # DataTableColumn("empty", label="empty", width=5),

@@ -40,7 +40,7 @@ class DataTableColumn(object):
                  format_fn=None,
                  format_record = None, # format_fn is passed full row data
                  attr = None,
-                 sort_key = None, sort_fn = None, sort_reverse=False,
+                 sort_key = None, sort_reverse=False,
                  sort_icon = None,
                  footer_fn = None):
 
@@ -59,7 +59,6 @@ class DataTableColumn(object):
         self.format_record = format_record
         self.attr = attr
         self.sort_key = sort_key
-        self.sort_fn = sort_fn
         self.sort_reverse = sort_reverse
         self.sort_icon = sort_icon
         self.footer_fn = footer_fn
@@ -623,16 +622,16 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if self.query_sort:
             self.reset()
         # else:
-        self.sort(column_name)
+        self.sort(column_name, key=column.sort_key)
 
         self.set_focus_column(self.sort_column)
 
         if self.with_header:
             self.header.update_sort(self.sort_by)
 
-    def sort(self, column):
+    def sort(self, column, key=None):
         logger.debug(column)
-        self.df.sort_columns(column, reverse=self.sort_by[1])
+        self.df.sort_columns(column, key=key, reverse=self.sort_by[1])
         self._modified()
 
 
