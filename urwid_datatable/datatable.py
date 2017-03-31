@@ -745,9 +745,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return [ c for c in self.columns if not c.hide ]
 
 
-    def add_row(self, data, sorted=True):
+    def add_row(self, data, sort=True):
         # raise Exception(data)
         self.append_rows([data])
+        if sort:
+            self.sort_by_column()
 
     def invalidate(self):
         self.df["_dirty"] = True

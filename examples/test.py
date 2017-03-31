@@ -170,6 +170,9 @@ def main():
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
             elif key == "A":
+                self.add_row(self.random_row(self.last_rec), sort=False)
+                self.last_rec += 1
+            elif key == "meta a":
                 name = "".join( random.choice(
                             string.ascii_uppercase
                             + string.lowercase
