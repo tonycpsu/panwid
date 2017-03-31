@@ -488,8 +488,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.listbox._invalidate()
 
     def position_to_index(self, position):
-        if not self.query_sort and self.sort_by[1]:
-            position = -(position + 1)
+        # if not self.query_sort and self.sort_by[1]:
+        #     position = -(position + 1)
         return self.df.index[position]
 
     def index_to_position(self, index):
@@ -622,7 +622,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def sort(self, column):
         logger.debug(column)
-        self.df.sort_columns(column)
+        self.df.sort_columns(column, reverse=self.sort_by[1])
         self._modified()
 
 
