@@ -20,5 +20,5 @@ setup(name=name,
       packages=['urwid_datatable'],
       data_files=[('share/doc/%s' % name, ['LICENSE','README.md']),
               ],
-      install_requires = ['urwid']
+      install_requires = ["urwid", "urwid-utils", "raccoon"]
      )
