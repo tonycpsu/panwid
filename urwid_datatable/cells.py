@@ -122,9 +122,16 @@ class DataTableHeaderCell(DataTableCell):
             self.sort_icon = self.column.sort_icon
         else:
             self.sort_icon = sort_icon
+
         self.columns = urwid.Columns([
-            ('weight', 1, urwid.Text(column.label, align=self.column.align))
+            ('weight', 1,
+             column.label
+             if isinstance(column.label, urwid.Widget)
+             else
+             urwid.Text(column.label, align=self.column.align)
+            )
         ])
+
         if sort_icon:
             self.columns.contents.append(
                 (urwid.Text(""), self.columns.options("given", 1))
