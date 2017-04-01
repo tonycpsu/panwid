@@ -1,3 +1,4 @@
+from __future__ import division
 import logging
 logger = logging.getLogger("urwid_datatable")
 import urwid
@@ -7,6 +8,7 @@ from orderedattrdict import OrderedDict
 import itertools
 import traceback
 from datetime import datetime, date as datetype
+import math
 
 from .dataframe import *
 from .rows import *
@@ -311,7 +313,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         raise Exception("query_result_count method must be defined")
 
     @classmethod
-    def get_palette_entries(cls, user_entries={}):
+    def get_palette_entries(
+            cls,
+            user_entries={},
+            min_contrast_entries = None,
+            min_contrast = 2.0
+    ):
 
         foreground_map = {
             "table_row_body": [ "light gray", "light gray" ],
@@ -384,18 +391,90 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             DataTable.focus_map[name] = "%s focused" %(name)
             DataTable.highlight_map[name] = "%s highlight" %(name)
             DataTable.highlight_focus_map["%s highlight" %(name)] = "%s highlight focused" %(name)
-            for suffix in [None, "focused",
+            for suffix in ["focused",
                            "highlight", "highlight focused"]:
+
+                foreground = entry.foreground
+                background = background_map[suffix][0]
+                foreground_high = entry.foreground_high if entry.foreground_high else entry.foreground
+                background_high = background_map[suffix][1]
+                if min_contrast_entries and name in min_contrast_entries:
+                    # All of this code is available in the colourettu package
+                    # (https://github.com/MinchinWeb/colourettu) but newer
+                    # versions don't run Python 3, and older versions don't work
+                    # right.
+                    def normalized_rgb(r, g, b):
+
+                        r1 = r / 255
+                        g1 = g / 255
+                        b1 = b / 255
+
+                        if r1 <= 0.03928:
+                            r2 = r1 / 12.92
+                        else:
+                            r2 = math.pow(((r1 + 0.055) / 1.055), 2.4)
+                        if g1 <= 0.03928:
+                            g2 = g1 / 12.92
+                        else:
+                            g2 = math.pow(((g1 + 0.055) / 1.055), 2.4)
+                        if b1 <= 0.03928:
+                            b2 = b1 / 12.92
+                        else:
+                            b2 = math.pow(((b1 + 0.055) / 1.055), 2.4)
+
+                        return (r2, g2, b2)
+
+                    def luminance(r, g, b):
+
+                        return math.sqrt(
+                            0.299*math.pow(r, 2) +
+                            0.587*math.pow(g, 2) +
+                            0.114*math.pow(b, 2)
+                        )
+
+                    def contrast(c1, c2):
+
+                        n1 = normalized_rgb(*c1)
+                        n2 = normalized_rgb(*c2)
+                        lum1 = luminance(*n1)
+                        lum2 = luminance(*n2)
+                        minlum = min(lum1, lum2)
+                        maxlum = max(lum1, lum2)
+                        return (maxlum + 0.05) / (minlum + 0.05)
+
+                    table_bg = background_map[suffix][1]
+                    attrspec_bg = urwid.AttrSpec(table_bg, table_bg, 256)
+                    color_bg = attrspec_bg.get_rgb_values()[3:6]
+                    attrspec_fg = urwid.AttrSpec(
+                        foreground_high,
+                        foreground_high,
+                        256
+                    )
+                    color_fg = attrspec_fg.get_rgb_values()[0:3]
+                    cfg = contrast(color_bg, color_fg)
+                    cblack = contrast((0,0,0), color_fg)
+                    # cwhite = contrast((255, 255, 255), color_fg)
+                    # logger.info("%s, %s, %s" %(cfg, cblack, cwhite))
+                    # raise Exception("%s, %s, %s, %s, %s, %s" %(table_bg, color_fg, color_bg, cfg, cblack, cwhite))
+                    if cfg < min_contrast and cfg < cblack:
+                        # logger.info("adjusting contrast of %s" %(name))
+                        foreground_high = "black"
+                        # if cblack > cwhite:
+                        # else:
+                        #     foreground_high = "white"
+
                 if suffix:
                     attr = ' '.join([name, suffix])
                 else:
                     attr = name
+
+                # print foreground, foreground_high, background, background_high
                 entries[attr] = PaletteEntry(
                     mono = "white",
-                    foreground = entry.foreground,
-                    background = background_map[suffix][0],
-                    foreground_high = entry.foreground_high or entry.foreground,
-                    background_high = background_map[suffix][1],
+                    foreground = foreground,
+                    background = background,
+                    foreground_high = foreground_high,
+                    background_high = background_high,
                 )
 
         entries.update({
