@@ -391,7 +391,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             DataTable.focus_map[name] = "%s focused" %(name)
             DataTable.highlight_map[name] = "%s highlight" %(name)
             DataTable.highlight_focus_map["%s highlight" %(name)] = "%s highlight focused" %(name)
-            for suffix in ["focused",
+            for suffix in [None, "focused",
                            "highlight", "highlight focused"]:
 
                 foreground = entry.foreground
