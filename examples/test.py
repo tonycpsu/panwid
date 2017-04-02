@@ -280,34 +280,34 @@ def main():
         # ),
 
 
-        # ExampleDataTableBox(
-        #     10,
-        #     index="uniqueid",
-        #     detail_fn=detail_fn,
-        #     detail_column="bar"
-        # ),
-        # ExampleDataTableBox(
-        #     1000,
-        #     index="uniqueid",
-        #     sort_by = "foo",
-        #     query_sort=False,
-        #     ui_sort=False,
-        #     with_footer=True,
-        #     with_scrollbar=True,
-        # ),
-        # ExampleDataTableBox(
-        #     500,
-        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
-        #     limit=25,
-        #     index="uniqueid",
-        #     sort_by = ("bar", True),
-        #     sort_icons = False,
-        #     query_sort=True,
-        #     with_footer=True,
-        #     with_scrollbar=True,
-        #     border=(1, u"\N{VERTICAL LINE}", "blue"),
-        #     padding=3,
-        # ),
+        ExampleDataTableBox(
+            10,
+            index="uniqueid",
+            detail_fn=detail_fn,
+            detail_column="bar"
+        ),
+        ExampleDataTableBox(
+            1000,
+            index="uniqueid",
+            sort_by = "foo",
+            query_sort=False,
+            ui_sort=False,
+            with_footer=True,
+            with_scrollbar=True,
+        ),
+        ExampleDataTableBox(
+            500,
+            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
+            limit=25,
+            index="uniqueid",
+            sort_by = ("bar", True),
+            sort_icons = False,
+            query_sort=True,
+            with_footer=True,
+            with_scrollbar=True,
+            border=(1, u"\N{VERTICAL LINE}", "blue"),
+            padding=3,
+        ),
         ExampleDataTableBox(
             5000,
             limit=500,
