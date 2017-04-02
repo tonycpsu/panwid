@@ -21,13 +21,15 @@ class DataTableDataFrame(rc.DataFrame):
             self[c] = None
 
 
-    def log_dump(self, n=5, columns=None):
+    def log_dump(self, n=5, columns=None, label=None):
         df = self
         if columns:
             if not isinstance(columns, list):
                 columns = [columns]
             df = df[columns]
-        logger.info("index: %s [%s%s]\n%s" %(
+        logger.info("%slength: %d, index: %s [%s%s]\n%s" %(
+            "%s, " %(label) if label else "",
+            len(self),
             self.index_name,
             ",".join([str(x) for x in self.index[0:min(n, len(self.index))]]),
             "..." if len(self.index) > n else "",
@@ -63,10 +65,11 @@ class DataTableDataFrame(rc.DataFrame):
             index=index,
             index_name = self.index_name,
         )
-        # self.log_dump()
+        self.log_dump(10, label="before")
         newdata = DataTableDataFrame(**kwargs)
         # newdata.log_dump()
         self.append(newdata)
+        self.log_dump(10, label="after")
 
     # def add_column(self, column, data=None):
     #     self[column] = data

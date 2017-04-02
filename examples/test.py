@@ -117,9 +117,9 @@ def main():
             )
 
 
-        def query(self, sort=(None, None), offset=None, load_all=False):
+        def query(self, sort=(None, None), offset=None, limit=None, load_all=False):
 
-            logger.info("query: offset=%s, limit=%s, sort=%s" %(offset, self.limit, sort))
+            logger.info("query: offset=%s, limit=%s, sort=%s" %(offset, limit, sort))
             try:
                 sort_field, sort_reverse = sort
             except:
@@ -135,7 +135,7 @@ def main():
             if offset is not None:
                 if not load_all:
                     start = offset
-                    end = offset + self.limit
+                    end = offset + limit
                     r = self.query_data[start:end]
                     logger.debug("%s:%s (%s)" %(start, end, len(r)))
                 else:
@@ -269,7 +269,7 @@ def main():
     boxes = [
 
         # ExampleDataTableBox(
-        #     5,
+        #     20,
         #     limit=5,
         #     index="uniqueid",
         #     # sort_by = ("foo", False),
@@ -279,46 +279,35 @@ def main():
         #     with_scrollbar=True
         # ),
 
+
         # ExampleDataTableBox(
-        #     5,
-        #     limit=5,
+        #     10,
         #     index="uniqueid",
-        #     sort_by = ("foo", False),
-        #     query_sort=True,
-        #     with_header=True,
-        #     with_footer=True,
-        #     with_scrollbar=True
+        #     detail_fn=detail_fn,
+        #     detail_column="bar"
         # ),
-
-
-        ExampleDataTableBox(
-            10,
-            index="uniqueid",
-            detail_fn=detail_fn,
-            detail_column="bar"
-        ),
-        ExampleDataTableBox(
-            1000,
-            index="uniqueid",
-            sort_by = "foo",
-            query_sort=False,
-            ui_sort=False,
-            with_footer=True,
-            with_scrollbar=True,
-        ),
-        ExampleDataTableBox(
-            500,
-            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
-            limit=25,
-            index="uniqueid",
-            sort_by = ("bar", True),
-            sort_icons = False,
-            query_sort=True,
-            with_footer=True,
-            with_scrollbar=True,
-            border=(1, u"\N{VERTICAL LINE}", "blue"),
-            padding=3,
-        ),
+        # ExampleDataTableBox(
+        #     1000,
+        #     index="uniqueid",
+        #     sort_by = "foo",
+        #     query_sort=False,
+        #     ui_sort=False,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        # ),
+        # ExampleDataTableBox(
+        #     500,
+        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
+        #     limit=25,
+        #     index="uniqueid",
+        #     sort_by = ("bar", True),
+        #     sort_icons = False,
+        #     query_sort=True,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     border=(1, u"\N{VERTICAL LINE}", "blue"),
+        #     padding=3,
+        # ),
         ExampleDataTableBox(
             5000,
             limit=500,

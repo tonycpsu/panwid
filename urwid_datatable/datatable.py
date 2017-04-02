@@ -203,12 +203,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if detail_column is not None: self.detail_column = detail_column
         if auto_expand_details: self.auto_expand_details = auto_expand_details
 
+        self.offset = 0
         if limit:
-            self.offset = 0
             self.limit = limit
 
         self.sort_column = None
 
+        self.filters = None
         self.filtered_rows = blist()
 
         logger.debug("columns: %s" %(self.column_names))
@@ -229,10 +230,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.listbox = ScrollingListBox(
             self, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
-            row_count_fn = (self.query_result_count
-                            if self.with_scrollbar
-                            else None)
-            )
+            row_count_fn = self.row_count
+        )
 
         urwid.connect_signal(
             self.listbox, "select",
@@ -758,16 +757,21 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["sort"] = (None, False)
         if self.limit:
             kwargs["offset"] = offset
+            kwargs["limit"] = self.limit
 
         rows = list(self.query(**kwargs))
+        self.offset += self.limit
+        # logger.info("offset: %s" %(self.offset))
         self.append_rows(rows)
         self.refresh_calculated_fields()
+        self.apply_filters()
         # for r in rows:
         #     self.refresh_calculated_fields(r[self.index])
 
 
 
     def append_rows(self, rows):
+        # logger.info("append_rows: %s" %([row[self.index] for row in rows]))
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
         self.invalidate()
@@ -892,8 +896,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # r1 = self[self.position_to_index(p1)]
         self.swap_rows_by_field(p0, p1, field=field)
 
+    def row_count(self):
+
+        if not self.with_scrollbar:
+            return None
+
+        if self.offset and self.offset >= self.query_result_count():
+            return len(self.filtered_rows)
+        else:
+            return self.query_result_count()
+
     def load_more(self, offset):
-        if offset >= self.query_result_count():
+        logger.debug("load_more: %s" %(offset))
+        if offset >= self.query_result_count() or offset > len(self):
             return
         self.requery(offset)
 
@@ -903,20 +918,26 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.requery(len(self), load_all=True)
         self.listbox._invalidate()
 
+    def apply_filters(self, filters=None):
 
-    def apply_filters(self, filters):
-        if not isinstance(filters, list):
+        if not filters:
+            filters = self.filters
+        elif not isinstance(filters, list):
             filters = [filters]
 
         self.filtered_rows = blist(
-            row[self.index]
-            for row in self.df.iterrows()
-            if all(
+            i
+            for i, row in enumerate(self.df.iterrows())
+            if not filters or all(
                     f(row)
                     for f in filters
             )
         )
-        # logger.info(self.filtered_rows)
+        # logger.info("filtered: %s" %(self.filtered_rows))
+
+        if filters:
+            self.focus_position = 0
+
         self.filters = filters
         self.invalidate()
 
@@ -930,7 +951,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.offset = 0
         self.df.clear()
         self.requery()
-        self.filtered_rows = blist(xrange(len(self.df)))
+        self.clear_filters()
+        self.apply_filters()
         if reset_sort:
             self.sort_by_column(self.initial_sort)
         self.focus_position = 0
