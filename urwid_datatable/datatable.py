@@ -9,6 +9,7 @@ import itertools
 import traceback
 from datetime import datetime, date as datetype
 import math
+from blist import blist
 
 from .dataframe import *
 from .rows import *
@@ -196,7 +197,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if border is not None: self.border = border
         if padding is not None: self.padding = padding
 
-
         if ui_sort is not None: self.ui_sort = ui_sort
 
         if detail_fn is not None: self.detail_fn = detail_fn
@@ -208,6 +208,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.limit = limit
 
         self.sort_column = None
+
+        self.filtered_rows = blist()
 
         logger.debug("columns: %s" %(self.column_names))
 
@@ -516,10 +518,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     @property
     def focus(self): return self._focus
 
-
     def next_position(self, position):
         index = position + 1
-        if index > len(self): raise IndexError
+        if index > len(self.filtered_rows): raise IndexError
         return index
 
     def prev_position(self, position):
@@ -538,7 +539,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def __getitem__(self, position):
         # logger.debug("walker get: %d" %(position))
-        if position < 0 or position >= len(self): raise IndexError
+        if position < 0 or position >= len(self.filtered_rows): raise IndexError
         try:
             r = self.get_row(position)
             return r
@@ -548,7 +549,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
 
     def __len__(self):
-        return len(self.df)
+        return len(self.filtered_rows)
 
     def __getattr__(self, attr):
         if attr in [
@@ -595,14 +596,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except IndexError:
             logger.debug(traceback.format_exc())
 
-        return  OrderedDict(
-            (k, v[0])
-            for k, v in self.df[index:index].to_dict(ordered=True, index=True).items()
-            # if k in self.column_names
-        )
+        return self.df.get_columns(index, self.df.columns, as_dict=True)
 
     def get_row(self, position):
-        index = self.position_to_index(position)
+        index = self.position_to_index(self.filtered_rows[position])
         # raise Exception(self.sort_by)
         try:
             row = self.df.get(index, "_rendered_row")
@@ -906,11 +903,34 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.requery(len(self), load_all=True)
         self.listbox._invalidate()
 
+
+    def apply_filters(self, filters):
+        if not isinstance(filters, list):
+            filters = [filters]
+
+        self.filtered_rows = blist(
+            row[self.index]
+            for row in self.df.iterrows()
+            if all(
+                    f(row)
+                    for f in filters
+            )
+        )
+        # logger.info(self.filtered_rows)
+        self.filters = filters
+        self.invalidate()
+
+    def clear_filters(self):
+        self.filtered_rows = blist(xrange(len(self.df)))
+        self.filters = None
+        self.invalidate()
+
     def reset(self, reset_sort=False):
         logger.debug("reset")
         self.offset = 0
         self.df.clear()
         self.requery()
+        self.filtered_rows = blist(xrange(len(self.df)))
         if reset_sort:
             self.sort_by_column(self.initial_sort)
         self.focus_position = 0

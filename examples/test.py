@@ -202,6 +202,10 @@ def main():
                 self.toggle_columns(["foo", "baz"])
             elif key == "D":
                 self.remove_columns(len(self.columns)-1)
+            elif key == "f":
+                self.apply_filters([lambda x: x["foo"] > 20, lambda x: x["bar"] < 800])
+            elif key == "F":
+                self.clear_filters()
             elif key == ".":
                 self.toggle_details()
             elif key == "shift left":
