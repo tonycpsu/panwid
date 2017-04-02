@@ -203,7 +203,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if detail_column is not None: self.detail_column = detail_column
         if auto_expand_details: self.auto_expand_details = auto_expand_details
 
-        self.offset = 0
+        # self.offset = 0
         if limit:
             self.limit = limit
 
@@ -256,7 +256,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if self.limit:
             urwid.connect_signal(self.listbox, "load_more", self.load_more)
-            self.offset = 0
+            # self.offset = 0
 
         if self.with_header:
             self.header = DataTableHeaderRow(
@@ -760,7 +760,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["limit"] = self.limit
 
         rows = list(self.query(**kwargs))
-        self.offset += self.limit
+        # self.offset += self.limit
         # logger.info("offset: %s" %(self.offset))
         self.append_rows(rows)
         self.refresh_calculated_fields()
@@ -901,21 +901,28 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not self.with_scrollbar:
             return None
 
-        if self.offset and self.offset >= self.query_result_count():
-            return len(self.filtered_rows)
+        if self.limit:
+            if self.page*self.limit >= self.query_result_count():
+                return len(self.filtered_rows)
+            else:
+                return self.query_result_count()
         else:
-            return self.query_result_count()
+            return len(self)
 
-    def load_more(self, offset):
-        logger.debug("load_more: %s" %(offset))
-        if offset >= self.query_result_count() or offset > len(self):
+    def load_more(self):
+        offset = self.page*self.limit
+        if offset >= self.row_count():# or offset >= len(self):
             return
+        logger.info("load_more: page: %s, offset: %s, len: %s" %(self.page, offset, self.row_count()))
         self.requery(offset)
+        self.page += 1
 
     def load_all(self):
         if len(self) >= self.query_result_count():
             return
-        self.requery(len(self), load_all=True)
+        logger.info("load_all: %s" %(self.page))
+        self.requery(self.page*self.limit, load_all=True)
+        self.page = (self.query_result_count() // self.limit)
         self.listbox._invalidate()
 
     def apply_filters(self, filters=None):
@@ -933,10 +940,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     for f in filters
             )
         )
+        if self.focus_position > len(self):
+            self.focus_position = len(self)-1
+
         # logger.info("filtered: %s" %(self.filtered_rows))
 
-        if filters:
-            self.focus_position = 0
 
         self.filters = filters
         self.invalidate()
@@ -948,9 +956,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def reset(self, reset_sort=False):
         logger.debug("reset")
-        self.offset = 0
+        # self.offset = 0
         self.df.clear()
         self.requery()
+        self.page = 1
         self.clear_filters()
         self.apply_filters()
         if reset_sort:

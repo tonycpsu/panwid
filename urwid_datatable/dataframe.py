@@ -65,11 +65,11 @@ class DataTableDataFrame(rc.DataFrame):
             index=index,
             index_name = self.index_name,
         )
-        self.log_dump(10, label="before")
+        # self.log_dump(10, label="before")
         newdata = DataTableDataFrame(**kwargs)
         # newdata.log_dump()
         self.append(newdata)
-        self.log_dump(10, label="after")
+        # self.log_dump(10, label="after")
 
     # def add_column(self, column, data=None):
     #     self[column] = data

@@ -218,7 +218,7 @@ def main():
                 self.sort_by_column(reverse=False)
             elif key == "shift end":
                 self.load_all()
-                self.listbox.focus_position = len(self) -1
+                # self.listbox.focus_position = len(self) -1
             elif key == "ctrl up":
                 if self.focus_position > 0:
                     self.swap_rows(self.focus_position, self.focus_position-1, "foo")
@@ -280,34 +280,34 @@ def main():
         # ),
 
 
-        # ExampleDataTableBox(
-        #     10,
-        #     index="uniqueid",
-        #     detail_fn=detail_fn,
-        #     detail_column="bar"
-        # ),
-        # ExampleDataTableBox(
-        #     1000,
-        #     index="uniqueid",
-        #     sort_by = "foo",
-        #     query_sort=False,
-        #     ui_sort=False,
-        #     with_footer=True,
-        #     with_scrollbar=True,
-        # ),
-        # ExampleDataTableBox(
-        #     500,
-        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
-        #     limit=25,
-        #     index="uniqueid",
-        #     sort_by = ("bar", True),
-        #     sort_icons = False,
-        #     query_sort=True,
-        #     with_footer=True,
-        #     with_scrollbar=True,
-        #     border=(1, u"\N{VERTICAL LINE}", "blue"),
-        #     padding=3,
-        # ),
+        ExampleDataTableBox(
+            10,
+            index="uniqueid",
+            detail_fn=detail_fn,
+            detail_column="bar"
+        ),
+        ExampleDataTableBox(
+            1000,
+            index="uniqueid",
+            sort_by = "foo",
+            query_sort=False,
+            ui_sort=False,
+            with_footer=True,
+            with_scrollbar=True,
+        ),
+        ExampleDataTableBox(
+            500,
+            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
+            limit=25,
+            index="uniqueid",
+            sort_by = ("bar", True),
+            sort_icons = False,
+            query_sort=True,
+            with_footer=True,
+            with_scrollbar=True,
+            border=(1, u"\N{VERTICAL LINE}", "blue"),
+            padding=3,
+        ),
         ExampleDataTableBox(
             5000,
             limit=500,

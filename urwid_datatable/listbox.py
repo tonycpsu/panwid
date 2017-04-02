@@ -71,6 +71,10 @@ class ListBoxScrollBar(urwid.WidgetWrap):
             )
         self._invalidate()
 
+    def selectable(self):
+        # FIXME: mouse click/drag
+        return False
+
 
 class ScrollingListBox(urwid.WidgetWrap):
 
@@ -93,8 +97,9 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.drag_from = None
         self.drag_last = None
         self.drag_to = None
-        self.requery = False
+        self.load_more = False
         self.height = 0
+        self.page = 0
 
         self.queued_keypress = None
 
@@ -128,7 +133,7 @@ class ScrollingListBox(urwid.WidgetWrap):
                 pos = self.listbox.focus_position + int(self.height * SCROLL_WHEEL_HEIGHT_RATIO)
                 if pos > len(self.listbox.body) - 1:
                     if self.infinite:
-                        self.requery = True
+                        self.load_more = True
                     pos = len(self.listbox.body) - 1
                 self.listbox.focus_position = pos
                 self.listbox.make_cursor_visible(size)
@@ -179,33 +184,39 @@ class ScrollingListBox(urwid.WidgetWrap):
         }
         key = KEY_MAP.get(key, key)
 
-        if len(self.body):
-            if (self.infinite
-            and key in ["page down", "down"]
-            and len(self.body)
-            and self.focus_position == len(self.body)-1):
-                self.requery = True
+        if self.infinite:
+            try:
+                focus = self.focus_position
+            except IndexError:
+                focus = None
+            if (key in ["page down", "down"]
+                and (
+                    not len(self.body)
+                    or focus == len(self.body)-1)
+            ):
+                # logger.info("load_more keypress")
+                self.load_more = True
                 self.queued_keypress = key
+                self._invalidate()
 
-            if key == "home":
-                self.focus_position = 0
-            elif key == "end":
-                self.focus_position = 0
-                self.focus_position = len(self.body) - 1
+        if key in ["up", "down", "page up", "page down"]:
+            # raise Exception(key)
+            return super(ScrollingListBox, self).keypress(size, key)
+        elif key == "home":
+            self.focus_position = 0
+        elif key == "end":
+            self.focus_position = 0
+            self.focus_position = len(self.body) - 1
+            self._invalidate()
 
-            if key in ["up", "down", "home", "end", "page up", "page down"]:
-                # raise Exception(key)
-                return super(ScrollingListBox, self).keypress(size, key)
+        elif key == "enter":
+            urwid.signals.emit_signal(self, "select", self, self.selection)
 
-            elif key == "enter":
-                urwid.signals.emit_signal(self, "select", self, self.selection)
-
-            else:
-                return super(ScrollingListBox, self).keypress(size, key)
-
-                # self._invalidate()
         else:
             return super(ScrollingListBox, self).keypress(size, key)
+
+        # else:
+        #     return super(ScrollingListBox, self).keypress(size, key)
 
     @property
     def selection(self):
@@ -221,28 +232,33 @@ class ScrollingListBox(urwid.WidgetWrap):
         # print
         # print
         # print self.listbox.get_focus_offset_inset(size)
+        if (self.load_more
+            and (len(self.body) == 0
+                 or "bottom" in self.ends_visible((maxcol, maxrow))
+            )
+        ):
 
-        if self.requery and "bottom" in self.ends_visible(
-                (maxcol, maxrow) ):
-            self.requery = False
+            self.load_more = False
+            self.page += 1
+            # old_len = len(self.body)
             urwid.signals.emit_signal(
-                self, "load_more", len(self.body))
-            if self.queued_keypress:
+                self, "load_more")
+            try:
+                focus = self.focus_position
+            except IndexError:
+                focus = None
+            if (self.queued_keypress
+                and focus
+                and focus < len(self.body)
+            ):
+                # logger.info("send queued keypress")
                 self.keypress(size, self.queued_keypress)
-                self.queued_keypress = None
+            self.queued_keypress = None
+            # self.listbox._invalidate()
+            # self._invalidate()
 
         if self.with_scrollbar and len(self.body):
             self.scroll_bar.update(size)
-
-        # if len(self.body) and self.focus_position:
-        #     scroll_pos = self.listbox.get_focus_offset_inset(size)[0]
-        #     if self.scroll_rows:
-        #         if (scroll_pos <= self.scroll_rows):
-        #             pct = ((self.scroll_rows )/maxrow)*100
-        #             self.set_focus_valign(("relative", pct))
-        #         elif (scroll_pos >= (maxrow - self.scroll_rows)):
-        #             pct = ((maxrow - self.scroll_rows )/maxrow)*100
-        #             self.set_focus_valign(("relative", pct))
 
         self.height = maxrow
         return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
