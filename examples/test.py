@@ -83,14 +83,17 @@ def main():
         def __init__(self, num_rows = 10, *args, **kwargs):
             self.num_rows = num_rows
             # indexes = random.sample(range(self.num_rows*2), num_rows)
+            self.randomize_query_data()
+            self.last_rec = len(self.query_data)
+            super(ExampleDataTable, self).__init__(*args, **kwargs)
+
+        def randomize_query_data(self):
             indexes = range(self.num_rows)
             self.query_data = [
                 self.random_row(indexes[i]) for i in range(self.num_rows)
                 # self.random_row(i) for i in range(self.num_rows)
             ]
             random.shuffle(self.query_data)
-            self.last_rec = len(self.query_data)
-            super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def random_row(self, uniqueid):
             return dict(uniqueid=uniqueid,
@@ -153,6 +156,9 @@ def main():
 
 
         def keypress(self, size, key):
+            if key == "meta r":
+                self.randomize_query_data()
+                self.reset(requery=True, reset_sort=True)
             if key == "ctrl r":
                 self.reset(reset_sort=True)
             if key == "ctrl d":
@@ -170,6 +176,10 @@ def main():
             elif key.isdigit() and int(key)-1 in range(len(self.columns)):
                 col = int(key)-1
                 self.sort_by_column(col, toggle=True)
+            elif key == "ctrl l":
+                self.load("test.json")
+            elif key == "ctrl s":
+                self.save("test.json")
             elif key == "0":
                 # self.sort_by_column(self.index, toggle=True)
                 self.sort_index()
@@ -334,6 +344,13 @@ def main():
         else:
             return False
 
+    old_signal_keys = screen.tty_signal_keys()
+    l = list(old_signal_keys)
+    l[0] = 'undefined'
+    l[3] = 'undefined'
+    l[4] = 'undefined'
+    screen.tty_signal_keys(*l)
+
     main = urwid.MainLoop(
         urwid.Frame(urwid.Filler(urwid.LineBox(grid_flow), valign="top")),
         palette = palette,
@@ -342,7 +359,10 @@ def main():
 
     )
 
-    main.run()
+    try:
+        main.run()
+    finally:
+        screen.tty_signal_keys(*old_signal_keys)
 
 if __name__ == "__main__":
     main()

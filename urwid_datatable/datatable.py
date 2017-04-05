@@ -955,9 +955,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def reset(self, requery=False, reset_sort=False):
         logger.debug("reset")
         # self.offset = 0
-        if self.query_sort:
-            self.df.clear()
+        # if self.query_sort:
+            # self.df.clear()
         if requery or self.query_sort:
+            self.df.clear()
             self.requery()
         self.page = 1
         self.clear_filters()
@@ -969,8 +970,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def load(self, path):
 
-        self.df = rc.from_json(path)
+        with open(path, "r") as f:
+            json = "\n".join(f.readlines())
+            self.df = DataTableDataFrame.from_json(json)
         self.reset()
+
+    def save(self, path):
+        print path
+        with open(path, "w") as f:
+            f.write(self.df.to_json())
 
     # def keypress(self, size, key):
     #     if key != "enter":
