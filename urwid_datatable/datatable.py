@@ -263,8 +263,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 self,
                 border = self.border,
                 padding = self.padding,
-                sort = self.sort_by,
-                sort_icons = self.sort_icons
             )
 
             self.pile.contents.insert(0,

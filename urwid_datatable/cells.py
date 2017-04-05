@@ -35,7 +35,7 @@ class DataTableCell(urwid.WidgetWrap):
         else:
             self.padding = padding
 
-        self.contents = self._format(value)
+        self.update_contents()
 
         self.padding = urwid.Padding(
             self.contents,
@@ -60,6 +60,9 @@ class DataTableCell(urwid.WidgetWrap):
             focus_map = self.normal_focus_map
         )
         super(DataTableCell, self).__init__(self.attr)
+
+    def update_contents(self):
+        pass
 
     def set_attr_maps(self):
 
@@ -106,6 +109,8 @@ class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
     PADDING_ATTR = "table_row_body_padding"
 
+    def update_contents(self):
+        self.contents = self._format(self.value)
 
 
 class DataTableHeaderCell(DataTableCell):
@@ -115,29 +120,26 @@ class DataTableHeaderCell(DataTableCell):
     ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
     DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
 
-    def __init__(self, table, column, sort=None, sort_icon=None, *args, **kwargs):
-        self.table = table
-        self.column = column
-        if self.column.sort_icon is not None:
-            self.sort_icon = self.column.sort_icon
-        else:
-            self.sort_icon = sort_icon
+    # def __init__(self, table, column, sort=None, sort_icon=None, *args, **kwargs):
+    def update_contents(self):
+
+        self.sort_icon = self.column.sort_icon if self.column.sort_icon else self.table.sort_icons
 
         self.columns = urwid.Columns([
             ('weight', 1,
              column.label
-             if isinstance(column.label, urwid.Widget)
+             if isinstance(self.column.label, urwid.Widget)
              else
-             urwid.Text(column.label, align=self.column.align)
+             urwid.Text(self.column.label, align=self.column.align)
             )
         ])
 
-        if sort_icon:
+        if self.sort_icon:
             self.columns.contents.append(
                 (urwid.Text(""), self.columns.options("given", 1))
             )
-        super(DataTableHeaderCell, self).__init__(self.table, column, self.columns, *args, **kwargs)
-        self.update_sort(sort)
+        self.contents = self.columns
+        self.update_sort(self.table.sort_by)
 
     def set_attr_maps(self):
 
@@ -172,5 +174,13 @@ class DataTableHeaderCell(DataTableCell):
             self.columns.contents[1][0].set_text("")
 
 class DataTableFooterCell(DataTableCell):
+
     ATTR = "table_row_footer"
     PADDING_ATTR = "table_row_footer_padding"
+
+
+    def update_contents(self):
+        self.contents = urwid.Text("")
+        if self.column.footer_fn and len(self.table.df):
+            self.table.df.log_dump()
+            self.contents.set_text(str(self.column.footer_fn(self.table.df[self.column.name].to_list())))

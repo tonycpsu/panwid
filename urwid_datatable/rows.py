@@ -17,7 +17,6 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, table, data=None, index=None,
                  border=None, padding=None,
-                 sort=None, sort_icons=None,
                  *args, **kwargs):
 
         self.table = table
@@ -25,8 +24,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.index = index
         self.border = border
         self.padding = padding
-        self.sort = sort
-        self.sort_icons = sort_icons
+        self.sort = self.table.sort_by
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
@@ -181,9 +179,6 @@ class DataTableBodyRow(DataTableRow):
                 self.table,
                 col,
                 self.data[col.name],
-                # self.data[col.name] if not col.value_fn else col.value_fn(self),
-                sort=self.sort,
-                sort_icon=self.sort_icons,
                 value_attr=self.data.get(col.attr, None))
             for i, col in enumerate(self.table.visible_columns)]
 
@@ -201,7 +196,6 @@ class DataTableHeaderRow(DataTableRow):
                 self.table,
                 col,
                 sort=self.sort,
-                sort_icon=self.sort_icons
             )
             for i, col in enumerate(self.table.visible_columns)]
 
@@ -228,7 +222,6 @@ class DataTableHeaderRow(DataTableRow):
 
     def update_sort(self, sort):
         for c in self.cells:
-            # raise Exception(c)
             c.update_sort(sort)
 
 
@@ -242,9 +235,13 @@ class DataTableFooterRow(DataTableRow):
                 self.table,
                 col,
                 sort=self.sort,
-                sort_icon=self.sort_icons
             )
             for i, col in enumerate(self.table.visible_columns)]
 
     def selectable(self):
         return False
+
+    # def update(self):
+    #     super(DataTableFooterRow, self).update()
+    #     for c in self.cells:
+    #         c.update()
