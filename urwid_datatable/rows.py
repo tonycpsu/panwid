@@ -106,7 +106,6 @@ class DataTableRow(urwid.WidgetWrap):
 
 
     def set_focus_column(self, index):
-        # self.columns.focus_position = index
         for i, cell in enumerate(self):
             if i == index:
                 cell.highlight()

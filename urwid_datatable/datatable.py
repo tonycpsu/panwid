@@ -293,7 +293,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
              )
 
 
-        self.reset()
+        self.reset(requery=True)
 
         if self.sort_by:
             self.sort_by_column(self.sort_by)
@@ -708,10 +708,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # else:
         self.sort(column_name, key=column.sort_key)
 
-        self.set_focus_column(self.sort_column)
-
         if self.with_header:
             self.header.update_sort(self.sort_by)
+
+        self.set_focus_column(self.sort_column)
 
     def sort(self, column, key=None):
         logger.debug(column)
@@ -954,18 +954,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.filters = None
         self.invalidate()
 
-    def reset(self, reset_sort=False):
+    def reset(self, requery=False, reset_sort=False):
         logger.debug("reset")
         # self.offset = 0
-        self.df.clear()
-        self.requery()
+        # self.df.clear()
+        if requery:
+            self.requery()
         self.page = 1
         self.clear_filters()
         self.apply_filters()
         if reset_sort:
             self.sort_by_column(self.initial_sort)
         self.focus_position = 0
-        self.invalidate()
+        # self.invalidate()
 
     # def keypress(self, size, key):
     #     if key != "enter":
