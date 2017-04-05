@@ -127,7 +127,7 @@ class DataTableHeaderCell(DataTableCell):
 
         self.columns = urwid.Columns([
             ('weight', 1,
-             column.label
+             self.column.label
              if isinstance(self.column.label, urwid.Widget)
              else
              urwid.Text(self.column.label, align=self.column.align)

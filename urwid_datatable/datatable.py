@@ -967,6 +967,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.focus_position = 0
         # self.invalidate()
 
+    def load(self, path):
+
+        self.df = rc.from_json(path)
+        self.reset()
+
     # def keypress(self, size, key):
     #     if key != "enter":
     #         return key
