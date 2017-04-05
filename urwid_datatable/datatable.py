@@ -955,8 +955,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def reset(self, requery=False, reset_sort=False):
         logger.debug("reset")
         # self.offset = 0
-        # self.df.clear()
-        if requery:
+        if self.query_sort:
+            self.df.clear()
+        if requery or self.query_sort:
             self.requery()
         self.page = 1
         self.clear_filters()
