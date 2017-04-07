@@ -7,7 +7,8 @@ class DataTableDataFrame(rc.DataFrame):
     DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_rendered_row"]
 
     def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sorted=None):
-        if not index_name in columns:
+
+        if columns and not index_name in columns:
             columns = [index_name] + columns
         super(DataTableDataFrame, self).__init__(
             data=data,

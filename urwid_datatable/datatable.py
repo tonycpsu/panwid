@@ -45,7 +45,7 @@ class DataTableColumn(object):
                  attr = None,
                  sort_key = None, sort_reverse=False,
                  sort_icon = None,
-                 footer_fn = None):
+                 footer_fn = None, footer_arg = "values"):
 
         self.name = name
         self.label = label if label else name
@@ -65,6 +65,7 @@ class DataTableColumn(object):
         self.sort_reverse = sort_reverse
         self.sort_icon = sort_icon
         self.footer_fn = footer_fn
+        self.footer_arg = footer_arg
 
         if isinstance(self.width, tuple):
             if self.width[0] != "weight":
@@ -291,7 +292,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
              )
 
 
-        self.reset(requery=True)
+        self.reset()
 
         if self.sort_by:
             self.sort_by_column(self.sort_by)
@@ -316,8 +317,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             cls,
             user_entries={},
             min_contrast_entries = None,
-            min_contrast = 2.0
+            min_contrast = 2.0,
+            default_background="black"
     ):
+
 
         foreground_map = {
             "table_row_body": [ "light gray", "light gray" ],
@@ -393,10 +396,25 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             for suffix in [None, "focused",
                            "highlight", "highlight focused"]:
 
-                foreground = entry.foreground
+                # Check entry backgroun colors against default bg.  If they're
+                # the same, replace the entry's background color with focus or
+                # highglight color.  If not, preserve the entry background.
+
+                default_bg_rgb = urwid.AttrSpec(default_background, default_background, 16)
+                bg_rgb = urwid.AttrSpec(entry.background, entry.background, 16)
                 background = background_map[suffix][0]
-                foreground_high = entry.foreground_high if entry.foreground_high else entry.foreground
+                if default_bg_rgb.get_rgb_values() != bg_rgb.get_rgb_values():
+                    background = entry.background
+
                 background_high = background_map[suffix][1]
+                if entry.background_high:
+                    bg_high_rgb = urwid.AttrSpec(entry.background_high, entry.background_high, 1<<24)
+                    if default_bg_rgb.get_rgb_values() != bg_high_rgb.get_rgb_values():
+                        background_high = entry.background_high
+
+                foreground = entry.foreground
+                background = background
+                foreground_high = entry.foreground_high if entry.foreground_high else entry.foreground
                 if min_contrast_entries and name in min_contrast_entries:
                     # All of this code is available in the colourettu package
                     # (https://github.com/MinchinWeb/colourettu) but newer
@@ -952,14 +970,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.filters = None
         self.invalidate()
 
-    def reset(self, requery=False, reset_sort=False):
+    def reset(self, reset_sort=False):
         logger.debug("reset")
         # self.offset = 0
         # if self.query_sort:
             # self.df.clear()
-        if requery or self.query_sort:
-            self.df.clear()
-            self.requery()
+        # if requery or self.query_sort:
+        self.df.clear()
+        self.requery()
         self.page = 1
         self.clear_filters()
         self.apply_filters()

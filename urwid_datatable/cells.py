@@ -180,7 +180,17 @@ class DataTableFooterCell(DataTableCell):
 
 
     def update_contents(self):
-        self.contents = urwid.Text("")
         if self.column.footer_fn and len(self.table.df):
-            self.table.df.log_dump()
-            self.contents.set_text(str(self.column.footer_fn(self.table.df[self.column.name].to_list())))
+            # self.table.df.log_dump()
+            if self.column.footer_arg == "values":
+                footer_arg = self.table.df[self.column.name].to_list()
+            elif self.column.footer_arg == "rows":
+                footer_arg = self.table.df.iterrows()
+            elif self.column.footer_arg == "table":
+                footer_arg = self.table.df
+            else:
+                raise Exception
+            footer_value = self.column.footer_fn(self.column, footer_arg)
+            self.contents = self._format(footer_value)
+        else:
+            self.contents = urwid.Text("")

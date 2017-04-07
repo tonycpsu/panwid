@@ -62,7 +62,7 @@ def main():
         DataTableColumn("foo", label="Foo", width=4, align="right",
                         sort_key = lambda v: (v is None, v),
                         attr="color", padding=0,
-                        footer_fn = lambda rows: sum(r for r in rows if r is not None)),
+                        footer_fn = lambda column, values: sum(v for v in values if v is not None)),
         DataTableColumn("bar", label="Bar", width=10, align="right",
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
         DataTableColumn("baz", label="Baz!", width=("weight", 1)),
@@ -158,7 +158,7 @@ def main():
         def keypress(self, size, key):
             if key == "meta r":
                 self.randomize_query_data()
-                self.reset(requery=True, reset_sort=True)
+                self.reset(reset_sort=True)
             if key == "ctrl r":
                 self.reset(reset_sort=True)
             if key == "ctrl d":
