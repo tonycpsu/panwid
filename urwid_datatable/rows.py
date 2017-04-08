@@ -172,6 +172,22 @@ class DataTableBodyRow(DataTableRow):
         else:
             self.open_details()
 
+    def set_attr(self, attr):
+        attr_map = self.attr.get_attr_map()
+        attr_map[self.ATTR] = attr
+        self.attr.set_attr_map(attr_map)
+        focus_map = self.attr.get_focus_map()
+        focus_map[self.ATTR] = "%s focused" %(attr)
+        self.attr.set_focus_map(focus_map)
+
+    def clear_attr(self, attr):
+        attr_map = self.attr.get_attr_map()
+        if self.ATTR in attr_map:
+            del attr_map[self.ATTR]
+        self.attr.set_attr_map(attr_map)
+        focus_map = self.attr.get_focus_map()
+        focus_map[self.ATTR] = "%s focused" %(self.ATTR)
+        self.attr.set_focus_map(focus_map)
 
     def make_cells(self):
         return [

@@ -219,6 +219,10 @@ def main():
                 self.clear_filters()
             elif key == ".":
                 self.toggle_details()
+            elif key == "s":
+                self.selection.set_attr("red")
+            elif key == "S":
+                self.selection.clear_attr("red")
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
