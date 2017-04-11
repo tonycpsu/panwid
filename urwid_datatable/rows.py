@@ -2,6 +2,7 @@ import urwid
 
 from .cells import *
 import functools
+from orderedattrdict import AttrDict
 
 DEFAULT_CELL_PADDING = 0
 DEFAULT_TABLE_BORDER_WIDTH = 1
@@ -20,7 +21,11 @@ class DataTableRow(urwid.WidgetWrap):
                  *args, **kwargs):
 
         self.table = table
-        self.data = data
+        if data:
+            if isinstance(data, list):
+                self.data = AttrDict(zip([c.name for c in self.table.columns], data))
+            else:
+                self.data = AttrDict(data)
         self.index = index
         self.border = border
         self.padding = padding
@@ -41,8 +46,6 @@ class DataTableRow(urwid.WidgetWrap):
         self.focus_map.update(table.focus_map)
         self.focus_map.update(table.highlight_focus_map)
 
-        if isinstance(self.data, list):
-            self.data = dict(zip([c.name for c in self.table.columns], self.data))
 
         self.columns_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
         self.attr = urwid.AttrMap(
@@ -118,6 +121,10 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __iter__(self):
         return iter( self.columns[i] for i in range(0, len(self.columns.contents), 2) )
+
+    @property
+    def values(self):
+        return AttrDict(zip([c.name for c in self.table.visible_columns], [ c.value for c in self ]))
 
 
 class DataTableBodyRow(DataTableRow):

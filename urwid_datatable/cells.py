@@ -190,7 +190,7 @@ class DataTableFooterCell(DataTableCell):
                 footer_arg = self.table.df
             else:
                 raise Exception
-            footer_value = self.column.footer_fn(self.column, footer_arg)
-            self.contents = self._format(footer_value)
+            self.value = self.column.footer_fn(self.column, footer_arg)
+            self.contents = self._format(self.value)
         else:
             self.contents = urwid.Text("")

@@ -556,7 +556,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # logger.debug("walker get: %d" %(position))
         if position < 0 or position >= len(self.filtered_rows): raise IndexError
         try:
-            r = self.get_row(position)
+            r = self.get_row_by_position(position)
             return r
         except IndexError:
             logger.error(traceback.format_exc())
@@ -613,9 +613,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         return self.df.get_columns(index, self.df.columns, as_dict=True)
 
-    def get_row(self, position):
-        index = self.position_to_index(self.filtered_rows[position])
-        # raise Exception(self.sort_by)
+    def get_row(self, index):
         try:
             row = self.df.get(index, "_rendered_row")
         except:
@@ -635,10 +633,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.df.set(index, "_dirty", False)
         return row
 
-
-    def delete_rows(self, indexes):
-        self.df.delete_rows(indexes)
-        self._modified()
+    def get_row_by_position(self, position):
+        index = self.position_to_index(self.filtered_rows[position])
+        return self.get_row(index)
 
     @property
     def selection(self):
@@ -765,7 +762,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def requery(self, offset=0, load_all=False, **kwargs):
 
-        logger.debug("requery")
+        # logger.info("requery")
         kwargs = {"load_all": load_all}
         if self.query_sort:
             kwargs["sort"] = self.sort_by
@@ -860,12 +857,25 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def visible_columns(self):
         return [ c for c in self.columns if not c.hide ]
 
-
     def add_row(self, data, sort=True):
         # raise Exception(data)
         self.append_rows([data])
         if sort:
             self.sort_by_column()
+        self.apply_filters()
+        # else:
+        #     self.invalidate()
+
+    def delete_rows(self, indexes):
+        self.df.delete_rows(indexes)
+        self.apply_filters()
+        if self.focus_position >= len(self)-1:
+            self.focus_position = len(self)-1
+        # if self.focus > len(self)-1:
+            # self.focus = len(self)-1
+        # self._modified()
+        # self.invalidate()
+
 
     def invalidate(self):
         self.df["_dirty"] = True

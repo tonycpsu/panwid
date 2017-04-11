@@ -162,9 +162,9 @@ def main():
             if key == "ctrl r":
                 self.reset(reset_sort=True)
             if key == "ctrl d":
-                self.log_dump(10)
+                self.log_dump(20)
             if key == "meta d":
-                self.log_dump(10, columns=["foo", "baz"])
+                self.log_dump(20, columns=["foo", "baz"])
             if key == "ctrl f":
                 self.focus_position = 0
             elif key == "ctrl t":
@@ -191,7 +191,7 @@ def main():
                 self.last_rec += 1
             elif key == "d":
                 if len(self):
-                    self.delete_rows(self.df.index[0])
+                    self.delete_rows(self.df.index[self.focus_position])
             elif key == "meta a":
                 name = "".join( random.choice(
                             string.ascii_uppercase
@@ -223,6 +223,8 @@ def main():
                 self.selection.set_attr("red")
             elif key == "S":
                 self.selection.clear_attr("red")
+            elif key == "u":
+                logger.info(self.footer.values)
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":
