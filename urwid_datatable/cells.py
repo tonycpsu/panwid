@@ -104,6 +104,23 @@ class DataTableCell(urwid.WidgetWrap):
         if event == 'mouse press':
             urwid.emit_signal(self, "click")
 
+    def set_attr(self, attr):
+        attr_map = self.attr.get_attr_map()
+        attr_map[None] = attr
+        self.attr.set_attr_map(attr_map)
+        focus_map = self.attr.get_focus_map()
+        focus_map[None] = "%s focused" %(attr)
+        self.attr.set_focus_map(focus_map)
+
+    def clear_attr(self, attr):
+        attr_map = self.attr.get_attr_map()
+        attr_map = self.normal_attr_map
+        # attr_map[None] = self.attr
+        self.attr.set_attr_map(attr_map)
+        focus_map = self.normal_focus_map #.attr.get_focus_map()
+        # focus_map[None] = self.attr_focused
+        self.attr.set_focus_map(focus_map)
+
 
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"

@@ -114,7 +114,8 @@ class DataTableRow(urwid.WidgetWrap):
                 cell.unhighlight()
 
     def __getitem__(self, position):
-        return self.columns.contents[position][0]
+        # return self.columns.contents[position][0]
+        return self.cells[position]
 
     def __len__(self):
         return len(self.columns.contents)

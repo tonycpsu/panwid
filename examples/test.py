@@ -223,6 +223,10 @@ def main():
                 self.selection.set_attr("red")
             elif key == "S":
                 self.selection.clear_attr("red")
+            elif key == "k":
+                self.selection[2].set_attr("red")
+            elif key == "K":
+                self.selection[2].clear_attr("red")
             elif key == "u":
                 logger.info(self.footer.values)
             elif key == "shift left":
