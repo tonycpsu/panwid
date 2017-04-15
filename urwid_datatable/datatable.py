@@ -50,7 +50,10 @@ class DataTableColumn(object):
         self.name = name
         self.label = label if label else name
         if value:
-            self.value_fn = make_value_function(value)
+            if isinstance(value, str):
+                self.value_fn = make_value_function(value)
+            elif callable(value):
+                self.value_fn = value
         else:
             self.value_fn = None
         self.width = width

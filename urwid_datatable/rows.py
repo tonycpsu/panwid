@@ -130,8 +130,11 @@ class DataTableBodyRow(DataTableRow):
     def __init__(self, table, data, *args, **kwargs):
 
         if isinstance(data, list):
-            data = zip([c.name for c in self.table.columns], data)
-        self.data = AttrDict(data)
+            data = dict(zip([c.name for c in table.columns], data))
+        self.data = AttrDict(
+            (k, v(data) if callable(v) else v)
+            for k, v in data.items()
+        )
         self.details_open = False
         super(DataTableBodyRow, self).__init__(table, *args, **kwargs)
 

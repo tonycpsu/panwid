@@ -105,13 +105,14 @@ def main():
                             string.ascii_uppercase
                             + string.lowercase
                             + string.digits + ' ' * 10
-                        ) for _ in range(20))
+                        ) for _ in range(random.randint(5, 20)))
                               if random.randint(0, 5)
                               else None),
                         qux = urwid.Text([("red", "1"),("green", "2"), ("blue", "3")]),
                         xyzzy = ( "%0.1f" %(random.uniform(0, 100))
                                if random.randint(0, 5)
                                else None),
+                        baz_len = lambda r: len(r["baz"]) if r.get("baz") else 0,
                         # xyzzy = random.randint(10, 100),
                         empty = None,
                         a = dict(b=dict(c=random.randint(0, 100))),
@@ -283,6 +284,7 @@ def main():
 
         return urwid.Padding(urwid.Columns([
             ("weight", 1, data.get("qux")),
+            ("weight", 1, urwid.Text(str(data.get("baz_len")))),
             ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
         ]))
 
