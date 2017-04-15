@@ -16,16 +16,11 @@ DEFAULT_TABLE_BORDER = (
 
 class DataTableRow(urwid.WidgetWrap):
 
-    def __init__(self, table, data=None, index=None,
+    def __init__(self, table, index=None,
                  border=None, padding=None,
                  *args, **kwargs):
 
         self.table = table
-        if data:
-            if isinstance(data, list):
-                self.data = AttrDict(zip([c.name for c in self.table.columns], data))
-            else:
-                self.data = AttrDict(data)
         self.index = index
         self.border = border
         self.padding = padding
@@ -132,9 +127,13 @@ class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, table, data, *args, **kwargs):
+
+        if isinstance(data, list):
+            data = zip([c.name for c in self.table.columns], data)
+        self.data = AttrDict(data)
         self.details_open = False
-        super(DataTableBodyRow, self).__init__(*args, **kwargs)
+        super(DataTableBodyRow, self).__init__(table, *args, **kwargs)
 
     def open_details(self):
 
@@ -198,6 +197,7 @@ class DataTableBodyRow(DataTableRow):
         self.attr.set_focus_map(focus_map)
 
     def make_cells(self):
+
         return [
             DataTableBodyCell(
                 self.table,
