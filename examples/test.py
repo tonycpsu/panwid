@@ -173,7 +173,7 @@ def main():
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
                                                     self.selection.get("baz")))
-            elif key.isdigit() and int(key)-1 in range(len(self.columns)):
+            elif self.ui_sort and key.isdigit() and int(key)-1 in range(len(self.columns)):
                 col = int(key)-1
                 self.sort_by_column(col, toggle=True)
             elif key == "ctrl l":
