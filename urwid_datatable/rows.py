@@ -144,7 +144,10 @@ class DataTableBodyRow(DataTableRow):
             return
         content = self.table.detail_fn(self.data)
         if self.table.detail_column:
-            col_index = self.table.visible_column_index(self.table.detail_column)
+            try:
+                col_index = self.table.visible_column_index(self.table.detail_column)
+            except IndexError:
+                col_index = 0
         else:
             col_index = 0
 

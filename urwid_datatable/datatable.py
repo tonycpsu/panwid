@@ -672,7 +672,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                      if c.name == column_name)
 
         except StopIteration:
-            return None
+            raise IndexError
 
     def sort_by_column(self, col=None, reverse=None, toggle=False):
 
@@ -693,7 +693,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             column_number = col
         elif isinstance(col, str):
             column_name = col
-            column_number = self.visible_column_index(column_name)
+            try:
+                column_number = self.visible_column_index(column_name)
+            except:
+                column_number = None
 
         self.sort_column = column_number
 
