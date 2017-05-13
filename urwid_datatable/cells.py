@@ -152,9 +152,14 @@ class DataTableHeaderCell(DataTableCell):
         ])
 
         if self.sort_icon:
-            self.columns.contents.append(
-                (urwid.Text(""), self.columns.options("given", 1))
-            )
+            if self.column.align == "right":
+                self.columns.contents.insert(0,
+                    (urwid.Text(""), self.columns.options("given", 1))
+                )
+            else:
+                self.columns.contents.append(
+                    (urwid.Text(""), self.columns.options("given", 1))
+                )
         self.contents = self.columns
         self.update_sort(self.table.sort_by)
 
@@ -184,11 +189,12 @@ class DataTableHeaderCell(DataTableCell):
     def update_sort(self, sort):
         if not self.sort_icon: return
 
+        index = 0 if self.column.align=="right" else 1
         if sort and sort[0] == self.column.name:
             direction = self.DESCENDING_SORT_MARKER if sort[1] else self.ASCENDING_SORT_MARKER
-            self.columns.contents[1][0].set_text(direction)
+            self.columns.contents[index][0].set_text(direction)
         else:
-            self.columns.contents[1][0].set_text("")
+            self.columns.contents[index][0].set_text("")
 
 class DataTableFooterCell(DataTableCell):
 
