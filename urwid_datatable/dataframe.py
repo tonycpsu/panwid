@@ -6,7 +6,7 @@ class DataTableDataFrame(rc.DataFrame):
 
     DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_rendered_row"]
 
-    def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sorted=None):
+    def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sort=None):
 
         if columns and not index_name in columns:
             columns = [index_name] + columns
@@ -16,7 +16,7 @@ class DataTableDataFrame(rc.DataFrame):
             index=index,
             index_name=index_name,
             use_blist=use_blist,
-            sorted=sorted
+            sort=sort
         )
         for c in self.DATA_TABLE_COLUMNS:
             self[c] = None
@@ -62,7 +62,7 @@ class DataTableDataFrame(rc.DataFrame):
             columns = columns,
             data = data,
             use_blist=True,
-            sorted=False,
+            sort=False,
             index=index,
             index_name = self.index_name,
         )

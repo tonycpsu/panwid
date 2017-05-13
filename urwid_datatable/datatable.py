@@ -221,7 +221,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         kwargs = dict(
             columns = self.column_names,
             use_blist=True,
-            sorted=False,
+            sort=False,
             # sorted=True,
         )
         if self.index:
