@@ -48,7 +48,7 @@ class DataTableColumn(object):
                  footer_fn = None, footer_arg = "values"):
 
         self.name = name
-        self.label = label if label else name
+        self.label = label if label is not None else name
         if value:
             if isinstance(value, str):
                 self.value_fn = make_value_function(value)
