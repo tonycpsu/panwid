@@ -209,7 +209,7 @@ class DataTableBodyRow(DataTableRow):
                 self.table,
                 col,
                 self.data[col.name],
-                value_attr=self.data.get(col.attr, None))
+                value_attr=self.data.get(col.attr, col.attr))
             for i, col in enumerate(self.table.visible_columns)]
 
 
