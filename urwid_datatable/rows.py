@@ -204,12 +204,23 @@ class DataTableBodyRow(DataTableRow):
 
     def make_cells(self):
 
+        def col_to_attr(col):
+            if callable(col.attr):
+                return col.attr(self.data)
+            elif col.attr in self.data:
+                return self.data[col.attr]
+            # elif isinstance(col.attr, str):
+            #     return col.attr
+            else:
+                return None
+
         return [
             DataTableBodyCell(
                 self.table,
                 col,
                 self.data[col.name],
-                value_attr=self.data.get(col.attr, col.attr))
+                # value_attr=self.data.get(col.attr, col.attr if col.attr else None))
+                value_attr=col_to_attr(col))
             for i, col in enumerate(self.table.visible_columns)]
 
 
