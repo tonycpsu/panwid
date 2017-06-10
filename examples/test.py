@@ -307,7 +307,8 @@ def main():
             10,
             index="uniqueid",
             detail_fn=detail_fn,
-            detail_column="bar"
+            detail_column="bar",
+            sort_refocus = True
         ),
         ExampleDataTableBox(
             1000,

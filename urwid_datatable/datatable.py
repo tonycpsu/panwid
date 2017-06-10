@@ -141,6 +141,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     sort_by = (None, None)
     query_sort = False
     sort_icons = True
+    sort_refocus = False
 
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
@@ -162,6 +163,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  index=None,
                  with_header=None, with_footer=None, with_scrollbar=None,
                  sort_by=None, query_sort=None, sort_icons=None,
+                 sort_refocus=None,
                  border=None, padding=None,
                  detail_fn = None, detail_column = None,
                  auto_expand_details = False,
@@ -193,6 +195,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.initial_sort = self.sort_by
 
         if sort_icons is not None: self.sort_icons = sort_icons
+        if sort_refocus is not None: self.sort_refocus = sort_refocus
 
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
@@ -725,12 +728,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if self.query_sort:
             self.reset()
         # else:
+
+        row_index = None
+        if self.sort_refocus:
+            row_index = self[self._focus].data.get(self.index, None)
+            logger.info("row_index: %s" %(row_index))
         self.sort(column_name, key=column.sort_key)
 
         if self.with_header:
             self.header.update_sort(self.sort_by)
 
         self.set_focus_column(self.sort_column)
+        if row_index:
+            self.focus_position = self.index_to_position(row_index)
 
     def sort(self, column, key=None):
         logger.debug(column)
