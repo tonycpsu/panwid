@@ -76,4 +76,5 @@ class DataTableDataFrame(rc.DataFrame):
     #     self[column] = data
 
     def clear(self):
-        self.delete_rows(self.index)
+        self.delete_all_rows()
+        # self.delete_rows(self.index)
