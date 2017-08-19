@@ -1,6 +1,7 @@
 import logging
 logger = logging.getLogger("urwid_datatable")
 import raccoon as rc
+import collections
 
 class DataTableDataFrame(rc.DataFrame):
 
@@ -20,6 +21,16 @@ class DataTableDataFrame(rc.DataFrame):
         )
         for c in self.DATA_TABLE_COLUMNS:
             self[c] = None
+
+    def _validate_index(self, indexes):
+        try:
+            return super(DataTableDataFrame, self)._validate_index(indexes)
+        except ValueError:
+            logger.error("duplicates in index: %s" %(
+                [item for item, count
+                 in collections.Counter(indexes).items() if count > 1
+                ]))
+            raise
 
 
     def log_dump(self, n=5, columns=None, label=None):
