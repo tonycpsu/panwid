@@ -120,7 +120,7 @@ class DataTableRow(urwid.WidgetWrap):
 
     @property
     def values(self):
-        return AttrDict(zip([c.name for c in self.table.visible_columns], [ c.value for c in self ]))
+        return AttrDict(list(zip([c.name for c in self.table.visible_columns], [ c.value for c in self ])))
 
 
 class DataTableBodyRow(DataTableRow):
@@ -130,10 +130,10 @@ class DataTableBodyRow(DataTableRow):
     def __init__(self, table, data, *args, **kwargs):
 
         if isinstance(data, list):
-            data = dict(zip([c.name for c in table.columns], data))
+            data = dict(list(zip([c.name for c in table.columns], data)))
         self.data = AttrDict(
             (k, v(data) if callable(v) else v)
-            for k, v in data.items()
+            for k, v in list(data.items())
         )
         self.details_open = False
         super(DataTableBodyRow, self).__init__(table, *args, **kwargs)

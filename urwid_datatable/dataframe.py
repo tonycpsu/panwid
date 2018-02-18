@@ -28,7 +28,7 @@ class DataTableDataFrame(rc.DataFrame):
         except ValueError:
             logger.error("duplicates in index: %s" %(
                 [item for item, count
-                 in collections.Counter(indexes).items() if count > 1
+                 in list(collections.Counter(indexes).items()) if count > 1
                 ]))
             raise
 
@@ -53,15 +53,15 @@ class DataTableDataFrame(rc.DataFrame):
         colnames =  list(self.columns)
 
         try:
-            columns = list(set().union(*(d.keys() for d in rows)))
+            columns = list(set().union(*(list(d.keys()) for d in rows)))
             data = dict(
-                zip((columns),
+                list(zip((columns),
                     [ list(z) for z in zip(*[[
                         d.get(k, None) for k in columns ] for d in rows])]
-                )
+                ))
             )
             if self.index_name not in columns:
-                index = range(len(self), len(data.values()[0]))
+                index = list(range(len(self), len(list(data.values())[0])))
                 data[self.index_name] = index
             else:
                 index = data[self.index_name]

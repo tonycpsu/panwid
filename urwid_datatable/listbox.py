@@ -1,4 +1,4 @@
-from __future__ import division
+
 import urwid
 import logging
 logger = logging.getLogger(__name__.split(".")[0])
@@ -29,15 +29,15 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         # LOZENGE DIVIDED BY HORIZONTAL RULE
         # BLACK UP-POINTING TRIANGLE
         # BLACK DOWN-POINTING TRIANGLE
-        pos_marker = urwid.AttrMap(urwid.Text(u" "),
+        pos_marker = urwid.AttrMap(urwid.Text(" "),
                                    {None: "scroll_pos"}
         )
 
-        down_marker = urwid.AttrMap(urwid.Text(u"\N{DOWNWARDS ARROW}"),
+        down_marker = urwid.AttrMap(urwid.Text("\N{DOWNWARDS ARROW}"),
                                    {None: "scroll_marker"}
         )
 
-        end_marker = urwid.AttrMap(urwid.Text(u"\N{CIRCLED DOT OPERATOR}"),
+        end_marker = urwid.AttrMap(urwid.Text("\N{CIRCLED DOT OPERATOR}"),
                                    {None: "scroll_marker"}
         )
 

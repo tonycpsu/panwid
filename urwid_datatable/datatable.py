@@ -1,9 +1,9 @@
-from __future__ import division
+
 import logging
 logger = logging.getLogger("urwid_datatable")
 import urwid
 from urwid_utils.palette import *
-from listbox import ScrollingListBox
+from .listbox import ScrollingListBox
 from orderedattrdict import OrderedDict
 import itertools
 import traceback
@@ -95,7 +95,7 @@ class DataTableColumn(object):
         if self.format_fn:
             try:
                 v = self.format_fn(v)
-            except Exception, e:
+            except Exception as e:
                 logger.error("%s format exception: %s" %(self.name, v))
                 logger.exception(e)
                 raise e
@@ -395,7 +395,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 )
 
 
-        for name, entry in user_entries.items():
+        for name, entry in list(user_entries.items()):
             DataTable.focus_map[name] = "%s focused" %(name)
             DataTable.highlight_map[name] = "%s highlight" %(name)
             DataTable.highlight_focus_map["%s highlight" %(name)] = "%s highlight focused" %(name)
@@ -617,7 +617,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except IndexError:
             logger.debug(traceback.format_exc())
 
-        return self.df.get_columns(index, self.df.columns, as_dict=True)
+        return self.df.get_columns(index, as_dict=True)
 
     def get_row(self, index):
         try:
@@ -706,7 +706,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not column_name:
             return
         try:
-            column = (c for c in self.columns if c.name == column_name).next()
+            column = next((c for c in self.columns if c.name == column_name))
         except:
             return # FIXME
             # raise NoSuchColumnException("column %s not found (%s)" %(column_name, [c.name for c in self.columns]))
@@ -743,8 +743,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.focus_position = self.index_to_position(row_index)
 
     def sort(self, column, key=None):
+        import functools
         logger.debug(column)
-        self.df.sort_columns(column, key=key, reverse=self.sort_by[1])
+        if not key:
+            key = lambda x: (x is None, x)
+        self.df.sort_columns(
+            column,
+            key = key,
+            reverse = self.sort_by[1])
         self._modified()
 
 
@@ -850,7 +856,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     raise Exception("bad column number: %d" %(column))
             else:
                 try:
-                    column = ( c for c in self.columns if c.name == column).next()
+                    column = next(( c for c in self.columns if c.name == column))
                 except IndexError:
                     raise Exception("column %s not found" %(column))
 
@@ -919,14 +925,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         i0 = self.position_to_index(p0)
         i1 = self.position_to_index(p1)
 
-        r0 = { k: v[0] for k, v in self.df[i0, None].to_dict().items() }
-        r1 = { k: v[0] for k, v in self.df[i1, None].to_dict().items() }
+        r0 = { k: v[0] for k, v in list(self.df[i0, None].to_dict().items()) }
+        r1 = { k: v[0] for k, v in list(self.df[i1, None].to_dict().items()) }
 
-        for k, v in r0.items():
+        for k, v in list(r0.items()):
             if k != field:
                 self.df.set(i1, k, v)
 
-        for k, v in r1.items():
+        for k, v in list(r1.items()):
             if k != field:
                 self.df.set(i0, k, v)
         self.df.set(i0, "_dirty", True)
@@ -992,7 +998,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.invalidate()
 
     def clear_filters(self):
-        self.filtered_rows = blist(xrange(len(self.df)))
+        self.filtered_rows = blist(range(len(self.df)))
         self.filters = None
         self.invalidate()
 
@@ -1020,7 +1026,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.reset()
 
     def save(self, path):
-        print path
+        # print(path)
         with open(path, "w") as f:
             f.write(self.df.to_json())
 

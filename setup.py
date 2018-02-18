@@ -9,7 +9,7 @@ from glob import glob
 name = 'urwid_datatable'
 setup(name=name,
       version='0.1.0',
-      description=u'A simple data table widget for urwid',
+      description='A simple data table widget for urwid',
       author='Ton Cebzanov',
       author_email='tonycpsu@gmail.com',
       url='https://github.com/tonycpsu/urwid-datatable',

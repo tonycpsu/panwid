@@ -1,5 +1,5 @@
-from datatable import *
-from dataframe import *
+from .datatable import *
+from .dataframe import *
 
 __all__ = """
 DataTable

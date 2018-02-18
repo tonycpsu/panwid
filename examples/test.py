@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from __future__ import division
+
 import logging
 logger = logging.getLogger(__name__)
 import urwid
@@ -9,7 +9,6 @@ import os
 import random
 import string
 from optparse import OptionParser
-
 screen = urwid.raw_display.Screen()
 # screen.set_terminal_properties(1<<24)
 screen.set_terminal_properties(256)
@@ -19,6 +18,7 @@ NORMAL_FG_16 = "light gray"
 NORMAL_BG_16 = "black"
 NORMAL_FG_256 = "light gray"
 NORMAL_BG_256 = "g0"
+
 
 def main():
 
@@ -88,7 +88,7 @@ def main():
             super(ExampleDataTable, self).__init__(*args, **kwargs)
 
         def randomize_query_data(self):
-            indexes = range(self.num_rows)
+            indexes = list(range(self.num_rows))
             self.query_data = [
                 self.random_row(indexes[i]) for i in range(self.num_rows)
                 # self.random_row(i) for i in range(self.num_rows)
@@ -97,13 +97,13 @@ def main():
 
         def random_row(self, uniqueid):
             return dict(uniqueid=uniqueid,
-                        foo=random.choice(range(100) + [None]*20),
+                        foo=random.choice(list(range(100)) + [None]*20),
                         bar = (random.uniform(0, 1000)
                                if random.randint(0, 5)
                                else None),
                         baz =(''.join(random.choice(
                             string.ascii_uppercase
-                            + string.lowercase
+                            + string.ascii_lowercase
                             + string.digits + ' ' * 10
                         ) for _ in range(random.randint(5, 20)))
                               if random.randint(0, 5)
@@ -133,10 +133,14 @@ def main():
 
             if sort_field:
                 kwargs = {}
-                kwargs["key"] = lambda x: (x.get(sort_field), x.get(self.index))
+                kwargs["key"] = lambda x: (x.get(sort_field) is None,
+                                           x.get(sort_field),
+                                           x.get(self.index))
                 if sort_reverse:
                     kwargs["reverse"] = sort_reverse
-                self.query_data.sort(**kwargs)
+                self.query_data.sort(
+                    **kwargs
+                )
             if offset is not None:
                 if not load_all:
                     start = offset
@@ -183,7 +187,7 @@ def main():
                 self.save("test.json")
             elif key == "0":
                 # self.sort_by_column(self.index, toggle=True)
-                self.sort_index()
+                self.sort_sorindex()
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
@@ -274,7 +278,7 @@ def main():
             )
             self.pile = urwid.Pile([
                 ("pack", urwid.Text(label)),
-                ("pack", urwid.Divider(u"\N{HORIZONTAL BAR}")),
+                ("pack", urwid.Divider("\N{HORIZONTAL BAR}")),
                 ("weight", 1, self.table)
             ])
             self.box = urwid.BoxAdapter(urwid.LineBox(self.pile), 25)
@@ -329,7 +333,7 @@ def main():
             query_sort=True,
             with_footer=True,
             with_scrollbar=True,
-            border=(1, u"\N{VERTICAL LINE}", "blue"),
+            border=(1, "\N{VERTICAL LINE}", "blue"),
             padding=3,
         ),
         ExampleDataTableBox(
