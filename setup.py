@@ -8,7 +8,7 @@ from glob import glob
 
 name = 'urwid_datatable'
 setup(name=name,
-      version='0.1.0',
+      version='0.2.0',
       description='A simple data table widget for urwid',
       author='Ton Cebzanov',
       author_email='tonycpsu@gmail.com',
@@ -20,5 +20,5 @@ setup(name=name,
       packages=['urwid_datatable'],
       data_files=[('share/doc/%s' % name, ['LICENSE','README.md']),
               ],
-      install_requires = ["urwid", "urwid-utils", "raccoon"]
+      install_requires = ["urwid", "urwid-utils", "raccoon", "orderedattrdict"]
      )
