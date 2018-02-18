@@ -16,6 +16,6 @@ TODOs:
 
   [1]: https://github.com/grantjenks/sorted_containers
 
-[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?t=9)
+[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?t=9&autoplay=1)
 
 
