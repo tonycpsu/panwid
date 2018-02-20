@@ -1,7 +1,10 @@
-urwid-datatable
-===============
+panwid
+======
 
-A data table widget for urwid.
+Useful widgets for [urwid](https://urwid.org/).
+
+
+## Datatable ##
 
 Features include:
 * Flexible options for column formatting and sorting

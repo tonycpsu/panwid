@@ -3,7 +3,7 @@
 import logging
 logger = logging.getLogger(__name__)
 import urwid
-from urwid_datatable import *
+from panwid.datatable import *
 from urwid_utils.palette import *
 import os
 import random
@@ -35,12 +35,12 @@ def main():
         fh.setFormatter(formatter)
         if options.verbose > 1:
             logger.setLevel(logging.DEBUG)
-            logging.getLogger("urwid_datatable").setLevel(logging.DEBUG)
+            logging.getLogger("panwid.datatable").setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
-            logging.getLogger("urwid_datatable").setLevel(logging.INFO)
+            logging.getLogger("panwid.datatable").setLevel(logging.INFO)
         logger.addHandler(fh)
-        logging.getLogger("urwid_datatable").addHandler(fh)
+        logging.getLogger("panwid.datatable").addHandler(fh)
         # logging.getLogger("raccoon.dataframe").setLevel(logging.DEBUG)
         # logging.getLogger("raccoon.dataframe").addHandler(fh)
 

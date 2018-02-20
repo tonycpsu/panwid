@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger("urwid_datatable")
+logger = logging.getLogger("panwid.datatable")
 import raccoon as rc
 import collections
 

@@ -1,6 +1,6 @@
 
 import logging
-logger = logging.getLogger("urwid_datatable")
+logger = logging.getLogger("panwid.datable")
 import urwid
 from urwid_utils.palette import *
 from .listbox import ScrollingListBox
