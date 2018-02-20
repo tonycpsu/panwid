@@ -1,9 +1,11 @@
-import urwid
-import urwid.raw_display
 import os
 import random
 import string
 import re
+
+import urwid
+import urwid.raw_display
+
 from urwid_utils.palette import *
 from .datatable import *
 from .listbox import ScrollingListBox
@@ -34,13 +36,13 @@ class DropdownButton(urwid.Button):
         super(urwid.Button, self).__init__(self.cols)
 
     @property
-    def width(self):
+    def decoration_width(self):
+        return len(self.left_chars) + len(self.right_chars)
 
-        return (
-            len(self.button_left.get_text()[0])
-            + len(self.label)
-            + len(self.button_right.get_text()[0])
-        )
+    @property
+    def width(self):
+        return self.decoration_width + len(self.label_text)
+
 
 class DropdownItem(urwid.WidgetWrap):
 
@@ -57,8 +59,9 @@ class DropdownItem(urwid.WidgetWrap):
             self.label_text,
             left_chars=left_chars, right_chars=right_chars
         )
-        self.padding = urwid.Padding(self.button, width=("relative", 100),
-                                     left=self.margin, right=self.margin)
+        # self.padding = urwid.Padding(self.button, width=("relative", 100),
+        #                              left=self.margin, right=self.margin)
+        self.padding = self.button
         self.attr = urwid.AttrMap(self.padding, {None: "dropdown_text"})
         self.attr.set_focus_map({
             None: "dropdown_focused",
@@ -73,8 +76,11 @@ class DropdownItem(urwid.WidgetWrap):
 
     @property
     def width(self):
-
         return self.button.width + 2*self.margin
+
+    @property
+    def decoration_width(self):
+        return self.button.decoration_width + 2*self.margin
 
     def __str__(self):
         return self.label_text
@@ -168,6 +174,8 @@ class DropdownDialog(urwid.WidgetWrap):
             margin = 0,
             left_chars=None,
             right_chars=None,
+            left_chars_top=None,
+            rigth_chars_top=None,
             max_height=10
     ):
         self.drop_down = drop_down
@@ -188,7 +196,8 @@ class DropdownDialog(urwid.WidgetWrap):
         buttons = [
                 DropdownItem(
                     label=l, value=v, margin=self.margin,
-                    left_chars=left_chars, right_chars=right_chars
+                    left_chars=left_chars,
+                    right_chars=right_chars,
                 )
                 for l, v in self.items.items()
         ]
@@ -245,6 +254,7 @@ class DropdownDialog(urwid.WidgetWrap):
 
     @property
     def max_item_width(self):
+        # logger.debug("max: %s" %(max(w.width for w in self)))
         if not len(self):
             return self.min_width
         return max(w.width for w in self)
@@ -254,8 +264,8 @@ class DropdownDialog(urwid.WidgetWrap):
         width = self.max_item_width
         if self.border:
             width += 2
-        if self.scrollbar:
-            width += 1
+        # if self.scrollbar:
+        #     width += 1
         return width
 
     @property
@@ -281,7 +291,8 @@ class DropdownDialog(urwid.WidgetWrap):
 
     @focus_position.setter
     def focus_position(self, pos):
-        # self.dropdown_buttons.listbox.set_focus_valign("top")
+        logger.debug("set pos")
+        self.dropdown_buttons.listbox.set_focus_valign("top")
         self.dropdown_buttons.focus_position = pos
 
     @property
@@ -294,7 +305,7 @@ class DropdownDialog(urwid.WidgetWrap):
         value = button.value
         self.selected_button = self.focus_position
         # self.drop_down.make_selection(label, value)
-        self.dropdown_buttons.listbox.set_focus_valign("top")
+        # self.dropdown_buttons.listbox.set_focus_valign("top")
         self._emit("close")
 
     def keypress(self, size, key):
@@ -398,6 +409,7 @@ class Dropdown(urwid.PopUpLauncher):
             label=None, border=False, scrollbar = False,
             margin = None,
             left_chars = None, right_chars = None,
+            left_chars_top = None, right_chars_top = None,
             auto_complete = False,
             arrow_cycle = False
     ):
@@ -420,8 +432,9 @@ class Dropdown(urwid.PopUpLauncher):
         self.button = DropdownItem(
             u"", None,
             margin=self.margin,
-            left_chars = left_chars,
-            right_chars = right_chars)
+            left_chars = left_chars_top if left_chars_top else left_chars,
+            right_chars = right_chars_top if right_chars_top else right_chars
+        )
 
         self.pop_up = DropdownDialog(
             self,
@@ -431,8 +444,8 @@ class Dropdown(urwid.PopUpLauncher):
             border = self.border,
             margin = self.margin,
             left_chars = left_chars,
-            auto_complete = self.auto_complete,
             right_chars = right_chars,
+            auto_complete = self.auto_complete,
             scrollbar = scrollbar
         )
 
@@ -461,7 +474,7 @@ class Dropdown(urwid.PopUpLauncher):
         else:
             self.button.set_label(("dropdown_text", self.empty_label))
 
-        cols = [ (self.pop_up.max_item_width, self.button) ]
+        cols = [ (self.button_width, self.button) ]
 
         if self.label:
             cols[0:0] = [
@@ -492,7 +505,7 @@ class Dropdown(urwid.PopUpLauncher):
             self.focus_position = 0
         elif key == "end":
             self.focus_position = len(self)-1
-        elif key in ["/", "?"]:
+        elif self.auto_complete and key in ["/", "?"]:
             self.open_pop_up()
             self.pop_up.keypress(size, key)
 
@@ -504,12 +517,33 @@ class Dropdown(urwid.PopUpLauncher):
         return self.pop_up
 
     @property
-    def width(self):
-        width = self.pop_up.width
+    def button_width(self):
+        return self.pop_up.max_item_width + self.button.decoration_width
+
+    @property
+    def pop_up_width(self):
+        w = self.button_width
+        if self.border:
+            w += 2
+        return w
+
+    @property
+    def contents_width(self):
+        # raise Exception(self.button.width)
+        w = self.button_width
         if self.label:
-            width += len(self.label) + 2
-        # if self.border:
-        #     width += 2
+            w += len(self.label) + 2
+        logger.debug("%s, %s" %(self.pop_up.width, w))
+        return max(self.pop_up.width, w)
+
+    @property
+    def width(self):
+        width = max(self.contents_width, self.pop_up.width)
+        # width = max(self.pop_up.width, contents_width)
+        # if self.label:
+        #     width += len(self.label) + 2
+        if self.border:
+            width += 2
         return width
 
     @property
@@ -528,7 +562,7 @@ class Dropdown(urwid.PopUpLauncher):
     def get_pop_up_parameters(self):
         return {'left': (len(self.label) + 2 if self.label else 0),
                 'top': 0,
-                'overlay_width': self.pop_up.width,
+                'overlay_width': self.pop_up_width,
                 'overlay_height': self.pop_up.height
         }
 
@@ -557,6 +591,7 @@ class Dropdown(urwid.PopUpLauncher):
 
     def select(self, button):
         self.button.set_label(("dropdown_text", button.label))
+        self.pop_up.dropdown_buttons.listbox.set_focus_valign("top")
 
     def set_items(self, items, selected_value):
         self.items = items
@@ -622,15 +657,16 @@ def main():
     NORMAL_FG = 'light gray'
     NORMAL_BG = 'black'
 
-    # import logging
-    # global logger
-    # logger = logging.getLogger(__name__)
-    # logger.setLevel(logging.DEBUG)
-    # formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-    #                               datefmt='%Y-%m-%d %H:%M:%S')
-    # fh = logging.FileHandler("dropdown.log")
-    # fh.setFormatter(formatter)
-    # logger.addHandler(fh)
+    if os.environ["DEBUG"]:
+        import logging
+        global logger
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
+                                      datefmt='%Y-%m-%d %H:%M:%S')
+        fh = logging.FileHandler("dropdown.log")
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
 
 
     entries = {
@@ -674,6 +710,7 @@ def main():
             label="Foo",
             border = True,
             scrollbar = True,
+            right_chars_top = u" \N{BLACK DOWN-POINTING TRIANGLE}",
             auto_complete = True,
             arrow_cycle = True
         ),
