@@ -6,38 +6,31 @@ import string
 import re
 from urwid_utils.palette import *
 from .datatable import *
-from .datatable.listbox import ScrollingListBox
+from .listbox import ScrollingListBox
 
-class ComboButton(urwid.Button):
+class DropdownButton(urwid.Button):
 
-    button_left_text = u"\N{LIGHT LEFT TORTOISE SHELL BRACKET ORNAMENT}"
-    button_right_text = u"\N{LIGHT RIGHT TORTOISE SHELL BRACKET ORNAMENT}"
+    left_chars = u""
+    right_chars = u""
 
-    # button_left_text = ""
-    # button_right_text = ""
-
-    button_left = urwid.Text(button_left_text)
-    button_right = urwid.Text(button_right_text)
-
-    def __init__(self, label, value, on_press=None, user_data=None):
+    def __init__(self, label, left_chars=None, right_chars=None):
 
         self.label_text = label
-        self.value = value
-        self._label = urwid.SelectableIcon("", 0)
-        self.attr = urwid.AttrMap(self._label, {})
-        self.attr.set_focus_map({"combo_text": "combo_focused"})
+        if left_chars:
+            self.left_chars = left_chars
+        if right_chars:
+            self.right_chars = right_chars
+
+        self.button_left = urwid.Text(self.left_chars)
+        self.button_right = urwid.Text(self.right_chars)
+
+        self._label = urwid.SelectableIcon("")
         self.cols = urwid.Columns([
-            (len(self.button_left_text), self.button_left),
-            self.attr,
-            (len(self.button_right_text), self.button_right)
+            (len(self.left_chars), self.button_left),
+            ('weight', 1, self._label),
+            (len(self.right_chars), self.button_right)
         ], dividechars=0)
-
-        # The old way of listening for a change was to pass the callback
-        # in to the constructor.  Just convert it to the new way:
-        if on_press:
-            urwid.connect_signal(self, 'click', on_press, user_data)
-
-        self.set_label(("combo_text", self.label_text))
+        self.set_label(("dropdown_text", self.label_text))
         super(urwid.Button, self).__init__(self.cols)
 
     @property
@@ -49,6 +42,40 @@ class ComboButton(urwid.Button):
             + len(self.button_right.get_text()[0])
         )
 
+class DropdownItem(urwid.WidgetWrap):
+
+    signals = ["click"]
+
+    def __init__(self, label, value,
+                 margin=0, left_chars=None, right_chars=None):
+
+        self.label_text = label
+        self.value = value
+        self.margin = margin
+        # self.button = urwid.Button(("dropdown_text", self.label_text))
+        self.button = DropdownButton(
+            self.label_text,
+            left_chars=left_chars, right_chars=right_chars
+        )
+        self.padding = urwid.Padding(self.button, width=("relative", 100),
+                                     left=self.margin, right=self.margin)
+        self.attr = urwid.AttrMap(self.padding, {None: "dropdown_text"})
+        self.attr.set_focus_map({
+            None: "dropdown_focused",
+            "dropdown_text": "dropdown_focused"
+        })
+        super(DropdownItem, self).__init__(self.attr)
+        urwid.connect_signal(
+            self.button,
+            "click",
+            lambda source: self._emit("click")
+        )
+
+    @property
+    def width(self):
+
+        return self.button.width + 2*self.margin
+
     def __str__(self):
         return self.label_text
 
@@ -58,87 +85,31 @@ class ComboButton(urwid.Button):
     def startswith(self, s):
         return self.label_text.startswith(s)
 
+    @property
+    def label(self):
+        return self.button.label
+
+    def set_label(self, label):
+        self.button.set_label(label)
+
     def highlight_text(self, s, case_sensitive=False):
 
         # (a, b, c) = self.label_text.partition(s)
         (a, b, c) = re.search(
-            "(.*?)(%s)(.*)" %(s),
+            r"(.*?)(%s)(.*)" %(s),
             self.label_text,
             re.IGNORECASE if not case_sensitive else 0
         ).groups()
         self.set_label([
-            ("combo_text", a),
-            ("combo_highlight", b),
-            ("combo_text", c),
+            ("dropdown_text", a),
+            ("dropdown_highlight", b),
+            ("dropdown_text", c),
         ])
 
     def unhighlight(self):
-        self.set_label(("combo_text", self.label_text))
+        self.set_label(("dropdown_text", self.label_text))
 
-class ComboButtons(urwid.WidgetWrap):
 
-    signals = ["select"]
-
-    def __init__(self,
-                 widget_list,
-                 scrollbar = False,
-                 focus_item=None,
-                 cancelled=None,
-                 auto_complete=False,
-                 max_height=10):
-        """cancelled is a callback which is called
-        when the esc key is pressed
-        it takes no arguments"""
-
-        self.widget_list = widget_list
-        self.auto_complete = auto_complete
-        self.max_height = max_height
-
-        # self.listbox = urwid.ListBox(self.widget_list)
-        self.listbox = ScrollingListBox(self.widget_list, with_scrollbar=scrollbar)
-
-        urwid.connect_signal(
-            self.listbox,
-            'select',
-            lambda source, selection: self._emit("select", selection)
-        )
-
-        self.box = urwid.BoxAdapter(self.listbox, self.height)
-        super(ComboButtons, self).__init__(self.box)
-        self.cancelled = cancelled
-
-    def keypress(self, size, key):
-        key = super(ComboButtons, self).keypress(size, key)
-        if (key == "esc"):
-            self.cancel()
-        return key
-
-    def cancel(self):
-        if self.cancelled is not None:
-            self.cancelled()
-
-    @property
-    def width(self):
-        return max(w.width for w in self.widget_list)
-
-    @property
-    def height(self):
-        return min(len(self.widget_list), self.max_height)
-
-    @property
-    def body(self):
-        return self.listbox.body
-
-    def __getitem__(self, i):
-        return self.body[i]
-
-    @property
-    def focus_position(self):
-        return self.listbox.focus_position
-
-    @focus_position.setter
-    def focus_position(self, pos):
-        self.listbox.focus_position = pos
 
 class AutoCompleteEdit(urwid.Edit):
 
@@ -155,7 +126,7 @@ class AutoCompleteBar(urwid.WidgetWrap):
     signals = ["change", "close"]
     def __init__(self):
 
-        self.prompt = urwid.Text(("combo_prompt", "> "))
+        self.prompt = urwid.Text(("dropdown_prompt", "> "))
         self.text = AutoCompleteEdit("")
         # self.text.selectable = lambda x: False
         self.cols = urwid.Columns([
@@ -170,72 +141,74 @@ class AutoCompleteBar(urwid.WidgetWrap):
 
     def set_prompt(self, text):
 
-        self.prompt.set_text(("combo_prompt", text))
+        self.prompt.set_text(("dropdown_prompt", text))
 
     def set_text(self, text):
 
         self.text.set_edit_text(text)
 
-    # def selectable(self):
-    #     return True
-
-    # def kepyress(self, size, key):
-    #     if key == "enter":
-    #         return
-    #     return self.text.keypress(size, key)
-
     def text_changed(self, source, text):
         self._emit("change", text)
 
-class ComboBoxDialog(urwid.WidgetWrap):
-    signals = ['close']
+
+class DropdownDialog(urwid.WidgetWrap):
+
+    signals = ["select", "close"]
+
+    min_width = 4
 
     def __init__(
-            self, select_one, items, selected_value,
-            label=None, border=False, scrollbar=False,
+            self,
+            drop_down,
+            items,
+            initial_value=None,
+            label=None, border=False,
+            scrollbar=False,
             auto_complete=False,
+            margin = 0,
+            left_chars=None,
+            right_chars=None,
+            max_height=10
     ):
-        self.select_one = select_one
+        self.drop_down = drop_down
         self.items = items
         self.label = label
         self.border = border
         self.scrollbar = scrollbar
         self.auto_complete = auto_complete
+        self.margin = margin
+        self.max_height = max_height
 
         self.completing = False
         self.complete_anywhere = False
 
         self.selected_button = 0
-        # self.selected_value = selected_value
         buttons = []
-        for (i, (l, value)) in enumerate(items):
-            # buttons.append(ComboButton(label=l,
-            #                             value = value,
-            #                             on_press=self.select_button,
-            # ))
-            buttons.append(
-                ComboButton(label=l, value = value)
-            )
 
-            if value == selected_value:
-                self.selected_button = i
+        buttons = [
+                DropdownItem(
+                    label=l, value=v, margin=self.margin,
+                    left_chars=left_chars, right_chars=right_chars
+                )
+                for l, v in self.items.items()
+        ]
+        self.dropdown_buttons = ScrollingListBox(buttons, with_scrollbar=scrollbar)
 
-        self.combo_buttons = ComboButtons(
-            buttons,
-            # focus_item = self.selected_value
-            scrollbar = scrollbar,
-            cancelled = self.cancel,
-            auto_complete = self.auto_complete
+        urwid.connect_signal(
+            self.dropdown_buttons,
+            'select',
+            lambda source, selection: self._emit("select", selection)
         )
 
         urwid.connect_signal(
-            self.combo_buttons,
+            self.dropdown_buttons,
             'select',
             lambda source, selection: self.select_button(selection)
         )
 
-
-        self.fill = urwid.Filler(self.combo_buttons)
+        box_height = self.height -2 if self.border else self.height
+        self.box = urwid.BoxAdapter(self.dropdown_buttons, box_height)
+        self.fill = urwid.Filler(self.box)
         kwargs = {}
         if self.label is not None:
             kwargs["title"] = self.label
@@ -246,15 +219,16 @@ class ComboBoxDialog(urwid.WidgetWrap):
         if self.border:
            w = urwid.LineBox(w, **kwargs)
 
-        self.auto_complete_bar = AutoCompleteBar()
+        if self.auto_complete:
+            self.auto_complete_bar = AutoCompleteBar()
 
-        urwid.connect_signal(self.auto_complete_bar,
-                             "change",
-                             lambda source, text: self.complete())
+            urwid.connect_signal(self.auto_complete_bar,
+                                 "change",
+                                 lambda source, text: self.complete())
 
-        urwid.connect_signal(self.auto_complete_bar,
-                             "close",
-                             lambda source, text: self.complete_off())
+            urwid.connect_signal(self.auto_complete_bar,
+                                 "close",
+                                 lambda source, text: self.complete_off())
 
         self.pile = urwid.Pile([
             ("weight", 1, w),
@@ -270,12 +244,14 @@ class ComboBoxDialog(urwid.WidgetWrap):
         return self.auto_complete_bar.set_text(value)
 
     @property
-    def max_width(self):
-        return self.combo_buttons.width
+    def max_item_width(self):
+        if not len(self):
+            return self.min_width
+        return max(w.width for w in self)
 
     @property
     def width(self):
-        width = self.combo_buttons.width
+        width = self.max_item_width
         if self.border:
             width += 2
         if self.scrollbar:
@@ -284,67 +260,59 @@ class ComboBoxDialog(urwid.WidgetWrap):
 
     @property
     def height(self):
-        height = self.combo_buttons.height
+        height = min(len(self), self.max_height)
         if self.border:
             height += 2
         return height
 
     @property
     def body(self):
-        return self.combo_buttons.body
+        return self.dropdown_buttons.body
 
     def __getitem__(self, i):
         return self.body[i]
 
+    def __len__(self):
+        return len(self.body)
+
     @property
     def focus_position(self):
-        return self.combo_buttons.focus_position
+        return self.dropdown_buttons.focus_position
 
     @focus_position.setter
     def focus_position(self, pos):
-        # self.combo_buttons.listbox.set_focus_valign("top")
-        self.combo_buttons.focus_position = pos
+        # self.dropdown_buttons.listbox.set_focus_valign("top")
+        self.dropdown_buttons.focus_position = pos
+
+    @property
+    def selection(self):
+        return self.dropdown_buttons.selection
 
     def select_button(self, button):
         # (label, value) = label_value
         label = button.label
         value = button.value
         self.selected_button = self.focus_position
-        self.select_one.make_selection(label, value)
-        self.combo_buttons.listbox.set_focus_valign("top")
+        # self.drop_down.make_selection(label, value)
+        self.dropdown_buttons.listbox.set_focus_valign("top")
         self._emit("close")
 
     def keypress(self, size, key):
-        # if (key == "esc") and (self.cancelled is not None):
-        #     self.complete_off()
-        #     self.cancelled()
-        #     return
-        if key in ["/", "?"]:
+        if self.auto_complete and key in ["/", "?"]:
             self.complete_on(case_sensitive=False, anywhere = (key == "?"))
 
-        elif key == "*":
-            raise Exception(self.focus_position)
+        elif key == "esc":
+            self.cancel()
 
         elif self.completing:
-            # if key and len(key) == 1 and key in string.printable:
-            #     self.filter_text = self.filter_text + key
-            #     self.auto_complete_bar.set_text(self.filter_text)
-            #     self.complete(anywhere=self.complete_anywhere)
             if key in ["enter", "up", "down"]:
                 self.complete_off()
-                # self.pile.focus_position = 0
-                # return key
             else:
-                return super(ComboBoxDialog, self).keypress(size, key)
+                return super(DropdownDialog, self).keypress(size, key)
 
-        # elif key == "enter":
-        #     self.selected_button = self.focus_position
-        #     self._emit("select")
         else:
-            key = super(ComboBoxDialog, self).keypress(size, key)
-            # key = self.menu.keypress(size, key)
+            key = super(DropdownDialog, self).keypress(size, key)
             self[self.focus_position].unhighlight()
-            # self.filter_text = ""
             return key
 
     @property
@@ -363,6 +331,8 @@ class ComboBoxDialog(urwid.WidgetWrap):
         self.show_bar()
         if anywhere:
             self.complete_anywhere = True
+        else:
+            self.complete_anywhere = False
 
 
     def complete_off(self):
@@ -370,12 +340,11 @@ class ComboBoxDialog(urwid.WidgetWrap):
         if not self.completing:
             return
         self.filter_text = ""
-        # self.auto_complete_bar.set_prompt("")
-        # self.auto_complete_bar.set_text("")
+
         self.hide_bar()
         self.completing = False
 
-    def complete(self, anywhere=False, case_sensitive=False):
+    def complete(self, case_sensitive=False):
 
         self[self.focus_position].unhighlight()
         if not self.filter_text:
@@ -386,7 +355,7 @@ class ComboBoxDialog(urwid.WidgetWrap):
         else:
             g = lambda x: str(x).lower()
 
-        if anywhere:
+        if self.complete_anywhere:
             f = lambda x: g(self.filter_text) in g(x)
         else:
             f = lambda x: g(x).startswith(g(self.filter_text))
@@ -402,7 +371,6 @@ class ComboBoxDialog(urwid.WidgetWrap):
         self.close()
 
     def close(self):
-        # self.focus_position = self.selected_button
         self._emit("close")
 
     def show_bar(self):
@@ -416,72 +384,88 @@ class ComboBoxDialog(urwid.WidgetWrap):
         self.pile.focus_position = 0
         del self.pile.contents[1]
 
-class ComboBox(urwid.PopUpLauncher):
+class Dropdown(urwid.PopUpLauncher):
 
     # Based in part on SelectOne widget from
     # https://github.com/tuffy/python-audio-tools
 
+    empty_label = u"\N{EMPTY SET}"
+    margin = 0
+
     def __init__(
             self, items,
-            selected_value=None, on_change=None,
+            selected_value=None,
             label=None, border=False, scrollbar = False,
+            margin = None,
+            left_chars = None, right_chars = None,
             auto_complete = False,
-            user_data=None,):
-        """items is a list of (unicode, value) tuples
-        where value can be any sort of object
-        selected_value is a selected object
-        on_change is a callback which takes a new selected object
-        which is called as on_change(new_value, [user_data])
-        label is a unicode label string for the selection box"""
+            arrow_cycle = False
+    ):
 
         self.items = items
         self.label = label
         self.border = border
         self.scrollbar = scrollbar
         self.auto_complete = auto_complete
+        self.arrow_cycle = arrow_cycle
+
+        if margin:
+            self.margin = margin
+
+        if isinstance(self.items, list):
+            self.items = { item: n for n, item in enumerate(items) }
 
         self.selected_value = None  # set by make_selection, below
 
-        self.button = ComboButton(u"", None)
+        self.button = DropdownItem(
+            u"", None,
+            margin=self.margin,
+            left_chars = left_chars,
+            right_chars = right_chars)
 
-        self.pop_up = ComboBoxDialog(
+        self.pop_up = DropdownDialog(
             self,
             self.items,
             self.selected_value,
             label = self.label,
             border = self.border,
-            scrollbar = scrollbar,
-            auto_complete = self.auto_complete
+            margin = self.margin,
+            left_chars = left_chars,
+            auto_complete = self.auto_complete,
+            right_chars = right_chars,
+            scrollbar = scrollbar
         )
+
         urwid.connect_signal(
             self.pop_up,
-            'close',
-            lambda button: self.close_pop_up())
+            "select",
+            lambda souce, selection: self.select(selection)
+        )
 
+        urwid.connect_signal(
+            self.pop_up,
+            "close",
+            lambda button: self.close_pop_up()
+        )
 
-        self.__on_change__ = None
-        self.__user_data__ = None
+        try:
+            initial_index = next(
+                v for v in self.items.items()
+                if v == self.selected_value)
+            self.focus_position = initial_index
+        except StopIteration:
+            initial_index = 0
 
-        if selected_value is not None:
-            try:
-                (label, value) = [pair for pair in items
-                                  if pair[1] == selected_value][0]
-            except IndexError:
-                (label, value) = items[0]
+        if len(self):
+            self.select(self.selection)
         else:
-            (label, value) = items[0]
+            self.button.set_label(("dropdown_text", self.empty_label))
 
-        self.make_selection(label, value)
-
-        self.__on_change__ = on_change
-        self.__user_data__ = user_data
-
-        # cols = [ (self.pop_up.max_width, self.button) ]
-        cols = [ (self.pop_up.max_width, self.button) ]
+        cols = [ (self.pop_up.max_item_width, self.button) ]
 
         if self.label:
             cols[0:0] = [
-                ("pack", urwid.Text([("combo_label", "%s: " %(self.label))])),
+                ("pack", urwid.Text([("dropdown_label", "%s: " %(self.label))])),
             ]
         self.columns = urwid.Columns(cols, dividechars=0)
 
@@ -490,32 +474,30 @@ class ComboBox(urwid.PopUpLauncher):
             w = urwid.LineBox(self.columns)
         w = urwid.Padding(w, width=self.width)
 
-        # w = urwid.BoxAdapter(urwid.Filler(w), self.height)
-        super(ComboBox, self).__init__(w)
+        super(Dropdown, self).__init__(w)
         urwid.connect_signal(
             self.button,
             'click',
             lambda button: self.open_pop_up()
         )
 
-        assert(len(items) > 0)
-
     def keypress(self, size, key):
-        # key = super(ComboBox, self).keypress(size, key)
-        if key in ["up", "down"]:
+        # key = super(Dropdown, self).keypress(size, key)
+        if self.arrow_cycle and key in ["up", "down"]:
             self.cycle(-1 if key == "up" else 1)
         elif key in ["page up", "page down"]:
             h = self.pop_up.height
             self.cycle(-h if key == "page up" else h)
         elif key == "home":
-            self.select(0)
+            self.focus_position = 0
         elif key == "end":
-            self.select(len(self)-1)
+            self.focus_position = len(self)-1
         elif key in ["/", "?"]:
             self.open_pop_up()
             self.pop_up.keypress(size, key)
+
         else:
-            return super(ComboBox, self).keypress(size, key)
+            return super(Dropdown, self).keypress(size, key)
 
     def create_pop_up(self):
         # print("create")
@@ -537,11 +519,11 @@ class ComboBox(urwid.PopUpLauncher):
 
     def open_pop_up(self):
         # print("open")
-        super(ComboBox, self).open_pop_up()
+        super(Dropdown, self).open_pop_up()
 
     def close_pop_up(self):
         self.selected_value = self.pop_up.selected_value
-        super(ComboBox, self).close_pop_up()
+        super(Dropdown, self).close_pop_up()
 
     def get_pop_up_parameters(self):
         return {'left': (len(self.label) + 2 if self.label else 0),
@@ -556,7 +538,13 @@ class ComboBox(urwid.PopUpLauncher):
 
     @focus_position.setter
     def focus_position(self, pos):
+        # self.select_index(pos)
         self.pop_up.selected_button = self.pop_up.focus_position = pos
+        self.select(self.selection)
+
+    @property
+    def selection(self):
+        return self.pop_up.selection
 
     def cycle(self, n):
         pos = self.focus_position + n
@@ -565,21 +553,10 @@ class ComboBox(urwid.PopUpLauncher):
         elif pos < 0:
             pos = 0
         # self.focus_position = pos
-        self.select(pos)
+        self.focus_position = pos
 
-    def make_selection(self, label, value):
-        self.button.set_label(("combo_text", label))
-        self.selected_value = value
-        if self.__on_change__ is not None:
-            if self.__user_data__ is not None:
-                self.__on_change__(value, self.__user_data__)
-            else:
-                self.__on_change__(value)
-
-    def select(self, index):
-        self.focus_position = index
-        self.make_selection(*self.items[index])
-
+    def select(self, button):
+        self.button.set_label(("dropdown_text", button.label))
 
     def set_items(self, items, selected_value):
         self.items = items
@@ -591,7 +568,7 @@ class ComboBox(urwid.PopUpLauncher):
 
 def main():
 
-    data = [('Adipisci eius dolore consectetur.', 34),
+    data = dict([('Adipisci eius dolore consectetur.', 34),
             ('Aliquam consectetur velit dolore', 19),
             ('Amet ipsum quaerat numquam.', 25),
             ('Amet quisquam labore dolore.', 30),
@@ -640,7 +617,7 @@ def main():
             ('Sit quisquam numquam quaerat.', 36),
             ('Tempora etincidunt quiquia dolor', 13),
             ('Tempora velit etincidunt.', 24),
-            ('Velit dolor velit.', 47)]
+            ('Velit dolor velit.', 47)])
 
     NORMAL_FG = 'light gray'
     NORMAL_BG = 'black'
@@ -651,52 +628,75 @@ def main():
     # logger.setLevel(logging.DEBUG)
     # formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
     #                               datefmt='%Y-%m-%d %H:%M:%S')
-    # fh = logging.FileHandler("combobox.log")
+    # fh = logging.FileHandler("dropdown.log")
     # fh.setFormatter(formatter)
     # logger.addHandler(fh)
 
 
     entries = {
-        "combo_text": PaletteEntry(
-            foreground = "dark green",
-            background = "black"
+        "dropdown_text": PaletteEntry(
+            foreground = "light gray",
+            background = "dark blue",
+            foreground_high = "light gray",
+            background_high = "#003",
         ),
-        "combo_focused": PaletteEntry(
-            foreground = "light green",
-            background = "black"
+        "dropdown_focused": PaletteEntry(
+            foreground = "white",
+            background = "light blue",
+            foreground_high = "white",
+            background_high = "#009",
         ),
-        "combo_label": PaletteEntry(
+        "dropdown_highlight": PaletteEntry(
+            foreground = "yellow",
+            background = "light blue",
+            foreground_high = "yellow",
+            background_high = "#009",
+        ),
+        "dropdown_label": PaletteEntry(
             foreground = "white",
             background = "black"
         ),
-        "combo_highlight": PaletteEntry(
-            foreground = "yellow",
-            background = "black"
-        ),
-        "combo_prompt": PaletteEntry(
+        "dropdown_prompt": PaletteEntry(
             foreground = "light blue",
             background = "black"
         ),
     }
 
     entries = DataTable.get_palette_entries(user_entries=entries)
+    # raise Exception(entries["dropdown_text"])
     palette = Palette("default", **entries)
     screen = urwid.raw_display.Screen()
     screen.set_terminal_properties(256)
 
     boxes = [
-        ComboBox(
+        Dropdown(
             data,
             label="Foo",
             border = True,
             scrollbar = True,
-            auto_complete = True
+            auto_complete = True,
+            arrow_cycle = True
         ),
 
-        ComboBox(
+        Dropdown(
             data,
             border = False,
+            margin = 2,
+            left_chars = u"\N{LIGHT LEFT TORTOISE SHELL BRACKET ORNAMENT}",
+            right_chars = u"\N{LIGHT RIGHT TORTOISE SHELL BRACKET ORNAMENT}",
             auto_complete = True
+        ),
+        Dropdown(
+            data,
+            selected_value = list(data.values())[10],
+            label="Foo",
+            border = True,
+            scrollbar = False,
+            auto_complete = False,
+            arrow_cycle = True
+        ),
+        Dropdown(
+            [],
         ),
     ]
 
@@ -724,3 +724,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+__all__ = ["Dropdown"]
