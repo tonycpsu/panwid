@@ -1,8 +1,6 @@
-
 import urwid
 import logging
 logger = logging.getLogger(__name__.split(".")[0])
-
 
 class ListBoxScrollBar(urwid.WidgetWrap):
 
@@ -22,13 +20,9 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                 self.parent.focus_position / self.parent.row_count * height
             )
             scroll_marker_height = max( height * (height / self.parent.row_count ), 1)
-            # print "height: %d" %(scroll_marker_height)
         else:
             scroll_position = -1
 
-        # LOZENGE DIVIDED BY HORIZONTAL RULE
-        # BLACK UP-POINTING TRIANGLE
-        # BLACK DOWN-POINTING TRIANGLE
         pos_marker = urwid.AttrMap(urwid.Text(" "),
                                    {None: "scroll_pos"}
         )
@@ -52,7 +46,6 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
         for i in range(height):
             if abs( i - scroll_position ) <= scroll_marker_height//2:
-                # print self.parent.row_count, self.parent.focus_position
                 if i+1 == height and self.parent.row_count == self.parent.focus_position+1:
                     marker = end_marker
                 elif len(self.parent.body) == self.parent.focus_position+1 and i == scroll_position + scroll_marker_height//2:
@@ -172,10 +165,6 @@ class ScrollingListBox(urwid.WidgetWrap):
 
         Implements vim-like scrolling and infinite scrolling.
         """
-
-        # print "ListBox keypress"
-
-
         KEY_MAP = {
             "j": "down",
             "k": "up",
@@ -214,9 +203,6 @@ class ScrollingListBox(urwid.WidgetWrap):
 
         else:
             return super(ScrollingListBox, self).keypress(size, key)
-
-        # else:
-        #     return super(ScrollingListBox, self).keypress(size, key)
 
     @property
     def selection(self):

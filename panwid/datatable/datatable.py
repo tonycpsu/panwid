@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger("panwid.datable")
 import urwid
 from urwid_utils.palette import *
-from .listbox import ScrollingListBox
+from ..listbox import ScrollingListBox
 from orderedattrdict import OrderedDict
 import itertools
 import traceback
