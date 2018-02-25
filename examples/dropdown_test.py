@@ -1,14 +1,17 @@
 import logging
 logger = logging.getLogger(__name__)
 import os
+
 import urwid
 import urwid.raw_display
 from urwid_utils.palette import *
+from orderedattrdict import AttrDict
 
 from panwid.dropdown import *
 from panwid.datatable import *
 
 class TestDropdown(KeymapMovementMixin, Dropdown):
+
     KEYMAP = {
         "dropdown": {
             "up": "up",
@@ -24,13 +27,12 @@ class TestDropdown(KeymapMovementMixin, Dropdown):
             "esc": "cancel",
             "/": "complete prefix",
             "?": "complete substring",
-            "enter": "complete off"
         }
     }
 
 def main():
 
-    data = dict([('Adipisci eius dolore consectetur.', 34),
+    data = AttrDict([('Adipisci eius dolore consectetur.', 34),
             ('Aliquam consectetur velit dolore', 19),
             ('Amet ipsum quaerat numquam.', 25),
             ('Amet quisquam labore dolore.', 30),

@@ -98,6 +98,7 @@ class DropdownItem(urwid.WidgetWrap):
         return self.button.label
 
     def set_label(self, label):
+        logger.debug("set_label: " + repr(label) )
         self.button.set_label(label)
 
     def highlight_text(self, s, case_sensitive=False):
@@ -243,6 +244,10 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         self.__super.__init__(self.pile)
 
     @property
+    def KEYMAP(self):
+        return self.drop_down.KEYMAP
+
+    @property
     def filter_text(self):
         return self.auto_complete_bar.text.get_text()[0]
 
@@ -295,25 +300,26 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
 
     def select_button(self, button):
 
+        # logger.debug("select_button: %s" %(button))
         label = button.label
         value = button.value
         self.selected_button = self.focus_position
+        self.complete_off()
+        self._emit("select", button)
         self._emit("close")
 
-    def keypress(self, size, key):
+    # def keypress(self, size, key):
 
-        key = super(DropdownDialog, self).keypress(size, key)
-        if self.completing:
-            if key in ["enter", "up", "down"]:
-                self.complete_off()
-            else:
-                return key
+    #     raise Exception
+    #     logger.debug("DropdownDialog.keypress: %s" %(key))
+    #     if self.completing:
+    #         if key in ["enter", "up", "down"]:
+    #             self.complete_off()
+    #         else:
+    #             return key
+    #     else:
+    #         return super(DropdownDialog, self).keypress(size, key)
 
-        else:
-            return key
-
-    # def keymap_cancel(self):
-    #     self.cancel()
 
     @property
     def selected_value(self):
@@ -342,6 +348,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
             self.complete_anywhere = False
 
 
+    @keymap_command()
     def complete_off(self):
 
         if not self.completing:
@@ -373,6 +380,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
                 self.focus_position = i
                 break
 
+    @keymap_command()
     def cancel(self):
         logger.debug("cancel")
         self.focus_position = self.selected_button
@@ -592,6 +600,7 @@ class Dropdown(urwid.PopUpLauncher):
         self.focus_position = pos
 
     def select(self, button):
+        logger.debug("select: %s" %(button))
         self.button.set_label(("dropdown_text", button.label))
         self.pop_up.dropdown_buttons.listbox.set_focus_valign("top")
         self._emit("change", button, button.value)
