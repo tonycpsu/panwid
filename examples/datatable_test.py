@@ -277,7 +277,7 @@ def main():
             )
             self.pile = urwid.Pile([
                 ("pack", urwid.Text(label)),
-                ("pack", urwid.Divider("\N{HORIZONTAL BAR}")),
+                ("pack", urwid.Divider(u"\N{HORIZONTAL BAR}")),
                 ("weight", 1, self.table)
             ])
             self.box = urwid.BoxAdapter(urwid.LineBox(self.pile), 25)
@@ -332,7 +332,7 @@ def main():
             query_sort=True,
             with_footer=True,
             with_scrollbar=True,
-            border=(1, "\N{VERTICAL LINE}", "blue"),
+            border=(1, u"\N{VERTICAL LINE}", "blue"),
             padding=3,
         ),
         ExampleDataTableBox(

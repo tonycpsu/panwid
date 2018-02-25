@@ -1,3 +1,4 @@
+from __future__ import division
 import urwid
 import logging
 logger = logging.getLogger(__name__.split(".")[0])
@@ -27,15 +28,15 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                                    {None: "scroll_pos"}
         )
 
-        down_marker = urwid.AttrMap(urwid.Text("\N{DOWNWARDS ARROW}"),
+        down_marker = urwid.AttrMap(urwid.Text(u"\N{DOWNWARDS ARROW}"),
                                    {None: "scroll_marker"}
         )
 
-        begin_marker = urwid.AttrMap(urwid.Text("\N{CIRCLED MINUS}"),
+        begin_marker = urwid.AttrMap(urwid.Text(u"\N{CIRCLED MINUS}"),
                                    {None: "scroll_marker"}
         )
 
-        end_marker = urwid.AttrMap(urwid.Text("\N{CIRCLED PLUS}"),
+        end_marker = urwid.AttrMap(urwid.Text("u\N{CIRCLED PLUS}"),
                                    {None: "scroll_marker"}
         )
 
@@ -46,7 +47,6 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         bg_marker = urwid.AttrMap(urwid.Text(" "),
                                    {None: "scroll_bg"}
         )
-
 
         for i in range(height):
             if abs( i - scroll_position ) <= scroll_marker_height//2:

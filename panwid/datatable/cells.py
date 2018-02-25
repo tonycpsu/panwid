@@ -134,8 +134,8 @@ class DataTableHeaderCell(DataTableCell):
     ATTR = "table_row_header"
     PADDING_ATTR = "table_row_header_padding"
 
-    ASCENDING_SORT_MARKER = "\N{UPWARDS ARROW}"
-    DESCENDING_SORT_MARKER = "\N{DOWNWARDS ARROW}"
+    ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
+    DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
 
     # def __init__(self, table, column, sort=None, sort_icon=None, *args, **kwargs):
     def update_contents(self):
