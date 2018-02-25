@@ -59,7 +59,7 @@ def main():
 
     COLUMNS = [
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-        DataTableColumn("foo", label="Foo", width=4, align="right",
+        DataTableColumn("foo", label="Foo", width=5, align="right",
                         sort_key = lambda v: (v is None, v),
                         attr="color", padding=0,
                         footer_fn = lambda column, values: sum(v for v in values if v is not None)),
@@ -78,7 +78,6 @@ def main():
         columns = COLUMNS[:]
 
         index="index"
-
 
         def __init__(self, num_rows = 10, *args, **kwargs):
             self.num_rows = num_rows
