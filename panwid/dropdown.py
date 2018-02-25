@@ -244,6 +244,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         ])
         self.__super.__init__(self.pile)
 
+
     @property
     def KEYMAP(self):
         return self.drop_down.KEYMAP
@@ -414,7 +415,7 @@ class Dropdown(urwid.PopUpLauncher):
     def __init__(
             self,
             items=None,
-            selected_value=None,
+            initial_value=None,
             label=None, border=False, scrollbar = False,
             margin = None,
             left_chars = None, right_chars = None,
@@ -424,6 +425,10 @@ class Dropdown(urwid.PopUpLauncher):
     ):
 
         # raise Exception(self.KEYMAP_SCOPE)
+        if items is not None:
+            self._items = items
+
+        self.initial_value = initial_value
         self.label = label
         self.border = border
         self.scrollbar = scrollbar
@@ -433,18 +438,13 @@ class Dropdown(urwid.PopUpLauncher):
         if margin:
             self.margin = margin
 
-        if items is not None:
-            self._items = items
-
         if isinstance(self.items, list):
             if len(self.items):
                 if isinstance(items[0], tuple):
                     self.items = AttrDict(self.items)
-                self._items = AttDict(( (item, n) for n, item in enumerate(self.items)))
+                self._items = AttrDict(( (item, n) for n, item in enumerate(self.items)))
             else:
                 self._items = AttrDict()
-
-        self.selected_value = None  # set by make_selection, below
 
         self.button = DropdownItem(
             u"", None,
@@ -456,7 +456,7 @@ class Dropdown(urwid.PopUpLauncher):
         self.pop_up = DropdownDialog(
             self,
             self._items,
-            self.selected_value,
+            self.initial_value,
             label = self.label,
             border = self.border,
             margin = self.margin,
@@ -481,8 +481,8 @@ class Dropdown(urwid.PopUpLauncher):
 
         try:
             initial_index = next(
-                v for v in self._items.items()
-                if v == self.selected_value)
+                v for v in self.items.values()
+                if v == self.initial_value)
             self.focus_position = initial_index
         except StopIteration:
             initial_index = 0
@@ -597,6 +597,14 @@ class Dropdown(urwid.PopUpLauncher):
     @property
     def selection(self):
         return self.pop_up.selection
+
+    @property
+    def selected_label(self):
+        return self.selection.label
+
+    @property
+    def selected_value(self):
+        return self.selection.value
 
     def cycle(self, n):
         pos = self.focus_position + n

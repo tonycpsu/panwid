@@ -150,7 +150,7 @@ def main():
         ),
         TestDropdown(
             data,
-            selected_value = list(data.values())[10],
+            initial_value = list(data.values())[10],
             label="Foo",
             border = True,
             scrollbar = False,
