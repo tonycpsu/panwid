@@ -31,7 +31,11 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                                    {None: "scroll_marker"}
         )
 
-        end_marker = urwid.AttrMap(urwid.Text("\N{CIRCLED DOT OPERATOR}"),
+        begin_marker = urwid.AttrMap(urwid.Text("\N{CIRCLED MINUS}"),
+                                   {None: "scroll_marker"}
+        )
+
+        end_marker = urwid.AttrMap(urwid.Text("\N{CIRCLED PLUS}"),
                                    {None: "scroll_marker"}
         )
 
@@ -46,7 +50,9 @@ class ListBoxScrollBar(urwid.WidgetWrap):
 
         for i in range(height):
             if abs( i - scroll_position ) <= scroll_marker_height//2:
-                if i+1 == height and self.parent.row_count == self.parent.focus_position+1:
+                if i == 0 and self.parent.focus_position == 0:
+                    marker = begin_marker
+                elif i+1 == height and self.parent.row_count == self.parent.focus_position+1:
                     marker = end_marker
                 elif len(self.parent.body) == self.parent.focus_position+1 and i == scroll_position + scroll_marker_height//2:
                     marker = down_marker
@@ -108,6 +114,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         super(ScrollingListBox, self).__init__(self.columns)
 
     def mouse_event(self, size, event, button, col, row, focus):
+
         SCROLL_WHEEL_HEIGHT_RATIO = 0.5
         if row < 0 or row >= self.height:
             return
@@ -156,49 +163,28 @@ class ScrollingListBox(urwid.WidgetWrap):
                     self, "drag_stop",self, self.drag_from, self.drag_to
                 )
             self.mouse_state = 0
-        # return self.__super.mouse_event(size, event, button, col, row, focus)
         return super(ScrollingListBox, self).mouse_event(size, event, button, col, row, focus)
 
 
     def keypress(self, size, key):
-        """Overrides ListBox.keypress method.
 
-        Implements vim-like scrolling and infinite scrolling.
-        """
-        KEY_MAP = {
-            "j": "down",
-            "k": "up",
-            "g": "home",
-            "G": "end",
-        }
-        key = KEY_MAP.get(key, key)
+        command = self._command_map[key]
+        if not command:
+            return super(ScrollingListBox, self).keypress(size, key)
 
-        if self.infinite:
-            try:
-                focus = self.focus_position
-            except IndexError:
-                focus = None
-            if (key in ["page down", "down"]
+        # down, page down at end trigger load of more data
+        if (
+                command in ["cursor down", "cursor page down"]
+                and self.infinite
                 and (
                     not len(self.body)
-                    or focus == len(self.body)-1)
-            ):
-                # logger.info("load_more keypress")
+                    or self.focus_position == len(self.body)-1)
+        ):
                 self.load_more = True
                 self.queued_keypress = key
                 self._invalidate()
 
-        if key in ["up", "down", "page up", "page down"]:
-            # raise Exception(key)
-            return super(ScrollingListBox, self).keypress(size, key)
-        elif key == "home":
-            self.focus_position = 0
-        elif key == "end":
-            self.focus_position = 0
-            self.focus_position = len(self.body) - 1
-            self._invalidate()
-
-        elif key == "enter":
+        elif command == "activate":
             urwid.signals.emit_signal(self, "select", self, self.selection)
 
         else:
@@ -255,7 +241,6 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     def enable(self):
         self.selectable = lambda: True
-
 
     @property
     def contents(self):

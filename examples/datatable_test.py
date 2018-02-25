@@ -187,7 +187,7 @@ def main():
                 self.save("test.json")
             elif key == "0":
                 # self.sort_by_column(self.index, toggle=True)
-                self.sort_sorindex()
+                self.sort_index()
             elif key == "a":
                 self.add_row(self.random_row(self.last_rec))
                 self.last_rec += 1
