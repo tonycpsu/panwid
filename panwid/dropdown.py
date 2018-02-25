@@ -7,6 +7,7 @@ from functools import wraps
 
 import six
 import urwid
+from orderedattrdict import AttrDict
 
 from .datatable import *
 from .keymap import *
@@ -433,12 +434,15 @@ class Dropdown(urwid.PopUpLauncher):
             self.margin = margin
 
         if items is not None:
-            self.items = items
+            self._items = items
 
         if isinstance(self.items, list):
-            self._items = { item: n for n, item in enumerate(self.items) }
-        else:
-            self._items = self.items
+            if len(self.items):
+                if isinstance(items[0], tuple):
+                    self.items = AttrDict(self.items)
+                self._items = AttDict(( (item, n) for n, item in enumerate(self.items)))
+            else:
+                self._items = AttrDict()
 
         self.selected_value = None  # set by make_selection, below
 
@@ -587,6 +591,10 @@ class Dropdown(urwid.PopUpLauncher):
         self.select(self.selection)
 
     @property
+    def items(self):
+        return self._items
+
+    @property
     def selection(self):
         return self.pop_up.selection
 
@@ -605,10 +613,10 @@ class Dropdown(urwid.PopUpLauncher):
         self.pop_up.dropdown_buttons.listbox.set_focus_valign("top")
         self._emit("change", button, button.value)
 
-    def set_items(self, items, selected_value):
-        self.items = items
-        self.make_selection([label for (label, value) in items if
-                             value is selected_value][0],
-                            selected_value)
+    # def set_items(self, items, selected_value):
+    #     self._items = items
+    #     self.make_selection([label for (label, value) in items if
+    #                          value is selected_value][0],
+    #                         selected_value)
     def __len__(self):
         return len(self.items)
