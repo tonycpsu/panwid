@@ -8,7 +8,7 @@ from glob import glob
 
 name = 'panwid'
 setup(name=name,
-      version='0.1.0',
+      version='0.2.0dev',
       description='Useful widgets for urwid',
       author='Tony Cebzanov',
       author_email='tonycpsu@gmail.com',
@@ -21,8 +21,18 @@ setup(name=name,
       packages=find_packages(),
       data_files=[('share/doc/%s' % name, ['LICENSE','README.md']),
               ],
-      install_requires = ["urwid", "urwid-utils"],
-      extras_require = {
-          "datatable": ["raccoon", "blist", "orderedattrdict"],
-      }
+      install_requires = [
+          "urwid",
+          "urwid-utils==0.0.5a0",
+          "six",
+          "raccoon",
+          "blist",
+          "orderedattrdict"
+      ],
+      # extras_require = {
+      #     "datatable": ["raccoon", "blist", "orderedattrdict"],
+      # },
+      dependency_links=[
+          "https://github.com/tonycpsu/urwid_utils/tarball/master#egg=urwid-utils-0.0.5a0"
+      ],
      )
