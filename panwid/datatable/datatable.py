@@ -419,7 +419,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
                 background_high = background_map[suffix][1]
                 if entry.background_high:
-                    bg_high_rgb = urwid.AttrSpec(entry.background_high, entry.background_high, 1<<24)
+                    bg_high_rgb = urwid.AttrSpec(entry.background_high, entry.background_high, 256)
                     if default_bg_rgb.get_rgb_values() != bg_high_rgb.get_rgb_values():
                         background_high = entry.background_high
 
