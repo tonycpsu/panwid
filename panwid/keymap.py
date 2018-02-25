@@ -86,6 +86,8 @@ def keymapped():
             key = super(cls, self).keypress(size, key)
             return key
 
+        if not hasattr(cls, "KEYMAP"):
+            cls.KEYMAP = {}
         scope = camel_to_snake(cls.__name__)
         cls.KEYMAP_SCOPE = scope
         func = getattr(cls, "keypress", None)
