@@ -1,8 +1,9 @@
 panwid
 ======
 
-Useful widgets for [urwid](https://urwid.org/).  Currently consists of the
-following:
+A collection of widgets for [urwid](https://urwid.org/).
+
+Currently consists of the following:
 
 ## Datatable ##
 
@@ -23,8 +24,8 @@ Listbox with an optional scrollbar.  Can signal to other widgets
 Dropdown menu widget with autocomplete support.
 
 TODOs:
-* Make more 16-color and non-unicode friendly
 * Documentation
+* Make more 16-color and non-unicode friendly
 * Add combo box functionality to dropdown
 * Update datatable so that footer functions calculate based on the entire
   dataset, not just visible rows.
