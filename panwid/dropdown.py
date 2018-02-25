@@ -5,9 +5,8 @@ import random
 import string
 from functools import wraps
 
+import six
 import urwid
-
-from urwid_utils.palette import *
 
 from .datatable import *
 from .keymap import *
@@ -29,7 +28,7 @@ class DropdownButton(urwid.Button):
         self.button_left = urwid.Text(self.left_chars)
         self.button_right = urwid.Text(self.right_chars)
 
-        self._label = urwid.SelectableIcon("")
+        self._label = urwid.SelectableIcon("", cursor_position=0)
         self.cols = urwid.Columns([
             (len(self.left_chars), self.button_left),
             ('weight', 1, self._label),
@@ -103,7 +102,6 @@ class DropdownItem(urwid.WidgetWrap):
 
     def highlight_text(self, s, case_sensitive=False):
 
-        # (a, b, c) = self.label_text.partition(s)
         (a, b, c) = re.search(
             r"(.*?)(%s)(.*)" %(s),
             self.label_text,
@@ -124,11 +122,10 @@ class AutoCompleteEdit(urwid.Edit):
 
     signals = ["close"]
 
-    def kepyress(self, size, key):
+    def keypress(self, size, key):
         if key == "enter":
             self._emit("close")
-        return self.text.keypress(size, key)
-
+        return super(AutoCompleteEdit, self).keypress(size, key)
 
 class AutoCompleteBar(urwid.WidgetWrap):
 
@@ -160,7 +157,8 @@ class AutoCompleteBar(urwid.WidgetWrap):
         self._emit("change", text)
 
 
-class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta):
+@keymapped()
+class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
 
     signals = ["select", "close"]
 
@@ -180,7 +178,7 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
             left_chars_top=None,
             rigth_chars_top=None,
             max_height=10,
-            keymap = {}
+            # keymap = {}
     ):
         self.drop_down = drop_down
         self.items = items
@@ -191,7 +189,7 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
         self.margin = margin
         self.max_height = max_height
 
-        self.KEYMAP = keymap
+        # self.KEYMAP = keymap
 
         self.completing = False
         self.complete_anywhere = False
@@ -208,12 +206,6 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
                 for l, v in self.items.items()
         ]
         self.dropdown_buttons = ScrollingListBox(buttons, with_scrollbar=scrollbar)
-
-        # urwid.connect_signal(
-        #     self.dropdown_buttons,
-        #     'select',
-        #     lambda source, selection: self._emit("select", selection)
-        # )
 
         urwid.connect_signal(
             self.dropdown_buttons,
@@ -243,7 +235,7 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
 
             urwid.connect_signal(self.auto_complete_bar,
                                  "close",
-                                 lambda source, text: self.complete_off())
+                                 lambda source: self.complete_off())
 
         self.pile = urwid.Pile([
             ("weight", 1, w),
@@ -269,8 +261,6 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
         width = self.max_item_width
         if self.border:
             width += 2
-        # if self.scrollbar:
-        #     width += 1
         return width
 
     @property
@@ -312,25 +302,29 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
 
     def keypress(self, size, key):
 
-
-        if self.completing and key in ["enter", "up", "down"]:
+        key = super(DropdownDialog, self).keypress(size, key)
+        if self.completing:
+            if key in ["enter", "up", "down"]:
                 self.complete_off()
-        else:
-            return super(DropdownDialog, self).keypress(size, key)
+            else:
+                return key
 
-    def keymap_cancel(self):
-        self.cancel()
+        else:
+            return key
+
+    # def keymap_cancel(self):
+    #     self.cancel()
 
     @property
     def selected_value(self):
 
         return self.body[self.focus_position].value
 
-    @keymap
+    @keymap_command()
     def complete_prefix(self):
         self.complete_on()
 
-    @keymap
+    @keymap_command()
     def complete_substring(self):
         self.complete_on(anywhere=True)
 
@@ -398,8 +392,8 @@ class DropdownDialog(KeymapMixin, urwid.WidgetWrap, metaclass=MovementKeymapMeta
         self.pile.focus_position = 0
         del self.pile.contents[1]
 
-
-class Dropdown(MovementKeymapMixin, urwid.PopUpLauncher, metaclass=MovementKeymapMeta):
+@keymapped()
+class Dropdown(urwid.PopUpLauncher):
     # Based in part on SelectOne widget from
     # https://github.com/tuffy/python-audio-tools
 
@@ -407,24 +401,6 @@ class Dropdown(MovementKeymapMixin, urwid.PopUpLauncher, metaclass=MovementKeyma
 
     empty_label = u"\N{EMPTY SET}"
     margin = 0
-
-    KEYMAP = {
-        "dropdown": {
-            "up": "up",
-            "down": "down",
-            "page up": "page up",
-            "page down": "page down",
-            "home": "home",
-            "end": "end",
-            "/": "complete prefix",
-            "?": "complete substring"
-        },
-        "dropdown_dialog": {
-            "esc": "cancel",
-            "/": "complete prefix",
-            "?": "complete substring"
-        }
-    }
 
     def __init__(
             self,
@@ -435,7 +411,7 @@ class Dropdown(MovementKeymapMixin, urwid.PopUpLauncher, metaclass=MovementKeyma
             left_chars = None, right_chars = None,
             left_chars_top = None, right_chars_top = None,
             auto_complete = False,
-            # keymap = DEFAULT_KEYMAP
+            keymap = {}
     ):
 
         # raise Exception(self.KEYMAP_SCOPE)
@@ -456,7 +432,6 @@ class Dropdown(MovementKeymapMixin, urwid.PopUpLauncher, metaclass=MovementKeyma
         else:
             self._items = self.items
 
-        # raise Exception(self.items)
         self.selected_value = None  # set by make_selection, below
 
         self.button = DropdownItem(
@@ -477,7 +452,7 @@ class Dropdown(MovementKeymapMixin, urwid.PopUpLauncher, metaclass=MovementKeyma
             right_chars = right_chars,
             auto_complete = self.auto_complete,
             scrollbar = scrollbar,
-            keymap = self.KEYMAP
+            # keymap = self.KEYMAP
         )
 
         urwid.connect_signal(
@@ -525,14 +500,14 @@ class Dropdown(MovementKeymapMixin, urwid.PopUpLauncher, metaclass=MovementKeyma
             lambda button: self.open_pop_up()
         )
 
-    @keymap
+    @keymap_command()
     def complete_prefix(self):
         if not self.auto_complete:
             return
         self.open_pop_up()
         self.pop_up.complete_prefix()
 
-    @keymap
+    @keymap_command()
     def complete_substring(self):
         if not self.auto_complete:
             return

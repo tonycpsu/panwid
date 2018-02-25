@@ -1,7 +1,32 @@
+import logging
+logger = logging.getLogger(__name__)
+import os
 import urwid
 import urwid.raw_display
+from urwid_utils.palette import *
 
 from panwid.dropdown import *
+from panwid.datatable import *
+
+class TestDropdown(KeymapMovementMixin, Dropdown):
+    KEYMAP = {
+        "dropdown": {
+            "up": "up",
+            "down": "down",
+            "page up": "page up",
+            "page down": "page down",
+            "home": "home",
+            "end": "end",
+            "/": "complete prefix",
+            "?": "complete substring"
+        },
+        "dropdown_dialog": {
+            "esc": "cancel",
+            "/": "complete prefix",
+            "?": "complete substring",
+            "enter": "complete off"
+        }
+    }
 
 def main():
 
@@ -104,7 +129,7 @@ def main():
     screen.set_terminal_properties(256)
 
     boxes = [
-        Dropdown(
+        TestDropdown(
             data,
             label="Foo",
             border = True,
@@ -113,7 +138,7 @@ def main():
             auto_complete = True,
         ),
 
-        Dropdown(
+        TestDropdown(
             data,
             border = False,
             margin = 2,
@@ -121,7 +146,7 @@ def main():
             right_chars = u"\N{LIGHT RIGHT TORTOISE SHELL BRACKET ORNAMENT}",
             auto_complete = True
         ),
-        Dropdown(
+        TestDropdown(
             data,
             selected_value = list(data.values())[10],
             label="Foo",
@@ -129,7 +154,7 @@ def main():
             scrollbar = False,
             auto_complete = False,
         ),
-        Dropdown(
+        TestDropdown(
             [],
         ),
     ]
