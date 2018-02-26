@@ -112,12 +112,14 @@ def keymapped():
 class KeymapMovementMixin(object):
 
     def cycle_position(self, n):
-        pos = self.focus_position + n
-        if pos > len(self) - 1:
-            pos = len(self) - 1
-        elif pos < 0:
-            pos = 0
-        self.focus_position = pos
+
+        if len(self):
+            pos = self.focus_position + n
+            if pos > len(self) - 1:
+                pos = len(self) - 1
+            elif pos < 0:
+                pos = 0
+            self.focus_position = pos
 
     @keymap_command("up")
     def keymap_up(self): self.cycle_position(-1)
