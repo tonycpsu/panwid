@@ -570,7 +570,6 @@ class Dropdown(urwid.PopUpLauncher):
         super(Dropdown, self).open_pop_up()
 
     def close_pop_up(self):
-        self.selected_value = self.pop_up.selected_value
         super(Dropdown, self).close_pop_up()
 
     def get_pop_up_parameters(self):
