@@ -5,7 +5,13 @@ A collection of widgets for [urwid](https://urwid.org/).
 
 Currently consists of the following:
 
-## Datatable ##
+## Dropdown ##
+
+Dropdown menu widget with autocomplete support.
+
+[![asciicast](https://asciinema.org/a/s4F0g06YvjxFEzljDjEnIoXKB.png)](https://asciinema.org/a/s4F0g06YvjxFEzljDjEnIoXKB)
+
+## DataTable ##
 
 Widget for displaying tabular data.
 
@@ -14,14 +20,13 @@ Features include:
 * Progressive loading / "infinite scrolling" for paginating large datasets
 * Scrollbar with indicator showing position within dataset
 
+[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?t=9&autoplay=1)
+
 ## ScrollingListbox ##
 
 Listbox with an optional scrollbar.  Can signal to other widgets
-(e.g. DataTable) when to fetch more data.
-
-## Dropdown ##
-
-Dropdown menu widget with autocomplete support.
+(e.g. DataTable) when to fetch more data.  Used by both Dropdown and
+DataTable, but can be used separately.
 
 TODOs:
 * Documentation
@@ -30,5 +35,3 @@ TODOs:
 * Update datatable so that footer functions calculate based on the entire
   dataset, not just visible rows.
 
-
-[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?t=9&autoplay=1)
