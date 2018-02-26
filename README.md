@@ -9,7 +9,7 @@ Currently consists of the following:
 
 Dropdown menu widget with autocomplete support.
 
-[![asciicast](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN.png)](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN)
+[![asciicast](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN.png)](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN?autoplay=1)
 ## DataTable ##
 
 Widget for displaying tabular data.
@@ -19,7 +19,7 @@ Features include:
 * Progressive loading / "infinite scrolling" for paginating large datasets
 * Scrollbar with indicator showing position within dataset
 
-[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw)
+[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?autoplay=1)
 
 ## ScrollingListbox ##
 
