@@ -27,7 +27,8 @@ Listbox with an optional scrollbar.  Can signal to other widgets
 (e.g. DataTable) when to fetch more data.  Used by both Dropdown and
 DataTable, but can be used separately.
 
-TODOs:
+**TODOs**:
+
 * Documentation
 * Make more 16-color and non-unicode friendly
 * Add combo box functionality to dropdown
