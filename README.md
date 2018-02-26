@@ -20,7 +20,7 @@ Features include:
 * Progressive loading / "infinite scrolling" for paginating large datasets
 * Scrollbar with indicator showing position within dataset
 
-[![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?t=9&autoplay=1)
+[![asciicast](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN.png)](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN)
 
 ## ScrollingListbox ##
 
