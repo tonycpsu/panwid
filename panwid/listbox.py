@@ -36,7 +36,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                                    {None: "scroll_marker"}
         )
 
-        end_marker = urwid.AttrMap(urwid.Text("u\N{CIRCLED PLUS}"),
+        end_marker = urwid.AttrMap(urwid.Text(u"\N{CIRCLED PLUS}"),
                                    {None: "scroll_marker"}
         )
 
