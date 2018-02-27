@@ -14,8 +14,8 @@ class TestDropdown(KeymapMovementMixin, Dropdown):
 
     KEYMAP = {
         "dropdown": {
-            "up": "up",
-            "down": "down",
+            "k": "up",
+            "j": "down",
             "page up": "page up",
             "page down": "page down",
             "home": "home",
