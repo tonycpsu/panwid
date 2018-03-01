@@ -14,6 +14,7 @@ class DataTableCell(urwid.WidgetWrap):
 
     def __init__(self, table, column,
                  value=None, value_attr=None,
+                 cell_selection=False,
                  padding=0,
                  *args, **kwargs):
 
@@ -29,6 +30,7 @@ class DataTableCell(urwid.WidgetWrap):
         self.column = column
         self.value = value
         self.value_attr = value_attr
+        self.cell_selection = cell_selection
 
         if column.padding:
             self.padding = column.padding
@@ -48,18 +50,19 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.normal_focus_map = {}
         self.highlight_focus_map = {}
+        self.highlight_column_focus_map = {}
 
         self.set_attr_maps()
 
         self.highlight_attr_map.update(self.table.highlight_map)
         self.highlight_focus_map.update(self.table.highlight_focus_map)
 
-        self.attr = urwid.AttrMap(
+        self.attrmap = urwid.AttrMap(
             self.padding,
             attr_map = self.normal_attr_map,
             focus_map = self.normal_focus_map
         )
-        super(DataTableCell, self).__init__(self.attr)
+        super(DataTableCell, self).__init__(self.attrmap)
 
     def update_contents(self):
         pass
@@ -69,26 +72,29 @@ class DataTableCell(urwid.WidgetWrap):
         self.normal_attr_map[None] = self.attr
         self.highlight_attr_map [None] = self.attr_highlight
         self.normal_focus_map[None] = self.attr_focused
-        self.highlight_focus_map[None] = self.attr_highlight
+        self.highlight_focus_map[None] = self.attr_highlight_focused
 
         if self.value_attr:
             self.normal_attr_map.update({None: self.value_attr})
             self.normal_focus_map.update({None: "%s focused" %(self.value_attr)})
             self.highlight_attr_map.update({None: "%s highlight" %(self.value_attr)})
-            self.highlight_focus_map.update({None: "%s highlight focused" %(self.value_attr)})
+            if  self.cell_selection:
+                self.highlight_focus_map.update({None: "%s highlight column_focused" %(self.value_attr)})
+            else:
+                self.highlight_focus_map.update({None: "%s highlight focused" %(self.value_attr)})
 
 
     def highlight(self):
-        self.attr.set_attr_map(self.highlight_attr_map)
-        self.attr.set_focus_map(self.highlight_focus_map)
+        self.attrmap.set_attr_map(self.highlight_attr_map)
+        self.attrmap.set_focus_map(self.highlight_focus_map)
 
 
     def unhighlight(self):
-        self.attr.set_attr_map(self.normal_attr_map)
-        self.attr.set_focus_map(self.normal_focus_map)
+        self.attrmap.set_attr_map(self.normal_attr_map)
+        self.attrmap.set_focus_map(self.normal_focus_map)
 
     def selectable(self):
-        return False
+        return self.cell_selection
 
     def keypress(self, size, key):
         return key
@@ -98,29 +104,28 @@ class DataTableCell(urwid.WidgetWrap):
         return self.column._format(v)
 
     def set_attr_map(self, attr_map):
-        self.attr.set_attr_map(attr_map)
+        self.attrmap.set_attr_map(attr_map)
 
     def mouse_event(self, size, event, button, col, row, focus):
         if event == 'mouse press':
             urwid.emit_signal(self, "click")
 
     def set_attr(self, attr):
-        attr_map = self.attr.get_attr_map()
+        attr_map = self.attrmap.get_attr_map()
         attr_map[None] = attr
         self.attr.set_attr_map(attr_map)
         focus_map = self.attr.get_focus_map()
         focus_map[None] = "%s focused" %(attr)
-        self.attr.set_focus_map(focus_map)
+        self.attrmap.set_focus_map(focus_map)
 
     def clear_attr(self, attr):
-        attr_map = self.attr.get_attr_map()
+        attr_map = self.attrmap.get_attr_map()
         attr_map = self.normal_attr_map
         # attr_map[None] = self.attr
         self.attr.set_attr_map(attr_map)
         focus_map = self.normal_focus_map #.attr.get_focus_map()
         # focus_map[None] = self.attr_focused
-        self.attr.set_focus_map(focus_map)
-
+        self.attrmap.set_focus_map(focus_map)
 
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
@@ -167,8 +172,9 @@ class DataTableHeaderCell(DataTableCell):
 
         self.normal_attr_map[None] = self.attr
         self.highlight_attr_map [None] = self.attr_highlight
-        self.normal_focus_map[None] = self.attr_column_focused
-        self.highlight_focus_map[None] = self.attr_highlight_column_focused
+        if self.cell_selection:
+            self.normal_focus_map[None] = self.attr_column_focused
+            self.highlight_focus_map[None] = self.attr_highlight_column_focused
 
 
     def _format(self, v):

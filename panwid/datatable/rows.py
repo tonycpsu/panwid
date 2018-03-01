@@ -18,38 +18,48 @@ class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, table, index=None,
                  border=None, padding=None,
+                 cell_selection=False,
                  *args, **kwargs):
 
         self.table = table
         self.index = index
         self.border = border
         self.padding = padding
+        self.cell_selection = cell_selection
         self.sort = self.table.sort_by
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
+        self.attr_column_focused = "%s column_focused" %(self.attr)
         self.attr_highlight = "%s highlight" %(self.attr)
         self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
+        self.attr_highlight_column_focused = "%s column_focused" %(self.attr_highlight)
         self.attr_map =  {
             None: self.attr,
         }
 
         self.focus_map = {
             self.attr: self.attr_focused,
-            self.attr_highlight: self.attr_highlight_focused
+            self.attr_highlight: self.attr_highlight_focused,
         }
 
-        self.focus_map.update(table.focus_map)
-        self.focus_map.update(table.highlight_focus_map)
+        if self.cell_selection:
+            self.focus_map.update({
+                self.attr_focused: self.attr_column_focused,
+                self.attr_highlight_focused: self.attr_highlight_column_focused,
+            })
 
+        self.focus_map.update(table.focus_map)
+        if self.cell_selection:
+            self.focus_map.update(table.column_focus_map)
 
         self.columns_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
-        self.attr = urwid.AttrMap(
+        self.attrmap = urwid.AttrMap(
             self.columns_placeholder,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
         )
         self.update()
-        super(DataTableRow, self).__init__(self.attr)
+        super(DataTableRow, self).__init__(self.attrmap)
 
     def update(self):
 
@@ -97,10 +107,6 @@ class DataTableRow(urwid.WidgetWrap):
     def selectable(self):
         return True
 
-    # def keypress(self, size, key):
-    #     return super(DataTableRow, self).keypress(size, key)
-
-
     def set_focus_column(self, index):
         for i, cell in enumerate(self):
             if i == index:
@@ -135,6 +141,7 @@ class DataTableBodyRow(DataTableRow):
             (k, v(data) if callable(v) else v)
             for k, v in list(data.items())
         )
+
         self.details_open = False
         super(DataTableBodyRow, self).__init__(table, *args, **kwargs)
 
@@ -186,21 +193,21 @@ class DataTableBodyRow(DataTableRow):
             self.open_details()
 
     def set_attr(self, attr):
-        attr_map = self.attr.get_attr_map()
+        attr_map = self.attrmap.get_attr_map()
         attr_map[self.ATTR] = attr
-        self.attr.set_attr_map(attr_map)
-        focus_map = self.attr.get_focus_map()
+        self.attrmap.set_attr_map(attr_map)
+        focus_map = self.attrmap.get_focus_map()
         focus_map[self.ATTR] = "%s focused" %(attr)
-        self.attr.set_focus_map(focus_map)
+        self.attrmap.set_focus_map(focus_map)
 
     def clear_attr(self, attr):
-        attr_map = self.attr.get_attr_map()
+        attr_map = self.attrmap.get_attr_map()
         if self.ATTR in attr_map:
             del attr_map[self.ATTR]
-        self.attr.set_attr_map(attr_map)
-        focus_map = self.attr.get_focus_map()
+        self.attrmap.set_attr_map(attr_map)
+        focus_map = self.attrmap.get_focus_map()
         focus_map[self.ATTR] = "%s focused" %(self.ATTR)
-        self.attr.set_focus_map(focus_map)
+        self.attrmap.set_focus_map(focus_map)
 
     def make_cells(self):
 
@@ -219,8 +226,9 @@ class DataTableBodyRow(DataTableRow):
                 self.table,
                 col,
                 self.data[col.name],
-                # value_attr=self.data.get(col.attr, col.attr if col.attr else None))
-                value_attr=col_to_attr(col))
+                value_attr=col_to_attr(col),
+                cell_selection=self.cell_selection
+            )
             for i, col in enumerate(self.table.visible_columns)]
 
 

@@ -264,16 +264,18 @@ def main():
                 self.table, "select",
                 lambda source, selection: logger.info("selection: %s" %(selection))
             )
-            label = "size:%d page:%s sort:%s%s hdr:%s ftr:%s sortable:%s" %(
+            label = "sz:%d pgsz:%s sort:%s%s hdr:%s ftr:%s ui_sort:%s cell_sel:%s" %(
                 self.table.query_result_count(),
                 self.table.limit if self.table.limit else "-",
                 "-" if self.table.sort_by[1]
-                else "+",
-                self.table.sort_by[0],
+                else "+" if self.table.sort_by[0]
+                else "n",
+                self.table.sort_by[0] or " ",
 
                 "y" if self.table.with_header else "n",
                 "y" if self.table.with_footer else "n",
                 "y" if self.table.ui_sort else "n",
+                "y" if self.table.cell_selection else "n",
             )
             self.pile = urwid.Pile([
                 ("pack", urwid.Text(label)),
@@ -294,23 +296,13 @@ def main():
 
     boxes = [
 
-        # ExampleDataTableBox(
-        #     20,
-        #     limit=5,
-        #     index="uniqueid",
-        #     # sort_by = ("foo", False),
-        #     query_sort=False,
-        #     with_header=True,
-        #     with_footer=True,
-        #     with_scrollbar=True
-        # ),
-
 
         ExampleDataTableBox(
             10,
             index="uniqueid",
             detail_fn=detail_fn,
             detail_column="bar",
+            cell_selection=True,
             sort_refocus = True
         ),
         ExampleDataTableBox(
@@ -332,6 +324,7 @@ def main():
             query_sort=True,
             with_footer=True,
             with_scrollbar=True,
+            cell_selection=True,
             border=(1, u"\N{VERTICAL LINE}", "blue"),
             padding=3,
         ),

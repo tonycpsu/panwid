@@ -138,6 +138,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     with_header = True
     with_footer = False
     with_scrollbar = False
+    cell_selection = False
 
     sort_by = (None, None)
     query_sort = False
@@ -152,8 +153,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     attr_map = {}
     focus_map = {}
+    column_focus_map = {}
     highlight_map = {}
     highlight_focus_map = {}
+    highlight_focus_map2 = {}
 
     detail_fn = None
     detail_column = None
@@ -165,6 +168,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  limit = None,
                  index = None,
                  with_header = None, with_footer = None, with_scrollbar = None,
+                 cell_selection = None,
                  sort_by = None, query_sort = None, sort_icons = None,
                  sort_refocus = None,
                  border = None, padding = None,
@@ -208,7 +212,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
-
+        if cell_selection is not None: self.cell_selection = cell_selection
         if border is not None: self.border = border
         if padding is not None: self.padding = padding
 
@@ -342,15 +346,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         background_map = {
             None: [ "black", "black" ],
             "focused": [ "dark gray", "g15" ],
+            "column_focused": [ "black", "#660" ],
             "highlight": ["light gray", "g15"],
-            "highlight focused": ["light gray", "g23"],#"g23"],
+            "highlight focused": ["light gray", "g23"],
+            "highlight column_focused": ["light gray", "#660"],
         }
 
         entries = dict()
 
         row_attr = "table_row_body"
-        for suffix in [None, "focused",
-                       "highlight", "highlight focused"]:
+        for suffix in [None, "focused", "column_focused",
+                       "highlight", "highlight focused",
+                       "highlight column_focused",
+        ]:
             if suffix:
                 attr = ' '.join([row_attr, suffix])
             else:
@@ -403,9 +411,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         for name, entry in list(user_entries.items()):
             DataTable.focus_map[name] = "%s focused" %(name)
             DataTable.highlight_map[name] = "%s highlight" %(name)
+            DataTable.column_focus_map["%s focused" %(name)] = "%s column_focused" %(name)
             DataTable.highlight_focus_map["%s highlight" %(name)] = "%s highlight focused" %(name)
-            for suffix in [None, "focused",
-                           "highlight", "highlight focused"]:
+            for suffix in [None, "focused", "column_focused",
+                           "highlight", "highlight focused",
+                           "highlight column_focused",
+            ]:
 
                 # Check entry backgroun colors against default bg.  If they're
                 # the same, replace the entry's background color with focus or
@@ -665,7 +676,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         row = DataTableBodyRow(self, item,
                                border = self.border,
                                padding = self.padding,
-                               index=item[self.index])
+                               index=item[self.index],
+                               cell_selection = self.cell_selection)
         return row
 
     def refresh_calculated_fields(self, indexes=None):
