@@ -890,6 +890,26 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def toggle_details(self):
         self.selection.toggle_details()
 
+    def enable_cell_selection(self):
+        logger.debug("enable_cell_selection")
+        for r in self:
+            r.enable_cell_selection()
+        self.reset()
+        self.cell_selection = True
+
+    def disable_cell_selection(self):
+        logger.debug("disable_cell_selection")
+        for r in self:
+            r.disable_cell_selection()
+        self.reset()
+        self.cell_selection = False
+
+    def toggle_cell_selection(self):
+        if self.cell_selection:
+            self.disable_cell_selection()
+        else:
+            self.enable_cell_selection()
+
     @property
     def visible_columns(self):
         return [ c for c in self.columns if not c.hide ]

@@ -42,15 +42,23 @@ class DataTableRow(urwid.WidgetWrap):
             self.attr_highlight: self.attr_highlight_focused,
         }
 
-        if self.cell_selection:
-            self.focus_map.update({
-                self.attr_focused: self.attr_column_focused,
-                self.attr_highlight_focused: self.attr_highlight_column_focused,
-            })
+        # needed to restore if cell selection is toggled
+        self.original_focus_map = self.focus_map.copy()
+
+        # if self.cell_selection:
+        self.focus_map.update({
+            self.attr_focused: self.attr_column_focused,
+            self.attr_highlight_focused: self.attr_highlight_column_focused,
+        })
+        self.focus_map.update(self.table.column_focus_map)
+        self.cell_selection_focus_map = self.focus_map.copy()
+
+        if cell_selection:
+            self.enable_cell_selection()
+        else:
+            self.disable_cell_selection()
 
         self.focus_map.update(table.focus_map)
-        if self.cell_selection:
-            self.focus_map.update(table.column_focus_map)
 
         self.columns_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
         self.attrmap = urwid.AttrMap(
@@ -60,6 +68,14 @@ class DataTableRow(urwid.WidgetWrap):
         )
         self.update()
         super(DataTableRow, self).__init__(self.attrmap)
+
+    def enable_cell_selection(self):
+        self.cell_selection = True
+        self.focus_map = self.cell_selection_focus_map
+
+    def disable_cell_selection(self):
+        self.cell_selection = False
+        self.focus_map = self.original_focus_map
 
     def update(self):
 

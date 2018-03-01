@@ -233,6 +233,8 @@ def main():
                 self.selection[2].clear_attr("red")
             elif key == "u":
                 logger.info(self.footer.values)
+            elif key == "c":
+                self.toggle_cell_selection()
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":

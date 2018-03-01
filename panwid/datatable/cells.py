@@ -83,7 +83,6 @@ class DataTableCell(urwid.WidgetWrap):
             else:
                 self.highlight_focus_map.update({None: "%s highlight focused" %(self.value_attr)})
 
-
     def highlight(self):
         self.attrmap.set_attr_map(self.highlight_attr_map)
         self.attrmap.set_focus_map(self.highlight_focus_map)
@@ -92,6 +91,12 @@ class DataTableCell(urwid.WidgetWrap):
     def unhighlight(self):
         self.attrmap.set_attr_map(self.normal_attr_map)
         self.attrmap.set_focus_map(self.normal_focus_map)
+
+    def enable_selection(self):
+        self.cell_selection = True
+
+    def disable_selection(self):
+        self.cell_selection = False
 
     def selectable(self):
         return self.cell_selection
