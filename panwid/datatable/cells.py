@@ -181,9 +181,9 @@ class DataTableHeaderCell(DataTableCell):
 
         self.normal_attr_map[None] = self.attr
         self.highlight_attr_map [None] = self.attr_highlight
-        if self.cell_selection:
-            self.normal_focus_map[None] = self.attr_column_focused
-            self.highlight_focus_map[None] = self.attr_highlight_column_focused
+        # if self.cell_selection:
+        self.normal_focus_map[None] = self.attr_column_focused
+        self.highlight_focus_map[None] = self.attr_highlight_column_focused
 
 
     def _format(self, v):
