@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 import urwid
 from panwid.datatable import *
+from panwid.listbox import ScrollingListBox
 from urwid_utils.palette import *
 import os
 import random
@@ -52,7 +53,8 @@ def main():
             foreground = attr,
             background = "black"
         )
-    entries = DataTable.get_palette_entries(user_entries=attr_entries)
+    entries = ScrollingListBox.get_palette_entries()
+    entries.update(DataTable.get_palette_entries(user_entries=attr_entries))
     palette = Palette("default", **entries)
 
 

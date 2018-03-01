@@ -1,7 +1,9 @@
 from __future__ import division
-import urwid
 import logging
 logger = logging.getLogger(__name__.split(".")[0])
+
+import urwid
+from urwid_utils.palette import *
 
 class ListBoxScrollBar(urwid.WidgetWrap):
 
@@ -112,6 +114,42 @@ class ScrollingListBox(urwid.WidgetWrap):
                 (self.scroll_bar, self.columns.options("given", 1))
             )
         super(ScrollingListBox, self).__init__(self.columns)
+
+    @classmethod
+    def get_palette_entries(cls):
+
+        return {
+
+            "scroll_pos": PaletteEntry(
+                mono = "white",
+                foreground = "black",
+                background = "white",
+                foreground_high = "black",
+                background_high = "white"
+            ),
+            "scroll_marker": PaletteEntry(
+                mono = "white,bold",
+                foreground = "black,bold",
+                background = "white",
+                foreground_high = "black,bold",
+                background_high = "white"
+            ),
+            "scroll_view": PaletteEntry(
+                mono = "black",
+                foreground = "black",
+                background = "light gray",
+                foreground_high = "black",
+                background_high = "g50"
+            ),
+            "scroll_bg": PaletteEntry(
+                mono = "black",
+                foreground = "light gray",
+                background = "dark gray",
+                foreground_high = "light gray",
+                background_high = "g23"
+            ),
+
+        }
 
     def mouse_event(self, size, event, button, col, row, focus):
 

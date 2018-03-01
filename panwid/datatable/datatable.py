@@ -516,38 +516,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     background_high = background_high,
                 )
 
-        entries.update({
 
-            "scroll_pos": PaletteEntry(
-                mono = "white",
-                foreground = "black",
-                background = "white",
-                foreground_high = "black",
-                background_high = "white"
-            ),
-            "scroll_marker": PaletteEntry(
-                mono = "white,bold",
-                foreground = "black,bold",
-                background = "white",
-                foreground_high = "black,bold",
-                background_high = "white"
-            ),
-            "scroll_view": PaletteEntry(
-                mono = "black",
-                foreground = "black",
-                background = "light gray",
-                foreground_high = "black",
-                background_high = "g50"
-            ),
-            "scroll_bg": PaletteEntry(
-                mono = "black",
-                foreground = "light gray",
-                background = "dark gray",
-                foreground_high = "light gray",
-                background_high = "g23"
-            ),
-
-        })
         # raise Exception(entries)
         return entries
 
