@@ -7,6 +7,7 @@ from functools import wraps
 
 import six
 import urwid
+from urwid_utils.palette import *
 from orderedattrdict import AttrDict
 
 from .datatable import *
@@ -511,6 +512,38 @@ class Dropdown(urwid.PopUpLauncher):
             'click',
             lambda button: self.open_pop_up()
         )
+
+    @classmethod
+    def get_palette_entries(cls):
+        return {
+            "dropdown_text": PaletteEntry(
+                foreground = "light gray",
+                background = "dark blue",
+                foreground_high = "light gray",
+                background_high = "#003",
+            ),
+            "dropdown_focused": PaletteEntry(
+                foreground = "white",
+                background = "light blue",
+                foreground_high = "white",
+                background_high = "#009",
+            ),
+            "dropdown_highlight": PaletteEntry(
+                foreground = "yellow",
+                background = "light blue",
+                foreground_high = "yellow",
+                background_high = "#009",
+            ),
+            "dropdown_label": PaletteEntry(
+                foreground = "white",
+                background = "black"
+            ),
+            "dropdown_prompt": PaletteEntry(
+                foreground = "light blue",
+                background = "black"
+            )
+        }
+
 
     @keymap_command()
     def complete_prefix(self):

@@ -8,6 +8,7 @@ from urwid_utils.palette import *
 from orderedattrdict import AttrDict
 
 from panwid.dropdown import *
+from panwid.listbox import *
 from panwid.datatable import *
 
 class TestDropdown(KeymapMovementMixin, Dropdown):
@@ -96,36 +97,9 @@ def main():
     else:
         logger.addHandler(logging.NullHandler())
 
-    entries = {
-        "dropdown_text": PaletteEntry(
-            foreground = "light gray",
-            background = "dark blue",
-            foreground_high = "light gray",
-            background_high = "#003",
-        ),
-        "dropdown_focused": PaletteEntry(
-            foreground = "white",
-            background = "light blue",
-            foreground_high = "white",
-            background_high = "#009",
-        ),
-        "dropdown_highlight": PaletteEntry(
-            foreground = "yellow",
-            background = "light blue",
-            foreground_high = "yellow",
-            background_high = "#009",
-        ),
-        "dropdown_label": PaletteEntry(
-            foreground = "white",
-            background = "black"
-        ),
-        "dropdown_prompt": PaletteEntry(
-            foreground = "light blue",
-            background = "black"
-        ),
-    }
-
-    entries = DataTable.get_palette_entries(user_entries=entries)
+    entries = Dropdown.get_palette_entries()
+    entries.update(ScrollingListBox.get_palette_entries())
+    entries.update(DataTable.get_palette_entries())
     palette = Palette("default", **entries)
     screen = urwid.raw_display.Screen()
     screen.set_terminal_properties(256)
