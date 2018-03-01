@@ -102,6 +102,10 @@ class DataTableCell(urwid.WidgetWrap):
         return self.cell_selection
 
     def keypress(self, size, key):
+        try:
+            key = super(DataTableCell, self).keypress(size, key)
+        except AttributeError:
+            pass
         return key
         # return super(DataTableCell, self).keypress(size, key)
 

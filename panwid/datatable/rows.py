@@ -69,6 +69,13 @@ class DataTableRow(urwid.WidgetWrap):
         self.update()
         super(DataTableRow, self).__init__(self.attrmap)
 
+    def keypress(self, size, key):
+        try:
+            key = super(DataTableRow, self).keypress(size, key)
+        except AttributeError:
+            pass
+        return key
+
     def enable_cell_selection(self):
         self.cell_selection = True
         self.focus_map = self.cell_selection_focus_map
