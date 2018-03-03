@@ -5,6 +5,7 @@ import random
 import string
 from functools import wraps
 import re
+import itertools
 
 import six
 import urwid
@@ -482,13 +483,16 @@ class Dropdown(urwid.PopUpLauncher):
             lambda button: self.close_pop_up()
         )
 
-        try:
-            initial_index = next(
-                v for v in self._items.values()
-                if v == self.default)
-            self.focus_position = initial_index
-        except StopIteration:
-            initial_index = 0
+        if self.default:
+            try:
+                index = next(itertools.dropwhile(
+                        lambda x: x[1] != self.default,
+                        enumerate((self._items.values())
+                    )
+                ))[0]
+                self.focus_position = index
+            except StopIteration:
+                initial_index = 0
 
         if len(self):
             self.select(self.selection)
