@@ -138,3 +138,9 @@ class KeymapMovementMixin(object):
 
     @keymap_command("end")
     def keymap_end(self): self.focus_position = len(self)-1
+
+__all__ = [
+    "keymapped",
+    "keymap_command",
+    "KeymapMovementMixin"
+]
