@@ -4,6 +4,7 @@ import os
 import random
 import string
 from functools import wraps
+import re
 
 import six
 import urwid
@@ -171,7 +172,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
             self,
             drop_down,
             items,
-            initial_value=None,
+            default=None,
             label=None, border=False,
             scrollbar=False,
             auto_complete=False,
@@ -416,7 +417,7 @@ class Dropdown(urwid.PopUpLauncher):
     def __init__(
             self,
             items=None,
-            initial_value=None,
+            default=None,
             label=None, border=False, scrollbar = False,
             margin = None,
             left_chars = None, right_chars = None,
@@ -429,7 +430,7 @@ class Dropdown(urwid.PopUpLauncher):
         if items is not None:
             self._items = items
 
-        self.initial_value = initial_value
+        self.default = default
         self.label = label
         self.border = border
         self.scrollbar = scrollbar
@@ -441,9 +442,10 @@ class Dropdown(urwid.PopUpLauncher):
 
         if isinstance(self.items, list):
             if len(self.items):
-                if isinstance(items[0], tuple):
-                    self.items = AttrDict(self.items)
-                self._items = AttrDict(( (item, n) for n, item in enumerate(self.items)))
+                if isinstance(self.items[0], tuple):
+                    self._items = AttrDict(self.items)
+                else:
+                    self._items = AttrDict(( (item, n) for n, item in enumerate(self.items)))
             else:
                 self._items = AttrDict()
 
@@ -457,7 +459,7 @@ class Dropdown(urwid.PopUpLauncher):
         self.pop_up = DropdownDialog(
             self,
             self._items,
-            self.initial_value,
+            self.default,
             label = self.label,
             border = self.border,
             margin = self.margin,
@@ -482,8 +484,8 @@ class Dropdown(urwid.PopUpLauncher):
 
         try:
             initial_index = next(
-                v for v in self.items.values()
-                if v == self.initial_value)
+                v for v in self._items.values()
+                if v == self.default)
             self.focus_position = initial_index
         except StopIteration:
             initial_index = 0
