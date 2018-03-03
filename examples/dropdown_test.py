@@ -9,7 +9,7 @@ from orderedattrdict import AttrDict
 
 from panwid.dropdown import *
 from panwid.listbox import *
-from panwid.datatable import *
+from panwid.keymap import *
 
 class TestDropdown(KeymapMovementMixin, Dropdown):
 
@@ -99,7 +99,6 @@ def main():
 
     entries = Dropdown.get_palette_entries()
     entries.update(ScrollingListBox.get_palette_entries())
-    entries.update(DataTable.get_palette_entries())
     palette = Palette("default", **entries)
     screen = urwid.raw_display.Screen()
     screen.set_terminal_properties(256)
@@ -124,7 +123,7 @@ def main():
         ),
         TestDropdown(
             data,
-            initial_value = list(data.values())[10],
+            default = list(data.values())[10],
             label="Foo",
             border = True,
             scrollbar = False,
