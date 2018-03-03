@@ -29,9 +29,6 @@ setup(name=name,
           "blist",
           "orderedattrdict"
       ],
-      # extras_require = {
-      #     "datatable": ["raccoon", "blist", "orderedattrdict"],
-      # },
       dependency_links=[
           "https://github.com/tonycpsu/urwid_utils/tarball/master#egg=urwid-utils-0.0.5a0"
       ],

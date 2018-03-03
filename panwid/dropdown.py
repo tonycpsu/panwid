@@ -660,3 +660,5 @@ class Dropdown(urwid.PopUpLauncher):
     #                         selected_value)
     def __len__(self):
         return len(self.items)
+
+__all__ = ["Dropdown"]

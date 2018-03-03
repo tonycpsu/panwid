@@ -315,3 +315,5 @@ class ScrollingListBox(urwid.WidgetWrap):
         if self.row_count_fn:
             return self.row_count_fn()
         return len(self.body)
+
+__all__ = ["ScrollingListBox"]

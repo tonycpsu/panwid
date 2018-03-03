@@ -1029,3 +1029,5 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # print(path)
         with open(path, "w") as f:
             f.write(self.df.to_json())
+
+__all__ = ["DataTable", "DataTableColumn"]
