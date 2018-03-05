@@ -640,17 +640,17 @@ class Dropdown(urwid.PopUpLauncher):
             f = lambda x: x.lower()
 
         index = next(itertools.dropwhile(
-                lambda x: f(x[1]) != f(self.default),
+                lambda x: f(x[1]) != f(label),
                 enumerate((self._items.keys())
             )
         ))[0]
         self.focus_position = index
 
 
-    def select_value(self, label):
+    def select_value(self, value):
 
         index = next(itertools.dropwhile(
-                lambda x: x[1] != self.default,
+                lambda x: x[1] != value,
                 enumerate((self._items.values())
             )
         ))[0]
