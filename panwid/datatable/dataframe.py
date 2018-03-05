@@ -51,6 +51,7 @@ class DataTableDataFrame(rc.DataFrame):
     def append_rows(self, rows):
 
         colnames =  list(self.columns)
+        length = len(rows)
 
         try:
             columns = list(set().union(*(list(d.keys()) for d in rows)))
@@ -61,7 +62,7 @@ class DataTableDataFrame(rc.DataFrame):
                 ))
             )
             if self.index_name not in columns:
-                index = list(range(len(self), len(list(data.values())[0])))
+                index = list(range(len(self), len(self) + length))
                 data[self.index_name] = index
             else:
                 index = data[self.index_name]
