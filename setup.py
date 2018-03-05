@@ -25,7 +25,7 @@ setup(name=name,
           "urwid",
           "urwid-utils==0.1.0.dev2",
           "six",
-          "raccoon",
+          "raccoon==2.1.5",
           "blist",
           "orderedattrdict"
       ],
