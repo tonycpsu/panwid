@@ -29,6 +29,7 @@ setup(name=name,
           "blist",
           "orderedattrdict"
       ],
+      test_suite="test",
       # dependency_links=[
       #     "https://github.com/tonycpsu/urwid_utils/tarball/master#egg=urwid_utils-0.0.5dev"
       # ],
