@@ -1,14 +1,29 @@
 language: python
-python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "3.6"
-  - "3.7-dev"  # 3.7 development branch
-# command to install dependencies
+
 install:
   - pip install
-# command to run tests
-#script:
-#  - pytest # or py.test for Python versions 3.5 and below
+script:
+  - python setup.py test
+
+matrix:
+  include:
+    - stage: test
+      python: 2.7
+    - stage: test
+      python: 3.3
+    - stage: test
+      python: 3.4
+    - stage: test
+      python: 3.5
+    - stage: test
+      python: 3.6
+    - stage: test
+      python: 3.7-dev
+    - stage: deploy
+      deploy:
+        provider: pypi
+        user: tonycpsu
+        password:
+          secure: o0GWbhRsPpssgg9xtHdoh/YcjAZafGATwWQsmY50eZ2ehESdi53A4URwqSmb3G91H2F5CS8BLRyEZdaQvUTmdeTp97YWBRziXy3u3yf9hjwtgJTRHzwhVte5Cob2m8XIbrd/MGYUURPF/wZJEHbP5OzTNh4YZgpr0iBfyk/MC9Q/eYz/if2WY+EPXjeGEr2QoIimgQ56aWE3hpDDatQmB669eTi+1wtAh1YZnJN0G6Z/I+9gr1ug0iQy3CcNvbX9M3KzUlIl9Y3nmd/TpiyCE2wC0xc6HNSXSCMzWbKYtg0zrMm284RNtG9cr7nrGFlkTR20kTlScWDxW4ECHyfXpiNApZZWHGo19HQaO4DSSGdVKXhpUO6DwNvhz3yGoBawMz3i3CT2TuBCLpLGZkrJ4GP6o+i8NQfhnVIGO+mwt2mE6oK/ECMDvXA62aDQ0kdoigwZwV7VeUWQTb1lBjnyLaCgIwP76tcchogVKYONqyvn344qk8hEi+fgJDzCjCUJ1xXBqJkxDAqQqpFauVoavRyIakqS6zpWnYMWWUNtMguFwwq5WgANArBJLJNeO8EsAILBWAWM+EU1bDik/eE2X5oHYpqcHnZ8vVNd4oROKl/nby3py3slkNhUz0L/MS1KuCwWm4YjsmmqlpO/y0yVhG/1wdZHC/O1d2pqmInMYa8=
+        on:
+          tags: true
