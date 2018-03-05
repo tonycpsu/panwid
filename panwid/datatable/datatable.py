@@ -399,7 +399,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     attr = ' '.join([prefix, suffix])
                 else:
                     attr = prefix
-                entries[attr] = PaletteEntry(
+                entries[attr] = urwid_utils.palette.PaletteEntry(
                     mono = "white",
                     foreground = header_foreground_map[suffix][0],
                     background = header_background_map[suffix][0],
@@ -515,7 +515,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     attr = name
 
                 # print foreground, foreground_high, background, background_high
-                entries[attr] = PaletteEntry(
+                entries[attr] = urwid_utils.palette.PaletteEntry(
                     mono = "white",
                     foreground = foreground,
                     background = background,
