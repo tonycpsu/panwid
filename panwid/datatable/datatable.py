@@ -1,7 +1,7 @@
 import logging
 logger = logging.getLogger("panwid.datable")
 import urwid
-from urwid_utils.palette import *
+import urwid_utils.palette
 from ..listbox import ScrollingListBox
 from orderedattrdict import OrderedDict
 import itertools
@@ -363,7 +363,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 attr = ' '.join([row_attr, suffix])
             else:
                 attr = row_attr
-            entries[attr] = PaletteEntry(
+            entries[attr] = urwid_utils.palette.PaletteEntry(
                 mono = "white",
                 foreground = foreground_map[row_attr][0],
                 background = background_map[suffix][0],
@@ -430,7 +430,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
                 background_high = background_map[suffix][1]
                 if entry.background_high:
-                    bg_high_rgb = urwid.AttrSpec(entry.background_high, entry.background_high, 256)
+                    bg_high_rgb = urwid.AttrSpec(
+                        entry.background_high,
+                        entry.background_high,
+                        (1<<24
+                         if urwid_utils.palette.URWID_HAS_TRUE_COLOR
+                         else 256
+                        )
+                    )
                     if default_bg_rgb.get_rgb_values() != bg_high_rgb.get_rgb_values():
                         background_high = entry.background_high
 
