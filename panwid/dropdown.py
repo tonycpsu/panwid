@@ -446,6 +446,7 @@ class Dropdown(urwid.PopUpLauncher):
                 if isinstance(self.items[0], tuple):
                     self._items = AttrDict(self.items)
                 else:
+                    logger.debug(self.items)
                     self._items = AttrDict(( (item, n) for n, item in enumerate(self.items)))
             else:
                 self._items = AttrDict()
@@ -485,14 +486,9 @@ class Dropdown(urwid.PopUpLauncher):
 
         if self.default:
             try:
-                index = next(itertools.dropwhile(
-                        lambda x: x[1] != self.default,
-                        enumerate((self._items.values())
-                    )
-                ))[0]
-                self.focus_position = index
+                self.select_value(self.default)
             except StopIteration:
-                initial_index = 0
+                self.focus_position = 0
 
         if len(self):
             self.select(self.selection)
@@ -635,6 +631,39 @@ class Dropdown(urwid.PopUpLauncher):
     @property
     def selection(self):
         return self.pop_up.selection
+
+
+    def select_label(self, label, case_sensitive=False):
+
+        f = lambda x: x
+        if not case_sensitive:
+            f = lambda x: x.lower()
+
+        index = next(itertools.dropwhile(
+                lambda x: f(x[1]) != f(self.default),
+                enumerate((self._items.keys())
+            )
+        ))[0]
+        self.focus_position = index
+
+
+    def select_value(self, label):
+
+        index = next(itertools.dropwhile(
+                lambda x: x[1] != self.default,
+                enumerate((self._items.values())
+            )
+        ))[0]
+        self.focus_position = index
+
+
+    @property
+    def labels(self):
+        return self._items.keys()
+
+    @property
+    def values(self):
+        return self._items.values()
 
     @property
     def selected_label(self):
