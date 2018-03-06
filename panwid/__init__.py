@@ -7,6 +7,8 @@ from .dropdown import *
 from . import keymap
 from .keymap import *
 
+__version__ = "0.2.2-dev4"
+
 __all__ = (
     listbox.__all__
     + datatable.__all__
