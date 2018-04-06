@@ -7,7 +7,7 @@ from .dropdown import *
 from . import keymap
 from .keymap import *
 
-__version__ = "0.2.2"
+__version__ = "0.2.2.dev5"
 
 __all__ = (
     listbox.__all__
