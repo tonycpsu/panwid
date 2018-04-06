@@ -23,7 +23,7 @@ setup(name=name,
               ],
       install_requires = [
           "urwid",
-          "urwid-utils>=0.1.0.dev5",
+          "urwid-utils>=0.1.2",
           "six",
           "raccoon==2.1.5",
           "blist",
