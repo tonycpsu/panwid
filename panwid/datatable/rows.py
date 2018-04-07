@@ -248,7 +248,7 @@ class DataTableBodyRow(DataTableRow):
             DataTableBodyCell(
                 self.table,
                 col,
-                self.data[col.name],
+                self.data[col.name] if not col.format_record else self.data,
                 value_attr=col_to_attr(col),
                 cell_selection=self.cell_selection
             )
