@@ -453,6 +453,9 @@ class Dropdown(urwid.PopUpLauncher):
                     self._items = AttrDict(( (item, n) for n, item in enumerate(self.items)))
             else:
                 self._items = AttrDict()
+        else:
+            self._items = self.items
+
 
         self.button = DropdownItem(
             u"", None,
