@@ -412,14 +412,16 @@ class Dropdown(urwid.PopUpLauncher):
 
     signals = ["change"]
 
+    label = None
     empty_label = u"\N{EMPTY SET}"
     margin = 0
 
     def __init__(
             self,
-            items=None,
-            default=None,
-            label=None, border=False, scrollbar = False,
+            items = None,
+            label = None,
+            default = None,
+            border = False, scrollbar = False,
             margin = None,
             left_chars = None, right_chars = None,
             left_chars_top = None, right_chars_top = None,
@@ -430,9 +432,10 @@ class Dropdown(urwid.PopUpLauncher):
         # raise Exception(self.KEYMAP_SCOPE)
         if items is not None:
             self._items = items
-
+        if label is not None:
+            self.label = label
         self.default = default
-        self.label = label
+
         self.border = border
         self.scrollbar = scrollbar
         self.auto_complete = auto_complete
@@ -484,7 +487,7 @@ class Dropdown(urwid.PopUpLauncher):
             lambda button: self.close_pop_up()
         )
 
-        if self.default:
+        if self.default is not None:
             try:
                 self.select_value(self.default)
             except StopIteration:
