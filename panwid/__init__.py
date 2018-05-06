@@ -9,7 +9,7 @@ from .dropdown import *
 from . import keymap
 from .keymap import *
 
-__version__ = "0.2.4"
+__version__ = "0.2.5.dev0"
 
 __all__ = (
     listbox.__all__
