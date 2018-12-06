@@ -65,9 +65,11 @@ class DropdownItem(urwid.WidgetWrap):
             self.label_text,
             left_chars=left_chars, right_chars=right_chars
         )
-        # self.padding = urwid.Padding(self.button, width=("relative", 100),
-        #                              left=self.margin, right=self.margin)
-        self.padding = self.button
+        self.padding = urwid.Padding(self.button, width=("relative", 100),
+                                     left=self.margin, right=self.margin)
+        # self.padding = self.button
+
+
         self.attr = urwid.AttrMap(self.padding, {None: "dropdown_text"})
         self.attr.set_focus_map({
             None: "dropdown_focused",
