@@ -159,7 +159,7 @@ class DataTableBodyRow(DataTableRow):
     def __init__(self, table, data, *args, **kwargs):
 
         if isinstance(data, list):
-            data = dict(list(zip([c.name for c in table.columns], data)))
+            data = AttrDict(list(zip([c.name for c in table.columns], data)))
         self.data = AttrDict(
             (k, v(data) if callable(v) else v)
             for k, v in list(data.items())

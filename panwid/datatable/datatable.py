@@ -616,7 +616,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except IndexError:
             logger.debug(traceback.format_exc())
 
-        return self.df.get_columns(index, as_dict=True)
+        return AttrDict(self.df.get_columns(index, as_dict=True))
 
     def get_row(self, index):
         try:
