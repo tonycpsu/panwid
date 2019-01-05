@@ -17,7 +17,7 @@ class PopUpMixin(object):
         self._w.original_widget = overlay
         self.popup_visible = True
 
-    def close_popup(self):
+    def close_popup(self, source):
         self._w.original_widget = self.view
         self.popup_visible = False
 
@@ -101,7 +101,7 @@ class BaseView(urwid.WidgetWrap):
         self._w.original_widget = overlay
         self.popup_visible = True
 
-    def close_popup(self):
+    def close_popup(self, source=None):
         self._w.original_widget = self.view
         self.popup_visible = False
 
