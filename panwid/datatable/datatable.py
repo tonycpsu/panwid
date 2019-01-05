@@ -124,7 +124,7 @@ class DataTableColumn(object):
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
-    signals = ["select", "refresh", "focus",
+    signals = ["select", "refresh", "focus", "blur",
                # "focus", "unfocus", "row_focus", "row_unfocus",
                "drag_start", "drag_continue", "drag_stop"]
 
@@ -548,6 +548,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def set_focus(self, position):
         # logger.debug("walker set_focus: %d" %(position))
+        self._emit("blur", self._focus)
         self._focus = position
         self._emit("focus", position)
         self._modified()
