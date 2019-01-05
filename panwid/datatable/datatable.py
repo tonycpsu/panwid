@@ -124,7 +124,7 @@ class DataTableColumn(object):
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
-    signals = ["select", "refresh",
+    signals = ["select", "refresh", "focus",
                # "focus", "unfocus", "row_focus", "row_unfocus",
                "drag_start", "drag_continue", "drag_stop"]
 
@@ -544,6 +544,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def set_focus(self, position):
         # logger.debug("walker set_focus: %d" %(position))
         self._focus = position
+        self._emit("focus", position)
         self._modified()
 
     def _modified(self):
@@ -966,7 +967,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def load_more(self):
         offset = self.page*self.limit
-        if offset >= self.row_count():# or offset >= len(self):
+        if self.row_count() is not None and offset >= self.row_count():
             return
         logger.info("load_more: page: %s, offset: %s, len: %s" %(self.page, offset, self.row_count()))
         self.requery(offset)
