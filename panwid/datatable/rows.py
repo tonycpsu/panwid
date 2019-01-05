@@ -218,15 +218,21 @@ class DataTableBodyRow(DataTableRow):
     def set_attr(self, attr):
         attr_map = self.attrmap.get_attr_map()
         attr_map[self.ATTR] = attr
-        attr_map[self.attr_highlight] = "%s highlight focused" %(attr)
+        if self.cell_selection:
+            attr_map[self.attr_highlight] = "%s highlight focused" %(attr)
+        else:
+            attr_map[self.attr_highlight] = "%s highlight" %(attr)
         self.attrmap.set_attr_map(attr_map)
 
         focus_map = self.attrmap.get_focus_map()
         focus_map[self.ATTR] = "%s focused" %(attr)
-        focus_map[self.attr_focused] = "%s column_focused" %(attr)
         focus_map[self.attr_highlight] = "%s highlight focused" %(attr)
-        focus_map[self.attr_highlight_focused] = "%s highlight column_focused" %(attr)
-        # focus_map[self.attr_highlight_focused] = attr
+        if self.cell_selection:
+            focus_map[self.attr_focused] = "%s column_focused" %(attr)
+            focus_map[self.attr_highlight_focused] = "%s highlight column_focused" %(attr)
+        else:
+            focus_map[self.attr_focused] = "%s focused" %(attr)
+            focus_map[self.attr_highlight_focused] = "%s highlight focused" %(attr)
         self.attrmap.set_focus_map(focus_map)
 
     def clear_attr(self, attr):
