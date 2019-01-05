@@ -297,17 +297,27 @@ def main():
             ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
         ]))
 
+    def row_attr_fn(row):
+        if row.baz and "R" in row.baz:
+            return "red"
+        elif row.baz and "G" in row.baz:
+            return "green"
+        elif row.baz and "B" in row.baz:
+            return "blue"
+        return None
 
     boxes = [
 
 
         ExampleDataTableBox(
-            10,
+            100,
             index="uniqueid",
             detail_fn=detail_fn,
             detail_column="bar",
             cell_selection=True,
-            sort_refocus = True
+            sort_refocus = True,
+            row_attr_fn = row_attr_fn
+
         ),
         ExampleDataTableBox(
             1000,

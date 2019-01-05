@@ -132,6 +132,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     columns = []
 
+    data = None
+
     limit = None
     index = "index"
 
@@ -148,8 +150,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
 
-    data = None
+
+    detail_fn = None
+    detail_column = None
+    auto_expand_details = False
     ui_sort = True
+    row_attr_fn = None
 
     attr_map = {}
     focus_map = {}
@@ -157,10 +163,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     highlight_map = {}
     highlight_focus_map = {}
     highlight_focus_map2 = {}
-
-    detail_fn = None
-    detail_column = None
-    auto_expand_details = False
 
     def __init__(self,
                  columns = None,
@@ -174,7 +176,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  border = None, padding = None,
                  detail_fn = None, detail_column = None,
                  auto_expand_details = False,
-                 ui_sort = None):
+                 ui_sort = None,
+                 row_attr_fn = None):
 
         self._focus = 0
         if columns is not None: self.columns = columns
@@ -217,6 +220,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if padding is not None: self.padding = padding
 
         if ui_sort is not None: self.ui_sort = ui_sort
+
+        if row_attr_fn is not None: self.row_attr_fn = row_attr_fn
 
         if detail_fn is not None: self.detail_fn = detail_fn
         if detail_column is not None: self.detail_column = detail_column
@@ -630,6 +635,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             # vals = self[index]
             vals = self.get_dataframe_row(index)
             row = self.render_item(vals)
+            if self.row_attr_fn:
+                attr = self.row_attr_fn(vals)
+                if attr:
+                    row.set_attr(attr)
             focus = self.df.get(index, "_focus_position")
             if focus is not None:
                 row.set_focus_column(focus)
