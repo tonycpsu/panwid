@@ -237,10 +237,14 @@ class DataTableBodyRow(DataTableRow):
 
     def clear_attr(self, attr):
         attr_map = self.attrmap.get_attr_map()
-        if self.ATTR in attr_map:
-            del attr_map[self.ATTR]
+        for a in [self.ATTR, self.attr_highlight]:
+            if a in attr_map:
+                del attr_map[a]
         self.attrmap.set_attr_map(attr_map)
         focus_map = self.attrmap.get_focus_map()
+        for a in [self.attr_focused, self.attr_highlight_focused]:
+            if a in focus_map:
+                del focus_map[a]
         focus_map[self.ATTR] = "%s focused" %(self.ATTR)
         self.attrmap.set_focus_map(focus_map)
 
