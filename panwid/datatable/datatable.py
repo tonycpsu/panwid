@@ -651,6 +651,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         index = self.position_to_index(self.filtered_rows[position])
         return self.get_row(index)
 
+    def set_value(self, row, column, value):
+        self.df.set(self.position_to_index(row), column, value)
+
     @property
     def selection(self):
         if len(self.body) and self.focus_position is not None:
