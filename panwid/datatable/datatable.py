@@ -625,7 +625,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except IndexError:
             logger.debug(traceback.format_exc())
 
-        return AttrDict(self.df.get_columns(index, as_dict=True))
+        d = self.df.get_columns(index, as_dict=True)
+        cls = d.get("_cls")
+        if cls:
+            return cls(**d)
+        else:
+            return AttrDict(**d)
 
     def get_row(self, index):
         try:
@@ -817,6 +822,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def append_rows(self, rows):
         # logger.info("append_rows: %s" %([row[self.index] for row in rows]))
+        for row in rows:
+            row["_cls"] = type(row)
         self.df.append_rows(rows)
         self.df["_focus_position"] = self.sort_column
         self.invalidate()
