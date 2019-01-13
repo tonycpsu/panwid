@@ -317,7 +317,8 @@ def main():
             detail_column="bar",
             cell_selection=True,
             sort_refocus = True,
-            row_attr_fn = row_attr_fn
+            row_attr_fn = row_attr_fn,
+            no_load_on_init = True
 
         ),
         ExampleDataTableBox(
