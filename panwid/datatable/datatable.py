@@ -605,7 +605,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     @focus_position.setter
     def focus_position(self, value):
-        self._focus = value
+        self.set_focus(value)
         # self.listbox.focus_position = value
         self.listbox._invalidate()
 
