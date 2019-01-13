@@ -6,6 +6,7 @@ import urwid
 from panwid.datatable import *
 from panwid.listbox import ScrollingListBox
 from urwid_utils.palette import *
+from orderedattrdict import AttrDict
 import os
 import random
 import string
@@ -97,7 +98,7 @@ def main():
             random.shuffle(self.query_data)
 
         def random_row(self, uniqueid):
-            return dict(uniqueid=uniqueid,
+            return AttrDict(uniqueid=uniqueid,
                         foo=random.choice(list(range(100)) + [None]*20),
                         bar = (random.uniform(0, 1000)
                                if random.randint(0, 5)
