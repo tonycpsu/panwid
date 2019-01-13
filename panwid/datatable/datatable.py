@@ -146,7 +146,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     query_sort = False
     sort_icons = True
     sort_refocus = False
-    no_load_on_init = False
+    no_load_on_init = None
 
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
@@ -174,7 +174,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  cell_selection = None,
                  sort_by = None, query_sort = None, sort_icons = None,
                  sort_refocus = None,
-                 no_load_on_init=False,
+                 no_load_on_init = None,
                  border = None, padding = None,
                  detail_fn = None, detail_column = None,
                  auto_expand_details = False,
@@ -317,8 +317,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not self.no_load_on_init:
             self.reset()
 
-        if self.sort_by:
-            self.sort_by_column(self.sort_by)
+            if self.sort_by:
+                self.sort_by_column(self.sort_by)
 
 
         self.attr = urwid.AttrMap(
