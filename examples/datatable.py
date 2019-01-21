@@ -82,12 +82,22 @@ def main():
 
         index="index"
 
-        def __init__(self, num_rows = 10, *args, **kwargs):
+        def __init__(self, num_rows = 10, random=False, *args, **kwargs):
             self.num_rows = num_rows
             # indexes = random.sample(range(self.num_rows*2), num_rows)
-            self.randomize_query_data()
+            if random:
+                self.randomize_query_data()
+            else:
+                self.fixed_query_data()
+
             self.last_rec = len(self.query_data)
             super(ExampleDataTable, self).__init__(*args, **kwargs)
+
+        def fixed_query_data(self):
+            self.query_data = [
+                self.fixed_row(i) for i in range(self.num_rows)
+                # self.random_row(i) for i in range(self.num_rows)
+            ]
 
         def randomize_query_data(self):
             indexes = list(range(self.num_rows))
@@ -96,6 +106,32 @@ def main():
                 # self.random_row(i) for i in range(self.num_rows)
             ]
             random.shuffle(self.query_data)
+
+        def fixed_row(self, uniqueid):
+            return AttrDict(uniqueid=uniqueid,
+                        foo=uniqueid,
+                        bar = (random.uniform(0, 1000)
+                               if random.randint(0, 5)
+                               else None),
+                        baz =(''.join(random.choice(
+                            string.ascii_uppercase
+                            + string.ascii_lowercase
+                            + string.digits + ' ' * 10
+                        ) for _ in range(random.randint(5, 20)))
+                              if random.randint(0, 5)
+                              else None),
+                        qux = urwid.Text([("red", "1"),("green", "2"), ("blue", "3")]),
+                        xyzzy = ( "%0.1f" %(random.uniform(0, 100))
+                               if random.randint(0, 5)
+                               else None),
+                        baz_len = lambda r: len(r["baz"]) if r.get("baz") else 0,
+                        # xyzzy = random.randint(10, 100),
+                        empty = None,
+                        a = dict(b=dict(c=random.randint(0, 100))),
+                        d = dict(e=dict(f=random.randint(0, 100))),
+                        color = ["red", "green", "blue"][random.randrange(3)],
+            )
+
 
         def random_row(self, uniqueid):
             return AttrDict(uniqueid=uniqueid,
@@ -163,16 +199,18 @@ def main():
 
 
         def keypress(self, size, key):
-            if key == "meta r":
+            if key == "r":
+                self.refresh()
+            elif key == "meta r":
                 self.randomize_query_data()
                 self.reset(reset_sort=True)
-            if key == "ctrl r":
+            elif key == "ctrl r":
                 self.reset(reset_sort=True)
-            if key == "ctrl d":
+            elif key == "ctrl d":
                 self.log_dump(20)
-            if key == "meta d":
+            elif key == "meta d":
                 self.log_dump(20, columns=["foo", "baz"])
-            if key == "ctrl f":
+            elif key == "ctrl f":
                 self.focus_position = 0
             elif key == "ctrl t":
                 # logger.info(self.get_row(0)[0])
@@ -212,8 +250,6 @@ def main():
                         ) for _ in range(5)) for _ in range(len(self)) ]
                 col = DataTableColumn(name, label=name, width=6, padding=0)
                 self.add_columns(col, data=data)
-            elif key == "r":
-                self.set_columns(COLUMNS)
             elif key == "t":
                 self.toggle_columns("qux")
             elif key == "T":
@@ -312,13 +348,14 @@ def main():
 
         ExampleDataTableBox(
             100,
+            limit=10,
             index="uniqueid",
             detail_fn=detail_fn,
             detail_column="bar",
             cell_selection=True,
             sort_refocus = True,
             row_attr_fn = row_attr_fn,
-            no_load_on_init = True
+            # no_load_on_init = True
 
         ),
         ExampleDataTableBox(

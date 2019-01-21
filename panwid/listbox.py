@@ -17,6 +17,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         scroll_marker_height = 1
         del self.pile.contents[:]
         if (len(self.parent.body)
+            and self.parent.row_count
             and self.parent.focus is not None
             and self.parent.row_count > height):
             scroll_position = int(
@@ -251,12 +252,12 @@ class ScrollingListBox(urwid.WidgetWrap):
             self.load_more = False
             self.page += 1
             # old_len = len(self.body)
-            urwid.signals.emit_signal(
-                self, "load_more")
             try:
                 focus = self.focus_position
             except IndexError:
                 focus = None
+            urwid.signals.emit_signal(
+                self, "load_more", focus)
             if (self.queued_keypress
                 and focus
                 and focus < len(self.body)
