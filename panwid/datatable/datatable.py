@@ -983,10 +983,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             return None
 
         if self.limit:
-            if self.page*self.limit >= self.query_result_count():
-                return len(self.filtered_rows)
-            else:
-                return self.query_result_count()
+            # if self.page*self.limit >= self.query_result_count():
+            #     return len(self.filtered_rows)
+            # else:
+            return self.query_result_count()
         else:
             return len(self)
 
@@ -1031,11 +1031,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def load_more(self, position):
 
-        logger.info("load_more")
+        # logger.info("load_more")
+        if position is not None and position > len(self):
+            return False
         self.page = len(self) // self.limit
         offset = (self.page)*self.limit
+        # logger.info(f"offset: {offset}, row count: {self.row_count()}")
         if (self.row_count() is not None
-            and offset >= self.row_count()):
+            and len(self) >= self.row_count()):
+            # and offset >= self.row_count()):
             return False
         # self.page += 1
         # self.page = (len(self) // self.limit) #(offset // limit) + 1
@@ -1049,7 +1053,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # )
         # pos = self.focus_position
         # logger.info(f"{pos}, {len(self)}")
-        self.requery(offset=offset)
+        try:
+            self.requery(offset=offset)
+        except Exception as e:
+            raise Exception(f"{position}, {len(self)}, {self.row_count()}, {offset}, {self.limit}, {e}")
+        # except:
+        #     raise Exception(f"offset: {offset}, limit: {self.limit}, row count: {self.row_count()}")
         # logger.info(f"{pos}, {len(self)}")
         # self.focus_position = pos
         # self.focus_position = 0
@@ -1066,8 +1075,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     # offset = None, limit = n: load from 0 limit
 
     def requery(self, offset=None, limit=None, load_all=False, **kwargs):
-        logger.info(f"requery: {offset}, {limit}")
-        if offset is not None and self.limit:
+        # logger.info(f"requery: {offset}, {limit}")
+        if (offset is not None) and self.limit:
             self.page = offset // self.limit
             offset = self.page*self.limit
             limit = self.limit
@@ -1079,7 +1088,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             limit = (self.page) * self.limit
             offset = 0
             # limit = limit
-        logger.info(f"requery: {offset}, {limit}, {self.page}")
+        # logger.info(f"requery: {offset}, {limit}, {self.page}")
         # self.page += 1
 
         # logger.info("requery")
@@ -1093,13 +1102,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["offset"] = offset
             kwargs["limit"] = limit
 
-        logger.info(f"requery: {kwargs}")
-        # pos = self.focus_position
         if self.data:
             rows = self.data
         else:
             rows = list(self.query(**kwargs))
-        self.append_rows(rows)
+        try:
+            self.append_rows(rows)
+        except:
+            raise Exception(kwargs, rows)
         self.refresh_calculated_fields()
         self.apply_filters()
         # if pos < len(self):
@@ -1116,30 +1126,24 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             offset = 0
             limit = self.limit
         else:
-            if self.selection:
+            try:
                 idx = getattr(self.selection.data, self.index)
+            except (AttributeError, IndexError):
+                pass
             pos = self.focus_position
             limit = len(self)
         del self[:]
-        # self.focus_position = 0
-        # self.page = 0
-        # self.df.clear()
-        # del self[:]
-        logger.info(f"refresh: {limit}")
         self.requery(offset=offset, limit=limit)
         if idx:
             try:
-                logger.info(f"idx: {idx}")
                 pos = self.index_to_position(idx)
             except:
                 pass
-        logger.info(f"pos: {pos}")
         self.focus_position = pos
         # self.focus_position = 0
 
 
     def reset(self, reset_sort=False):
-        logger.info("reset")
         self.refresh(reset=True)
         # self.clear_filters()
         # self.apply_filters()
