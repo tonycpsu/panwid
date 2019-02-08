@@ -8,6 +8,8 @@ from . import dropdown
 from .dropdown import *
 from . import keymap
 from .keymap import *
+from . import tabview
+from .tabview import *
 
 __version__ = "0.2.6.dev0"
 
@@ -17,4 +19,5 @@ __all__ = (
     + dialog.__all__
     + dropdown.__all__
     + keymap.__all__
+    + tabview.__all__
 )
