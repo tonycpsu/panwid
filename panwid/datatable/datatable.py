@@ -243,12 +243,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             columns = self.column_names,
             use_blist=True,
             sort=False,
+            index_name = self.index or None
             # sorted=True,
         )
-        if self.index:
-            kwargs["index_name"] = self.index
+        # if self.index:
+        #     kwargs["index_name"] = self.index
 
-        self.df = DataTableDataFrame(**kwargs)
+        # self.df = DataTableDataFrame(**kwargs)
+        self.df = DataTableDataFrame(
+            columns = self.column_names,
+            use_blist=True,
+            sort=False,
+            index_name = self.index or None
+        )
 
         self.pile = urwid.Pile([])
         self.listbox = ScrollingListBox(
@@ -819,14 +826,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.df.sort_index()
         self._modified()
 
-    def append_rows(self, rows):
-        # logger.info("append_rows: %s" %([row[self.index] for row in rows]))
-        for row in rows:
-            row["_cls"] = type(row)
-        self.df.append_rows(rows)
-        self.df["_focus_position"] = self.sort_column
-        self.invalidate()
-        self._modified()
+    # def append_rows(self, rows):
+    #     # logger.info("append_rows: %s" %([row[self.index] for row in rows]))
+    #     for row in rows:
+    #         row["_cls"] = type(row)
+    #     self.df.append_rows(rows)
+    #     self.df["_focus_position"] = self.sort_column
+    #     self.invalidate()
+    #     self._modified()
 
     def add_columns(self, columns, data=None):
 
@@ -1087,6 +1094,17 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.page = (limit // self.limit)
             limit = (self.page) * self.limit
             offset = 0
+
+        if offset:
+            df = self.df
+        else:
+            df = DataTableDataFrame(
+                columns = self.column_names,
+                use_blist=True,
+                sort=False,
+                index_name = self.index or None
+            )
+            # del self[:]
             # limit = limit
         # logger.info(f"requery: {offset}, {limit}, {self.page}")
         # self.page += 1
@@ -1106,10 +1124,21 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             rows = self.data
         else:
             rows = list(self.query(**kwargs))
-        try:
-            self.append_rows(rows)
-        except:
-            raise Exception(kwargs, rows)
+
+        for row in rows:
+            row["_cls"] = type(row)
+        df.append_rows(rows)
+        df["_focus_position"] = self.sort_column
+        if not offset:
+            self.df = df
+
+        self.invalidate()
+        self._modified()
+        # try:
+        #     self.append_rows(rows)
+        # except:
+        #     logger.error(f"{kwargs}, {rows}")
+        #     raise
         self.refresh_calculated_fields()
         self.apply_filters()
         # if pos < len(self):
@@ -1132,7 +1161,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 pass
             pos = self.focus_position
             limit = len(self)
-        del self[:]
+        # del self[:]
         self.requery(offset=offset, limit=limit)
         if idx:
             try:
