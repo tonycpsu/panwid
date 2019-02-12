@@ -48,7 +48,7 @@ def main():
 
 
     attr_entries = {}
-    for attr in ["dark red", "dark green", "dark blue"]:
+    for attr in ["dark red", "dark green", "dark blue", "dark cyan"]:
         attr_entries[attr.split()[1]] = PaletteEntry(
             mono = "white",
             foreground = attr,
@@ -56,8 +56,8 @@ def main():
         )
     entries = ScrollingListBox.get_palette_entries()
     entries.update(DataTable.get_palette_entries(user_entries=attr_entries))
+    # entries.update(attr_entries)
     palette = Palette("default", **entries)
-
 
 
     COLUMNS = [
@@ -67,6 +67,8 @@ def main():
                         attr="color", padding=0,
                         footer_fn = lambda column, values: sum(v for v in values if v is not None)),
         DataTableColumn("bar", label="Bar", width=10, align="right",
+                        format_fn = lambda v: round(v, 2) if v is not None else v,
+                        decoration_fn = lambda v: ("cyan", v),
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
         DataTableColumn("baz", label="Baz!", width=("weight", 1)),
         DataTableColumn(
@@ -214,7 +216,7 @@ def main():
                 self.focus_position = 0
             elif key == "ctrl t":
                 # logger.info(self.get_row(0)[0])
-                logger.info(self.selection.data["bar"])
+                logger.info(f"{self.selection.data['bar']}, {self.selection['bar']}")
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
                                                     self.selection.get("baz")))
@@ -295,6 +297,15 @@ def main():
                     self.focus_position += 1
             else:
                 return super(ExampleDataTable, self).keypress(size, key)
+
+        def decorate(self, row, column, value):
+            if column.name == "baz":
+                return urwid.Columns([
+                    (1, urwid.Text("[")),
+                    ("weight", 1, urwid.Text(value)),
+                    (1, urwid.Text("]")),
+                ])
+            return super().decorate(row, column, value)
 
     class ExampleDataTableBox(urwid.WidgetWrap):
 

@@ -146,7 +146,11 @@ class DataTableBodyCell(DataTableCell):
     PADDING_ATTR = "table_row_body_padding"
 
     def update_contents(self):
-        self.contents = self._format(self.value)
+        self.contents = self.table.decorate(
+            self.row,
+            self.column,
+            self._format(self.value)
+        )
 
 
 class DataTableHeaderCell(DataTableCell):
@@ -233,6 +237,10 @@ class DataTableFooterCell(DataTableCell):
                 footer_arg = self.table.df
             else:
                 raise Exception
-            self.contents = self._format(self.column.footer_fn(self.column, footer_arg))
+            self.contents = self.table.decorate(
+                self.row,
+                self.column,
+                self._format(self.column.footer_fn(self.column, footer_arg))
+            )
         else:
             self.contents = urwid.Text("")

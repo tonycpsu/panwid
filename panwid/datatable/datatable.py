@@ -40,6 +40,7 @@ class DataTableColumn(object):
                  padding = DEFAULT_CELL_PADDING, #margin=1,
                  hide=False,
                  format_fn=None,
+                 decoration_fn=None,
                  format_record = None, # format_fn is passed full row data
                  attr = None,
                  sort_key = None, sort_reverse=False,
@@ -61,6 +62,7 @@ class DataTableColumn(object):
         self.padding = padding
         self.hide = hide
         self.format_fn = format_fn
+        self.decoration_fn = decoration_fn
         self.format_record = format_record
         self.attr = attr
         self.sort_key = sort_key
@@ -114,10 +116,6 @@ class DataTableColumn(object):
             v = v.strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(v, datetype):
             v = v.strftime("%Y-%m-%d")
-
-        if not isinstance(v, urwid.Widget):
-            v = str(v)
-            v = urwid.Text(v, align=self.align, wrap=self.wrap)
         return v
 
 
@@ -621,6 +619,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # elif attr == "body":
         #     return self.walker
         # raise AttributeError(attr)
+
+    def decorate(self, row, column, value):
+        if column.decoration_fn:
+            value = column.decoration_fn(value)
+        if not isinstance(value, urwid.Widget):
+            value = urwid.Text(value, align=column.align, wrap=column.wrap)
+        return value
 
     @property
     def column_names(self):
