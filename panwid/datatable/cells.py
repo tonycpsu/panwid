@@ -12,14 +12,20 @@ class DataTableCell(urwid.WidgetWrap):
     ATTR = "table_cell"
     PADDING_ATTR = "table_row_padding"
 
-    def __init__(self, table, column,
-                 value=None, value_attr=None,
+    def __init__(self, table, column, row,
+                 value_attr=None,
                  cell_selection=False,
                  padding=0,
                  *args, **kwargs):
 
 
         self.table = table
+        self.column = column
+        self.row = row
+
+        self.value_attr = value_attr
+        self.cell_selection = cell_selection
+
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
         self.attr_column_focused = "%s column_focused" %(self.attr)
@@ -27,10 +33,6 @@ class DataTableCell(urwid.WidgetWrap):
         self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
         self.attr_highlight_column_focused = "%s column_focused" %(self.attr_highlight)
 
-        self.column = column
-        self.value = value
-        self.value_attr = value_attr
-        self.cell_selection = cell_selection
 
         if column.padding:
             self.padding = column.padding
@@ -63,6 +65,10 @@ class DataTableCell(urwid.WidgetWrap):
             focus_map = self.normal_focus_map
         )
         super(DataTableCell, self).__init__(self.attrmap)
+
+    @property
+    def value(self):
+        return self.row[self.column.name]
 
     def update_contents(self):
         pass
@@ -227,7 +233,6 @@ class DataTableFooterCell(DataTableCell):
                 footer_arg = self.table.df
             else:
                 raise Exception
-            self.value = self.column.footer_fn(self.column, footer_arg)
-            self.contents = self._format(self.value)
+            self.contents = self._format(self.column.footer_fn(self.column, footer_arg))
         else:
             self.contents = urwid.Text("")
