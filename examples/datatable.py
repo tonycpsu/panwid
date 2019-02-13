@@ -70,13 +70,26 @@ def main():
                         format_fn = lambda v: round(v, 2) if v is not None else v,
                         decoration_fn = lambda v: ("cyan", v),
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
-        DataTableColumn("baz", label="Baz!", width=("weight", 1)),
+        DataTableColumn("baz", label="Baz!", width=("weight", 1), truncate=True),
         DataTableColumn(
             "qux",
             label=urwid.Text([("red", "q"), ("green", "u"), ("blue", "x")]),
             width=5, hide=True),
         # DataTableColumn("empty", label="empty", width=5),
     ]
+
+    class BazColumns(urwid.WidgetWrap):
+        def __init__(self, value):
+            self.text = DataTableText(value)
+            super().__init__(urwid.Columns([
+                (1, urwid.Text("[")),
+                ("weight", 1, self.text),
+                (1, urwid.Text("]")),
+            ]))
+
+        def truncate(self, width, end_char=None):
+            self.text.truncate(width-2, end_char=end_char)
+
 
     class ExampleDataTable(DataTable):
 
@@ -119,7 +132,7 @@ def main():
                             string.ascii_uppercase
                             + string.ascii_lowercase
                             + string.digits + ' ' * 10
-                        ) for _ in range(random.randint(5, 20)))
+                        ) for _ in range(random.randint(5, 80)))
                               if random.randint(0, 5)
                               else None),
                         qux = urwid.Text([("red", "1"),("green", "2"), ("blue", "3")]),
@@ -145,7 +158,7 @@ def main():
                             string.ascii_uppercase
                             + string.ascii_lowercase
                             + string.digits + ' ' * 10
-                        ) for _ in range(random.randint(5, 20)))
+                        ) for _ in range(random.randint(5, 80)))
                               if random.randint(0, 5)
                               else None),
                         qux = urwid.Text([("red", "1"),("green", "2"), ("blue", "3")]),
@@ -300,11 +313,7 @@ def main():
 
         def decorate(self, row, column, value):
             if column.name == "baz":
-                return urwid.Columns([
-                    (1, urwid.Text("[")),
-                    ("weight", 1, urwid.Text(value)),
-                    (1, urwid.Text("]")),
-                ])
+                return BazColumns(value)
             return super().decorate(row, column, value)
 
     class ExampleDataTableBox(urwid.WidgetWrap):

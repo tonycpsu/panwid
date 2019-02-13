@@ -1,6 +1,8 @@
 import logging
 logger = logging.getLogger("panwid.datatable")
 
+from .common import *
+
 import urwid
 
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
@@ -32,7 +34,7 @@ class DataTableCell(urwid.WidgetWrap):
         self.attr_highlight = "%s highlight" %(self.attr)
         self.attr_highlight_focused = "%s focused" %(self.attr_highlight)
         self.attr_highlight_column_focused = "%s column_focused" %(self.attr_highlight)
-
+        self.width = None
 
         if column.padding:
             self.padding = column.padding
@@ -41,7 +43,7 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.update_contents()
 
-        self.padding = urwid.Padding(
+        self.padding_widget = urwid.Padding(
             self.contents,
             left=self.padding,
             right=self.padding
@@ -60,7 +62,7 @@ class DataTableCell(urwid.WidgetWrap):
         self.highlight_focus_map.update(self.table.highlight_focus_map)
 
         self.attrmap = urwid.AttrMap(
-            self.padding,
+            self.padding_widget,
             attr_map = self.normal_attr_map,
             focus_map = self.normal_focus_map
         )
@@ -69,6 +71,20 @@ class DataTableCell(urwid.WidgetWrap):
     @property
     def value(self):
         return self.row[self.column.name]
+
+    @value.setter
+    def value(self, value):
+        self.table.df[self.row.index, self.column.name] = value
+
+    @property
+    def formatted_value(self):
+        v = self._format(self.value
+                       if not self.column.format_record
+                       else self.table.get_dataframe_row(self.row.index))
+        if not self.width:
+            return v
+        raise Exception(self.width)
+        return v[:self.width-3]
 
     def update_contents(self):
         pass
@@ -141,6 +157,25 @@ class DataTableCell(urwid.WidgetWrap):
         # focus_map[None] = self.attr_focused
         self.attrmap.set_focus_map(focus_map)
 
+    def render(self, size, focus=False):
+        (maxcol,) = size
+        self.width = size[0]
+        contents_rows = self.contents.rows((maxcol,), focus)
+        if (self.column.truncate
+            and isinstance(self.contents, urwid.Widget)
+            and hasattr(self.contents, "truncate")
+        ):
+            self.contents.truncate(
+                self.width - (self.padding*2), end_char=self.column.truncate
+            )
+        return super().render((maxcol,), focus)
+
+    def rows(self, size, focus=False):
+        if self.column.truncate:
+            return 1
+        return super().rows(size, focus)
+
+
 class DataTableBodyCell(DataTableCell):
     ATTR = "table_row_body"
     PADDING_ATTR = "table_row_body_padding"
@@ -149,7 +184,7 @@ class DataTableBodyCell(DataTableCell):
         self.contents = self.table.decorate(
             self.row,
             self.column,
-            self._format(self.value)
+            self.formatted_value
         )
 
 
@@ -170,18 +205,18 @@ class DataTableHeaderCell(DataTableCell):
              self.column.label
              if isinstance(self.column.label, urwid.Widget)
              else
-             urwid.Text(self.column.label, align=self.column.align)
+             DataTableText(self.column.label, align=self.column.align)
             )
         ])
 
         if self.sort_icon:
             if self.column.align == "right":
                 self.columns.contents.insert(0,
-                    (urwid.Text(""), self.columns.options("given", 1))
+                    (DataTableText(""), self.columns.options("given", 1))
                 )
             else:
                 self.columns.contents.append(
-                    (urwid.Text(""), self.columns.options("given", 1))
+                    (DataTableText(""), self.columns.options("given", 1))
                 )
         self.contents = self.columns
         self.update_sort(self.table.sort_by)
@@ -243,4 +278,4 @@ class DataTableFooterCell(DataTableCell):
                 self._format(self.column.footer_fn(self.column, footer_arg))
             )
         else:
-            self.contents = urwid.Text("")
+            self.contents = DataTableText("")

@@ -12,6 +12,7 @@ from blist import blist
 
 from .dataframe import *
 from .rows import *
+from .common import *
 
 class NoSuchColumnException(Exception):
     pass
@@ -29,7 +30,6 @@ def make_value_function(template):
 
     return inner
 
-
 class DataTableColumn(object):
 
     def __init__(self, name,
@@ -38,6 +38,7 @@ class DataTableColumn(object):
                  width=('weight', 1),
                  align="left", wrap="space",
                  padding = DEFAULT_CELL_PADDING, #margin=1,
+                 truncate=False,
                  hide=False,
                  format_fn=None,
                  decoration_fn=None,
@@ -60,6 +61,7 @@ class DataTableColumn(object):
         self.align = align
         self.wrap = wrap
         self.padding = padding
+        self.truncate = truncate
         self.hide = hide
         self.format_fn = format_fn
         self.decoration_fn = decoration_fn
@@ -624,7 +626,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if column.decoration_fn:
             value = column.decoration_fn(value)
         if not isinstance(value, urwid.Widget):
-            value = urwid.Text(value, align=column.align, wrap=column.wrap)
+            value = DataTableText(value, align=column.align, wrap=column.wrap)
         return value
 
     @property
