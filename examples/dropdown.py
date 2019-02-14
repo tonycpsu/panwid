@@ -19,6 +19,8 @@ class TestDropdown(KeymapMovementMixin, Dropdown):
             "j": "down",
             "page up": "page up",
             "page down": "page down",
+            "ctrl up": ("cycle", [-1]),
+            "ctrl down": ("cycle", [1]),
             "home": "home",
             "end": "end",
             "/": "complete prefix",

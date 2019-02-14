@@ -185,7 +185,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
             left_chars_top=None,
             rigth_chars_top=None,
             max_height=10,
-            # keymap = {}
+            keymap = {}
     ):
         self.drop_down = drop_down
         self.items = items
@@ -428,10 +428,9 @@ class Dropdown(urwid.PopUpLauncher):
             left_chars = None, right_chars = None,
             left_chars_top = None, right_chars_top = None,
             auto_complete = False,
-            keymap = {}
+            # keymap = {}
     ):
 
-        # raise Exception(self.KEYMAP_SCOPE)
         if items is not None:
             self._items = items
         if label is not None:
@@ -681,6 +680,10 @@ class Dropdown(urwid.PopUpLauncher):
     def selected_value(self):
         return self.selection.value
 
+    def cycle_prev(self):
+        self.cycle(-1)
+
+    @keymap_command("cycle")
     def cycle(self, n):
         pos = self.focus_position + n
         if pos > len(self) - 1:
