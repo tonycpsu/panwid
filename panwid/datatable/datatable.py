@@ -626,7 +626,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if column.decoration_fn:
             value = column.decoration_fn(value)
         if not isinstance(value, urwid.Widget):
-            value = DataTableText(str(value), align=column.align, wrap=column.wrap)
+            if not isinstance(value, tuple):
+                value = str(value)
+            value = DataTableText(value, align=column.align, wrap=column.wrap)
         return value
 
     @property
