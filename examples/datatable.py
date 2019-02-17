@@ -289,6 +289,10 @@ def main():
                 logger.info(self.footer.values)
             elif key == "c":
                 self.toggle_cell_selection()
+            elif key == "z":
+                # self.columns[0].width = 12
+                self.resize_column("foo", ("given", 12))
+                # self.reset()
             elif key == "shift left":
                 self.cycle_sort_column(-1)
             elif key == "shift right":

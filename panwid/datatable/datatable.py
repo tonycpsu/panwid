@@ -904,6 +904,24 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def hide_columns(self, columns):
         self.show_column(columns, False)
 
+    def resize_column(self, name, size):
+
+        index, col = next( (i, c) for i, c in enumerate(self.columns) if c.name == name)
+        if isinstance(size, tuple):
+            col.sizing, col.width = size
+        elif isinstance(size, int):
+            col.sizing = "given"
+            col.width = size
+        else:
+            raise NotImplementedError
+        if self.with_header:
+            self.header.update()
+        for r in self:
+            r.update()
+        if self.with_footer:
+            self.footer.update()
+        #     r.resize_column(index, size)
+
     def toggle_details(self):
         self.selection.toggle_details()
 

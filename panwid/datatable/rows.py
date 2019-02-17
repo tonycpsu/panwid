@@ -84,6 +84,12 @@ class DataTableRow(urwid.WidgetWrap):
         self.cell_selection = False
         self.focus_map = self.original_focus_map
 
+    def resize_column(self, index, width):
+        # col = self.table.visible_columns[index*2]
+        (widget, options) = self.columns.contents[index*2]
+        self.columns.contents[index*2] = (widget, self.columns.options(*width))
+
+
     def update(self):
 
         self.cells = self.make_cells()
