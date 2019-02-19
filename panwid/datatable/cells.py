@@ -5,8 +5,6 @@ from .common import *
 
 import urwid
 
-intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
-
 class DataTableCell(urwid.WidgetWrap):
 
     signals = ["click", "select"]
@@ -83,8 +81,8 @@ class DataTableCell(urwid.WidgetWrap):
                        else self.table.get_dataframe_row(self.row.index))
         if not self.width:
             return v
-        raise Exception(self.width)
-        return v[:self.width-3]
+        # raise Exception(self.width)
+        return v[:self.width-self.padding*2]
 
     def update_contents(self):
         pass
@@ -189,23 +187,49 @@ class DataTableBodyCell(DataTableCell):
 
 
 class DataTableHeaderCell(DataTableCell):
+
     ATTR = "table_row_header"
     PADDING_ATTR = "table_row_header_padding"
 
     ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
     DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
 
-    # def __init__(self, table, column, sort=None, sort_icon=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        self.mouse_dragging = False
+        self.mouse_drag_start = None
+        self.mouse_drag_end = None
+        super().__init__(*args, **kwargs)
+
+    @property
+    def index(self):
+        return next(i for i, c in enumerate(self.table.visible_columns)
+                    if c.name == self.column.name)
+
+    @property
+    def contents_width(self):
+        return max([
+            (self.column.min_width
+                or
+             len(r.cells[self.index].formatted_value)
+            ) + self.padding*2
+            for r in (self.table.body)
+        ] + [self.min_width])
+
+    @property
+    def min_width(self):
+        return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)
+
     def update_contents(self):
 
+        self.label = self.column.label
         self.sort_icon = self.column.sort_icon if self.column.sort_icon else self.table.sort_icons
 
         self.columns = urwid.Columns([
             ('weight', 1,
-             self.column.label
-             if isinstance(self.column.label, urwid.Widget)
+             self.label
+             if isinstance(self.label, urwid.Widget)
              else
-             DataTableText(self.column.label, align=self.column.align)
+             DataTableText(self.label, align=self.column.align)
             )
         ])
 
@@ -242,8 +266,31 @@ class DataTableHeaderCell(DataTableCell):
         urwid.emit_signal(self, "select", self)
 
     def mouse_event(self, size, event, button, col, row, focus):
-        if event == 'mouse press':
-            urwid.emit_signal(self, "click", self)
+        if event == "mouse press":
+            logger.info("cell press")
+            if self.mouse_drag_start is None:
+                self.row.mouse_drag_source_column = col
+            self.row.mouse_drag_source = self
+            return False
+        elif event == "mouse drag":
+            logger.info("cell drag")
+            self.mouse_dragging = True
+            return False
+                # urwid.emit_signal(self, "drag_start")
+        elif event == "mouse release":
+            logger.info("cell release")
+            if self.mouse_dragging:
+                self.mouse_dragging = False
+                self.mouse_drag_start = None
+            else:
+                urwid.emit_signal(self, "select", self)
+            self.mouse_drag_source = None
+        #     self.mouse_drag_end = col
+        #     raise Exception(self.mouse_drag_start, self.mouse_drag_end)
+        #     self.mouse_drag_start = None
+        super().mouse_event(size, event, button, col, row, focus)
+
+
 
     def update_sort(self, sort):
         if not self.sort_icon: return

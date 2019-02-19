@@ -17,3 +17,6 @@ class DataTableText(urwid.Text):
         # raise Exception(len(text), max_width)
         if len(text) > max_width:
             self.set_text(text[:max_width]+end_char)
+
+    def __len__(self):
+        return len(self.get_text()[0])

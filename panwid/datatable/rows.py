@@ -14,6 +14,52 @@ DEFAULT_TABLE_BORDER = (
     DEFAULT_TABLE_BORDER_CHAR,
 )
 
+intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
+
+class DataTableColumnDivider(urwid.WidgetWrap):
+
+    signals = ["drag"]
+
+    def __init__(self, row, char, attr_map):
+        self.row = row
+        self.text = urwid.Text(char)
+        self.attrmap = urwid.AttrMap(self.text, attr_map = attr_map)
+        self.mouse_press = False
+        self.mouse_dragging = False
+        self.mouse_drag_start = None
+        self.mouse_drag_end = None
+        super().__init__(self.attrmap)
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        if event == "mouse press":
+            logger.info("divider press")
+            self.mouse_press = True
+            if self.mouse_drag_start is None:
+                self.row.mouse_drag_source_column = col
+            self.row.mouse_drag_source = self
+            return False
+        elif event == "mouse drag":
+            logger.info("divider drag")
+            if self.mouse_press:
+                self.mouse_dragging = True
+            return False
+        elif event == "mouse release":
+            logger.info("divider release")
+            self.mouse_press = False
+            if self.mouse_dragging:
+                self.row.mouse_drag_source = None
+            if self.mouse_dragging:
+                self.mouse_dragging = False
+                self.mouse_drag_start = None
+        # super().mouse_event(size, event, button, col, row, focus)
+
+def intersperse_dividers(cells, row, width, char, attr):
+    it = iter(cells)
+    yield next(it)
+    for cell in it:
+        yield (DataTableColumnDivider(row, char, attr), ('given', width, False))
+        yield cell
+
 class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, table, index=None,
@@ -26,6 +72,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.border = border
         self.padding = padding
         self.cell_selection = cell_selection
+
         self.sort = self.table.sort_by
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
@@ -121,12 +168,14 @@ class DataTableRow(urwid.WidgetWrap):
         elif isinstance(self.border, int):
             border_width = self.border
 
-        self.columns.contents = intersperse(
-            (urwid.AttrMap(urwid.Text(border_char),
-                           attr_map = border_attr_map),
-             ('given', border_width, False)),
-            self.columns.contents)
+        # self.columns.contents = intersperse(
+        #     (DataTableColumnDivider(self, border_char, border_attr_map),
+        #      ('given', border_width, False)),
+        #     self.columns.contents)
 
+        self.columns.contents = list(intersperse_dividers(
+            self.columns.contents, self, border_width, border_char, border_attr_map
+        ))
         self.pile = urwid.Pile([
             ('weight', 1, self.columns)
         ])
@@ -283,9 +332,18 @@ class DataTableBodyRow(DataTableRow):
 
 class DataTableHeaderRow(DataTableRow):
 
-    signals = ['column_click']
+    signals = ["column_click", "drag"]
 
     ATTR = "table_row_header"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mouse_press = False
+        self.mouse_dragging = False
+        self.mouse_drag_start = None
+        self.mouse_drag_end = None
+        self.mouse_drag_source = None
+        self.mouse_drag_source_column = None
 
     def make_cells(self):
         cells = [
@@ -322,6 +380,46 @@ class DataTableHeaderRow(DataTableRow):
         for c in self.cells:
             c.update_sort(sort)
 
+    def mouse_event(self, size, event, button, col, row, focus):
+
+        if not super().mouse_event(size, event, button, col, row, focus):
+            if event == "mouse press":
+                self.mouse_press = True
+                if self.mouse_drag_start is None:
+                    self.mouse_drag_start = col
+            elif event == "mouse drag":
+                if self.mouse_press:
+                    self.mouse_dragging = True
+                    # FIXME
+                    # self.mouse_drag_end = col
+                    # urwid.emit_signal(
+                    #     self,
+                    #     "drag",
+                    #     self.mouse_drag_source,
+                    #     self.mouse_drag_source_column,
+                    #     self.mouse_drag_start, self.mouse_drag_end
+                    # )
+                    # self.mouse_dragging = False
+                    # self.mouse_drag_start = None
+                    # FIXME
+            elif event == "mouse release":
+                self.mouse_press = False
+                if self.mouse_dragging:
+                    self.mouse_dragging = False
+                    self.mouse_drag_end = col
+                    # raise Exception(self.mouse_drag_start)
+                    urwid.emit_signal(
+                        self,
+                        "drag",
+                        self.mouse_drag_source,
+                        self.mouse_drag_source_column,
+                        self.mouse_drag_start, self.mouse_drag_end
+                    )
+                    # raise Exception(self.mouse_drag_source.column.name, self.mouse_drag_start, self.mouse_drag_end)
+                    self.mouse_drag_source = None
+                    self.mouse_drag_start = None
+
+
 
 class DataTableFooterRow(DataTableRow):
 
@@ -339,8 +437,3 @@ class DataTableFooterRow(DataTableRow):
 
     def selectable(self):
         return False
-
-    # def update(self):
-    #     super(DataTableFooterRow, self).update()
-    #     for c in self.cells:
-    #         c.update()

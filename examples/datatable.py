@@ -70,7 +70,8 @@ def main():
                         format_fn = lambda v: round(v, 2) if v is not None else v,
                         decoration_fn = lambda v: ("cyan", v),
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
-        DataTableColumn("baz", label="Baz!", width=("weight", 1), truncate=True),
+        DataTableColumn("baz", label="Baz!", width=("weight", 1), min_width=5,
+                        truncate=True),
         DataTableColumn(
             "qux",
             label=urwid.Text([("red", "q"), ("green", "u"), ("blue", "x")]),
@@ -228,8 +229,8 @@ def main():
             elif key == "ctrl f":
                 self.focus_position = 0
             elif key == "ctrl t":
-                # logger.info(self.get_row(0)[0])
-                logger.info(f"{self.selection.data['bar']}, {self.selection['bar']}")
+                logger.info(self.selection.data)
+                # logger.info(f"{self.selection.data['bar']}, {self.selection['bar']}")
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
                                                     self.selection.get("baz")))
@@ -378,6 +379,7 @@ def main():
             detail_column="bar",
             cell_selection=True,
             sort_refocus = True,
+            with_scrollbar=True,
             row_attr_fn = row_attr_fn,
             # no_load_on_init = True
 
@@ -388,6 +390,7 @@ def main():
             sort_by = "foo",
             query_sort=False,
             ui_sort=False,
+            ui_resize=False,
             with_footer=True,
             with_scrollbar=True,
         ),
