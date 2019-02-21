@@ -4,123 +4,17 @@ import urwid
 import urwid_utils.palette
 from ..listbox import ScrollingListBox
 from orderedattrdict import OrderedDict
+from collections.abc import MutableMapping
 import itertools
+import copy
 import traceback
-from datetime import datetime, date as datetype
 import math
 from blist import blist
 
 from .dataframe import *
 from .rows import *
+from .columns import *
 from .common import *
-
-class NoSuchColumnException(Exception):
-    pass
-
-def make_value_function(template):
-
-    def inner(table, row):
-        return template.format(
-            row=table.index_to_position(
-                row.get(table.index)
-            )+1,
-            rows_loaded = len(table),
-            rows_total = table.query_result_count()
-        )
-
-    return inner
-
-class DataTableColumn(object):
-
-    def __init__(self, name,
-                 label=None,
-                 value=None,
-                 width=('weight', 1),
-                 min_width=None,
-                 align="left", wrap="space",
-                 padding = DEFAULT_CELL_PADDING, #margin=1,
-                 truncate=False,
-                 hide=False,
-                 format_fn=None,
-                 decoration_fn=None,
-                 format_record = None, # format_fn is passed full row data
-                 attr = None,
-                 sort_key = None, sort_reverse=False,
-                 sort_icon = None,
-                 footer_fn = None, footer_arg = "values"):
-
-        self.name = name
-        self.label = label if label is not None else name
-        if value:
-            if isinstance(value, str):
-                self.value_fn = make_value_function(value)
-            elif callable(value):
-                self.value_fn = value
-        else:
-            self.value_fn = None
-        self.width = width
-        self.min_width = min_width
-        self.align = align
-        self.wrap = wrap
-        self.padding = padding
-        self.truncate = truncate
-        self.hide = hide
-        self.format_fn = format_fn
-        self.decoration_fn = decoration_fn
-        self.format_record = format_record
-        self.attr = attr
-        self.sort_key = sort_key
-        self.sort_reverse = sort_reverse
-        self.sort_icon = sort_icon
-        self.footer_fn = footer_fn
-        self.footer_arg = footer_arg
-
-        if isinstance(self.width, tuple):
-            if self.width[0] != "weight":
-                raise Exception(
-                    "Column width %s not supported" %(col.width[0])
-                )
-            self.sizing, self.width = self.width
-        elif isinstance(width, int):
-            self.sizing = "given"
-        else:
-            self.sizing = width
-
-
-    def width_with_padding(self, table_padding=None):
-        padding = 0
-        if self.padding is None and table_padding is not None:
-            padding = table_padding
-        return self.width + 2*padding
-
-
-    def _format(self, v):
-
-        # First, call the format function for the column, if there is one
-        if self.format_fn:
-            try:
-                v = self.format_fn(v)
-            except Exception as e:
-                logger.error("%s format exception: %s" %(self.name, v))
-                logger.exception(e)
-                raise e
-        return self.format(v)
-
-
-    def format(self, v):
-
-        # Do our best to make the value into something presentable
-        if v is None:
-            v = ""
-        elif isinstance(v, int):
-            v = "%d" %(v)
-        elif isinstance(v, float):
-            v = "%.03f" %(v)
-        elif isinstance(v, datetime):
-            v = v.strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(v, datetype):
-            v = v.strftime("%Y-%m-%d")
-        return v
 
 
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
@@ -187,7 +81,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self._focus = 0
         self.page = 0
-        if columns is not None: self.columns = columns
+        if columns is not None:
+            self.columns = columns
+        else:
+            self.columns = [copy.deepcopy(c) for c in self.columns]
+
         if not self.columns:
             raise Exception("must define columns for data table")
         if index: self.index = index
@@ -643,7 +541,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not isinstance(value, urwid.Widget):
             if not isinstance(value, tuple):
                 value = str(value)
-            value = DataTableText(value, align=column.align, wrap=column.wrap)
+            try:
+                value = DataTableText(value, align=column.align, wrap=column.wrap)
+            except:
+                raise Exception(value, type(value))
         return value
 
     @property
@@ -677,8 +578,16 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except IndexError:
             logger.debug(traceback.format_exc())
 
-        d = self.df.get_columns(index, as_dict=True)
+        try:
+            d = self.df.get_columns(index, as_dict=True)
+        except ValueError:
+            raise Exception(index, self.df)
         cls = d.get("_cls")
+        # if isinstance(d, MutableMapping):
+        #     cls = d.get("_cls")
+        # else:
+        #     cls = getattr(d, "_cls")
+
         if cls:
             return cls(**d)
         else:
@@ -690,11 +599,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except:
             raise
 
-        if self.df.get(index, "_dirty") or not row:
+        if self.df.get(index, "_dirty") or row is None:
             self.refresh_calculated_fields([index])
             # vals = self[index]
             vals = self.get_dataframe_row(index)
-            row = self.render_item(vals)
+            row = self.render_item(index)
             if self.row_attr_fn:
                 attr = self.row_attr_fn(vals)
                 if attr:
@@ -723,12 +632,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             return self[self.focus_position]
 
 
-    def render_item(self, item):
-        # raise Exception(item)
-        row = DataTableBodyRow(self, item,
+    def render_item(self, index):
+        row = DataTableBodyRow(self, index,
                                border = self.border,
                                padding = self.padding,
-                               index=item[self.index],
+                               # index=data[self.index],
                                cell_selection = self.cell_selection)
         return row
 
@@ -849,15 +757,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def sort_index(self):
         self.df.sort_index()
         self._modified()
-
-    # def append_rows(self, rows):
-    #     # logger.info("append_rows: %s" %([row[self.index] for row in rows]))
-    #     for row in rows:
-    #         row["_cls"] = type(row)
-    #     self.df.append_rows(rows)
-    #     self.df["_focus_position"] = self.sort_column
-    #     self.invalidate()
-    #     self._modified()
 
     def add_columns(self, columns, data=None):
 
@@ -1222,7 +1121,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             rows = list(self.query(**kwargs))
 
         for row in rows:
-            row["_cls"] = type(row)
+            if isinstance(row, MutableMapping):
+                row["_cls"] = type(row)
+            else:
+                setattr(row, "_cls", type(row))
         df.append_rows(rows)
         df["_focus_position"] = self.sort_column
         if not offset:

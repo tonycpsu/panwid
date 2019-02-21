@@ -175,6 +175,7 @@ class DataTableCell(urwid.WidgetWrap):
 
 
 class DataTableBodyCell(DataTableCell):
+
     ATTR = "table_row_body"
     PADDING_ATTR = "table_row_body_padding"
 
@@ -185,6 +186,19 @@ class DataTableBodyCell(DataTableCell):
             self.formatted_value
         )
 
+class DataTableDetailCell(DataTableBodyCell):
+
+    @property
+    def value(self):
+        return self.row.content
+
+
+    def update_contents(self):
+        self.contents = self.table.decorate(
+            self.row,
+            self.column,
+            self.value
+        )
 
 class DataTableHeaderCell(DataTableCell):
 

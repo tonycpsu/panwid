@@ -11,6 +11,10 @@ import os
 import random
 import string
 from optparse import OptionParser
+from dataclasses import dataclass
+import typing
+from collections.abc import MutableMapping
+
 screen = urwid.raw_display.Screen()
 # screen.set_terminal_properties(1<<24)
 screen.set_terminal_properties(256)
@@ -21,6 +25,40 @@ NORMAL_BG_16 = "black"
 NORMAL_FG_256 = "light gray"
 NORMAL_BG_256 = "g0"
 
+@dataclass
+class BaseDataClass(MutableMapping):
+
+    def keys(self):
+        return self.__dataclass_fields__.keys()
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def __delitem__(self, key):
+        delattr(self, key)
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def __len__(self):
+        return len(self.keys())
+
+@dataclass
+class Foo(BaseDataClass):
+    uniqueid: int
+    foo: int
+    bar: float
+    baz: str
+    qux: urwid.Widget
+    xyzzy: str
+    baz_len: typing.Any
+    a: dict
+    d: dict
+    color: list
+    _details_open: bool
 
 def main():
 
@@ -76,7 +114,6 @@ def main():
             "qux",
             label=urwid.Text([("red", "q"), ("green", "u"), ("blue", "x")]),
             width=5, hide=True),
-        # DataTableColumn("empty", label="empty", width=5),
     ]
 
     class BazColumns(urwid.WidgetWrap):
@@ -124,7 +161,8 @@ def main():
             random.shuffle(self.query_data)
 
         def fixed_row(self, uniqueid):
-            return AttrDict(uniqueid=uniqueid,
+            # return AttrDict(uniqueid=uniqueid,
+            return Foo(uniqueid=uniqueid,
                         foo=uniqueid,
                         bar = (random.uniform(0, 1000)
                                if random.randint(0, 5)
@@ -142,10 +180,10 @@ def main():
                                else None),
                         baz_len = lambda r: len(r["baz"]) if r.get("baz") else 0,
                         # xyzzy = random.randint(10, 100),
-                        empty = None,
                         a = dict(b=dict(c=random.randint(0, 100))),
                         d = dict(e=dict(f=random.randint(0, 100))),
                         color = ["red", "green", "blue"][random.randrange(3)],
+                        _details_open=True
             )
 
 
@@ -168,7 +206,6 @@ def main():
                                else None),
                         baz_len = lambda r: len(r["baz"]) if r.get("baz") else 0,
                         # xyzzy = random.randint(10, 100),
-                        empty = None,
                         a = dict(b=dict(c=random.randint(0, 100))),
                         d = dict(e=dict(f=random.randint(0, 100))),
                         color = ["red", "green", "blue"][random.randrange(3)],
@@ -355,7 +392,7 @@ def main():
 
         return urwid.Padding(urwid.Columns([
             ("weight", 1, data.get("qux")),
-            ("weight", 1, urwid.Text(str(data.get("baz_len")))),
+            # ("weight", 1, urwid.Text(str(data.get("baz_len")))),
             ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
         ]))
 
@@ -376,7 +413,7 @@ def main():
             limit=10,
             index="uniqueid",
             detail_fn=detail_fn,
-            detail_column="bar",
+            detail_column="baz",
             cell_selection=True,
             sort_refocus = True,
             with_scrollbar=True,

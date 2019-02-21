@@ -58,7 +58,10 @@ class DataTableDataFrame(rc.DataFrame):
             data = dict(
                 list(zip((columns),
                     [ list(z) for z in zip(*[[
-                        d.get(k, None) for k in columns ] for d in rows])]
+                        d.get(k, None)
+                        if isinstance(d, collections.abc.MutableMapping)
+                        else getattr(d, k, None)
+                        for k in columns] for d in rows])]
                 ))
             )
             if self.index_name not in columns:

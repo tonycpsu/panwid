@@ -1,18 +1,11 @@
+import functools
+from collections import MutableMapping
+
 import urwid
 
 from .cells import *
-import functools
+from .columns import *
 from orderedattrdict import AttrDict
-
-DEFAULT_CELL_PADDING = 0
-DEFAULT_TABLE_BORDER_WIDTH = 1
-DEFAULT_TABLE_BORDER_CHAR = " "
-DEFAULT_TABLE_BORDER_ATTR = None
-
-DEFAULT_TABLE_BORDER = (
-    DEFAULT_TABLE_BORDER_WIDTH,
-    DEFAULT_TABLE_BORDER_CHAR,
-)
 
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
@@ -51,7 +44,6 @@ class DataTableColumnDivider(urwid.WidgetWrap):
             if self.mouse_dragging:
                 self.mouse_dragging = False
                 self.mouse_drag_start = None
-        # super().mouse_event(size, event, button, col, row, focus)
 
 def intersperse_dividers(cells, row, width, char, attr):
     it = iter(cells)
@@ -62,13 +54,15 @@ def intersperse_dividers(cells, row, width, char, attr):
 
 class DataTableRow(urwid.WidgetWrap):
 
-    def __init__(self, table, index=None,
+    def __init__(self, table, content=None,
                  border=None, padding=None,
                  cell_selection=False,
                  *args, **kwargs):
 
         self.table = table
-        self.index = index
+        self.content = content
+        # if not isinstance(self.content, int):
+        #     raise Exception(self.content, type(self))
         self.border = border
         self.padding = padding
         self.cell_selection = cell_selection
@@ -107,9 +101,9 @@ class DataTableRow(urwid.WidgetWrap):
 
         self.focus_map.update(table.focus_map)
 
-        self.columns_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
+        self.contents_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
         self.attrmap = urwid.AttrMap(
-            self.columns_placeholder,
+            self.contents_placeholder,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
         )
@@ -136,17 +130,16 @@ class DataTableRow(urwid.WidgetWrap):
         (widget, options) = self.columns.contents[index*2]
         self.columns.contents[index*2] = (widget, self.columns.options(*width))
 
-
-    def update(self):
+    def make_columns(self):
 
         self.cells = self.make_cells()
 
-        self.columns = urwid.Columns([])
+        columns = urwid.Columns([])
 
         for i, cell in enumerate(self.cells):
             col = self.table.visible_columns[i]
-            self.columns.contents.append(
-                (cell, self.columns.options(col.sizing, col.width_with_padding(self.padding)))
+            columns.contents.append(
+                (cell, columns.options(col.sizing, col.width_with_padding(self.padding)))
             )
 
         border_width = DEFAULT_TABLE_BORDER_WIDTH
@@ -168,19 +161,22 @@ class DataTableRow(urwid.WidgetWrap):
         elif isinstance(self.border, int):
             border_width = self.border
 
-        # self.columns.contents = intersperse(
-        #     (DataTableColumnDivider(self, border_char, border_attr_map),
-        #      ('given', border_width, False)),
-        #     self.columns.contents)
 
-        self.columns.contents = list(intersperse_dividers(
-            self.columns.contents, self, border_width, border_char, border_attr_map
+        columns.contents = list(intersperse_dividers(
+            columns.contents, self, border_width, border_char, border_attr_map
         ))
-        self.pile = urwid.Pile([
-            ('weight', 1, self.columns)
-        ])
-        self.columns_placeholder.original_widget = self.pile
+        return columns
 
+    def make_contents(self):
+        self.columns = self.make_columns()
+        return self.columns
+
+    @property
+    def contents(self):
+        return self.contents_placeholder.original_widget
+
+    def update(self):
+        self.contents_placeholder.original_widget = self.make_contents()
 
     def selectable(self):
         return True
@@ -191,10 +187,6 @@ class DataTableRow(urwid.WidgetWrap):
                 cell.highlight()
             else:
                 cell.unhighlight()
-
-    def __getitem__(self, column):
-        return self.table.df[self.index, column]
-
     def __len__(self):
         return len(self.columns.contents)
 
@@ -210,26 +202,44 @@ class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
 
-    def __init__(self, table, data, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
 
-        if isinstance(data, AttrDict):
-            self.data = data
-        else:
-            if isinstance(data, list):
-                data = AttrDict(list(zip([c.name for c in table.columns], data)))
-            self.data = AttrDict(
-                (k, v(data) if callable(v) else v)
-                for k, v in list(data.items())
-            )
+        super().__init__(*args, **kwargs)
 
-        self.details_open = False
-        super(DataTableBodyRow, self).__init__(table, *args, **kwargs)
+        if self.get("_details_open"):
+            self["_details_open"] = False
+            self.open_details()
+
+    @property
+    def index(self):
+        return self.content
+
+    @property
+    def data(self):
+        return self.table.get_dataframe_row(self.index)
+
+    def __getitem__(self, column):
+        try:
+            return self.table.df[self.index, column]
+        except ValueError:
+            raise KeyError # o_O
+
+    def __setitem__(self, column, value):
+        self.table.df[self.index, column] = value
+
+    def get(self, key, default=None):
+
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
     def open_details(self):
 
-        if not self.table.detail_fn or self.details_open:
+        if not self.table.detail_fn or self.get("_details_open"):
             return
         content = self.table.detail_fn(self.data)
+
         if self.table.detail_column:
             try:
                 col_index = self.table.visible_column_index(self.table.detail_column)
@@ -238,36 +248,24 @@ class DataTableBodyRow(DataTableRow):
         else:
             col_index = 0
 
-        v = [ None for n in range(len(self.table.header.columns.contents)+1) ]
-        row = DataTableBodyRow(self.table, v)
-
-        for i in range(0, len(row.columns.contents)):
-            if i/2 == col_index:
-                row.columns.contents[i] = (content, row.columns.options("weight", 1))
-            else:
-                row.columns.contents[i] = (urwid.Text(""), row.columns.contents[i][1])
-        if col_index*2 < len(self.table.header.columns.contents):
-            del row.columns.contents[(col_index*2)+1:]
-        self.pile.contents.insert(0,
-            (urwid.Filler(urwid.Text("")), self.pile.options("given", 1))
-        )
+        row = DataTableDetailRow(self.table, content)
         row.selectable = lambda: False
-        self.pile.contents.append(
+        self.contents.contents.append(
             (row, self.pile.options("pack"))
         )
-        self.pile.focus_position = 1
-        self.details_open = True
+        self.contents.focus_position = 0
+        self["_details_open"] = True
 
     def close_details(self):
-        if not self.table.detail_fn or not self.details_open:
+        if not self.table.detail_fn or not self.get("_details_open"):
             return
-        self.details_open = False
-        del self.pile.contents[0]
-        del self.pile.contents[1]
+        self["_details_open"] = False
+        # del self.contents.contents[0]
+        del self.contents.contents[1]
 
     def toggle_details(self):
 
-        if self.details_open:
+        if self.data._details_open:
             self.close_details()
         else:
             self.open_details()
@@ -305,6 +303,18 @@ class DataTableBodyRow(DataTableRow):
         focus_map[self.ATTR] = "%s focused" %(self.ATTR)
         self.attrmap.set_focus_map(focus_map)
 
+    def update(self):
+        super().update()
+        self.pile = urwid.Pile([
+            ('weight', 1, self.columns)
+        ])
+
+    def make_contents(self):
+        self.columns = self.make_columns()
+        return urwid.Pile([
+            ("weight", 1, self.columns)
+        ])
+
     def make_cells(self):
 
         def col_to_attr(col):
@@ -328,6 +338,18 @@ class DataTableBodyRow(DataTableRow):
             )
             for i, col in enumerate(self.table.visible_columns)]
 
+
+class DataTableDetailRow(DataTableRow):
+
+    ATTR = "table_row_detail"
+
+    @property
+    def details(self):
+        return self.content
+
+    def make_contents(self):
+        col = DataTableColumn("details")
+        return DataTableDetailCell(self.table, col, self)
 
 
 class DataTableHeaderRow(DataTableRow):

@@ -305,7 +305,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.listbox._invalidate()
 
     def __getattr__(self, attr):
-        if attr in ["ends_visible", "set_focus", "set_focus_valign", "body", "focus"]:
+        if attr in ["ends_visible", "focus_position", "set_focus", "set_focus_valign", "body", "focus"]:
             return getattr(self.listbox, attr)
         # elif attr == "body":
         #     return self.walker
