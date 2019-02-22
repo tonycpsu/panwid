@@ -200,6 +200,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
 
         self.completing = False
         self.complete_anywhere = False
+        self.last_complete_index = None
 
         self.selected_button = 0
         buttons = []
@@ -365,11 +366,27 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         self.hide_bar()
         self.completing = False
 
-    def complete(self, case_sensitive=False):
+    @keymap_command
+    def complete(self, step=None, no_wrap=False, case_sensitive=False):
 
-        self[self.focus_position].unhighlight()
         if not self.filter_text:
             return
+
+        if self.last_complete_index:
+            self[self.last_complete_index].unhighlight()
+
+        start=0
+
+        if step:
+            if step > 0:
+                start = (self.last_complete_index + step) % len(self)
+            else:
+                start = (len(self) - self.last_complete_index)
+
+        if no_wrap:
+            end = len(self)
+        else:
+            end = start+len(self)
 
         if case_sensitive:
             g = lambda x: x
@@ -381,11 +398,24 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         else:
             f = lambda x: g(x).startswith(g(self.filter_text))
 
-        for i, w in enumerate(self.body):
+        cycle = itertools.cycle(
+            enumerate(self.body)
+            if step is None or step > 0
+            else reversed(list(enumerate(self.body)))
+        )
+
+        for i, w in itertools.islice(cycle, start, end):
             if f(w):
+                self.last_complete_index = i
                 self[i].highlight_text(self.filter_text)
                 self.focus_position = i
                 break
+        else:
+            if self.last_complete_index:
+                self[self.last_complete_index].highlight_text(self.filter_text)
+            # self.last_complete_index = None
+
+        self.last_filter_text = self.filter_text
 
     @keymap_command()
     def cancel(self):

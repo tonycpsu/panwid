@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 import os
 
 import urwid
@@ -19,17 +19,19 @@ class TestDropdown(KeymapMovementMixin, Dropdown):
             "j": "down",
             "page up": "page up",
             "page down": "page down",
-            "ctrl up": ("cycle", [-1]),
-            "ctrl down": ("cycle", [1]),
+            "ctrl up": ("cycle", [1]),
+            "ctrl down": ("cycle", [-1]),
             "home": "home",
             "end": "end",
             "/": "complete prefix",
-            "?": "complete substring"
+            "?": "complete substring",
         },
         "dropdown_dialog": {
             "esc": "cancel",
             "/": "complete prefix",
             "?": "complete substring",
+            "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
+            "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
         }
     }
 
