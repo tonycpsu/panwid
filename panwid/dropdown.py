@@ -184,7 +184,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
             right_chars=None,
             left_chars_top=None,
             rigth_chars_top=None,
-            max_height=10,
+            max_height=None,
             keymap = {}
     ):
         self.drop_down = drop_down
@@ -428,6 +428,7 @@ class Dropdown(urwid.PopUpLauncher):
             left_chars = None, right_chars = None,
             left_chars_top = None, right_chars_top = None,
             auto_complete = False,
+            max_height = 10,
             # keymap = {}
     ):
 
@@ -476,6 +477,7 @@ class Dropdown(urwid.PopUpLauncher):
             right_chars = right_chars,
             auto_complete = self.auto_complete,
             scrollbar = scrollbar,
+            max_height = max_height,
             # keymap = self.KEYMAP
         )
 
