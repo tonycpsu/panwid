@@ -67,8 +67,14 @@ def keymapped():
                             val = [val]
                         for cmd in val:
                             args = []
+                            kwargs = {}
                             if isinstance(cmd, tuple):
-                                (cmd, args) = cmd
+                                if len(cmd) == 3:
+                                    (cmd, args, kwargs) = cmd
+                                elif len(cmd) == 2:
+                                    (cmd, args) = cmd
+                                else:
+                                    raise Exception
                             command = cmd.replace(" ", "_")
                             if not command in self.KEYMAP_MAPPING:
                                 logger.debug("%s: %s not in mapping %s" %(cls, key, self.KEYMAP_MAPPING))
@@ -77,7 +83,7 @@ def keymapped():
                             else:
                                 fn_name = self.KEYMAP_MAPPING[command]
                             f = getattr(self, fn_name)
-                            f(*args)
+                            f(*args, **kwargs)
                     return key
                 else:
                     return key
