@@ -40,7 +40,7 @@ class MainView(BaseView):
     def open_popup_dialog(self):
         dialog = QuitDialog(self)
         urwid.connect_signal(dialog, "message", self.on_message)
-        self.open_popup(dialog, width=20, height=20)
+        self.open_popup(dialog, width=20, height=10)
 
     def on_message(self, source, n):
         self.text.set_text("You chose %d" %(n))
