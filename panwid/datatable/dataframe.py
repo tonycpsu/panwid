@@ -5,12 +5,13 @@ import collections
 
 class DataTableDataFrame(rc.DataFrame):
 
-    DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_rendered_row"]
+    DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_cls", "_details_open", "_rendered_row"]
 
     def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sort=None):
 
         if columns and not index_name in columns:
-            columns = [index_name] + columns
+            columns.insert(0, index_name)
+        columns += self.DATA_TABLE_COLUMNS
         super(DataTableDataFrame, self).__init__(
             data=data,
             columns=columns,
@@ -19,8 +20,8 @@ class DataTableDataFrame(rc.DataFrame):
             use_blist=use_blist,
             sort=sort
         )
-        for c in self.DATA_TABLE_COLUMNS:
-            self[c] = None
+        # for c in self.DATA_TABLE_COLUMNS:
+        #     self[c] = None
 
     def _validate_index(self, indexes):
         try:
@@ -50,38 +51,58 @@ class DataTableDataFrame(rc.DataFrame):
 
     def append_rows(self, rows):
 
-        colnames =  list(self.columns)
+        colnames = list(self.columns) + [c for c in self.DATA_TABLE_COLUMNS if c not in self.columns]
         length = len(rows)
+        if len(rows):
 
-        try:
-            columns = list(set().union(*(list(d.keys()) for d in rows)))
+            data_columns = list(set().union(*(list(d.keys()) for d in rows)))
+            colnames += [c for c in data_columns if c not in colnames]
             data = dict(
-                list(zip((columns),
+                list(zip((data_columns + self.DATA_TABLE_COLUMNS),
                     [ list(z) for z in zip(*[[
                         d.get(k, None)
                         if isinstance(d, collections.abc.MutableMapping)
                         else getattr(d, k, None)
-                        for k in columns] for d in rows])]
+                        for k in data_columns + self.DATA_TABLE_COLUMNS] for d in rows])]
                 ))
             )
-            if self.index_name not in columns:
+            if self.index_name not in data:
                 index = list(range(len(self), len(self) + length))
                 data[self.index_name] = index
             else:
                 index = data[self.index_name]
-        except IndexError:
-            columns = list(self.columns)
+
+            for c in self.columns:
+                if not c in data:
+                    data[c] = [None]*len(rows)
+            # colnames = columns
+        else:
+            return
+            columns = colnames
             data = { k: [] for k in colnames }
             index = None
+
+        # if not self.index_name in colnames:
+        #     colnames.insert(0, self.index_name)
+
+        # raise Exception(colnames + [c for c in data_columns if c not in colnames])
+        for c in colnames:
+            if not c in self.columns:
+                self[c] = None
+
         kwargs = dict(
-            columns = columns,
+            columns =  colnames,
             data = data,
             use_blist=True,
             sort=False,
             index=index,
             index_name = self.index_name,
         )
-        newdata = DataTableDataFrame(**kwargs)
+
+        try:
+            newdata = DataTableDataFrame(**kwargs)
+        except ValueError:
+            raise Exception(kwargs)
         # newdata.log_dump()
         # self.log_dump(10, label="before")
         try:

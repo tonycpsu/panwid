@@ -76,12 +76,10 @@ class DataTableCell(urwid.WidgetWrap):
 
     @property
     def formatted_value(self):
-        v = self._format(self.value
-                       if not self.column.format_record
-                       else self.table.get_dataframe_row(self.row.index))
+
+        v = self._format(self.value)
         if not self.width:
             return v
-        # raise Exception(self.width)
         return v[:self.width-self.padding*2]
 
     def update_contents(self):
@@ -178,6 +176,21 @@ class DataTableBodyCell(DataTableCell):
 
     ATTR = "table_row_body"
     PADDING_ATTR = "table_row_body_padding"
+
+    # @property
+    # def formatted_value(self):
+    #     v = self._format(
+    #         self.value
+    #         if not self.column.format_record
+    #         else self.table.get_dataframe_row(self.row.index)
+    #     )
+    #     # if self.column.format_record:
+    #     #     raise Exception(v)
+    #     if not self.width:
+    #         return v
+    #     # raise Exception(self.width)
+    #     return v[:self.width-self.padding*2]
+
 
     def update_contents(self):
         self.contents = self.table.decorate(
@@ -320,7 +333,6 @@ class DataTableFooterCell(DataTableCell):
 
     ATTR = "table_row_footer"
     PADDING_ATTR = "table_row_footer_padding"
-
 
     def update_contents(self):
         if self.column.footer_fn and len(self.table.df):

@@ -10,6 +10,8 @@ import copy
 import traceback
 import math
 from blist import blist
+from dataclasses import *
+import typing
 
 from .dataframe import *
 from .rows import *
@@ -49,7 +51,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
     detail_fn = None
-    detail_column = None
+    detail_selectable = False
+
     auto_expand_details = False
     ui_sort = True
     ui_resize = True
@@ -73,7 +76,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  sort_refocus = None,
                  no_load_on_init = None,
                  border = None, padding = None,
-                 detail_fn = None, detail_column = None,
+                 detail_fn = None, detail_selectable = None,
                  auto_expand_details = False,
                  ui_sort = None,
                  ui_resize = None,
@@ -130,7 +133,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if row_attr_fn is not None: self.row_attr_fn = row_attr_fn
 
         if detail_fn is not None: self.detail_fn = detail_fn
-        if detail_column is not None: self.detail_column = detail_column
+        if detail_selectable is not None: self.detail_selectable = detail_selectable
         if auto_expand_details: self.auto_expand_details = auto_expand_details
 
         # self.offset = 0
@@ -573,25 +576,47 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def get_dataframe_row(self, index):
         # logger.debug("__getitem__: %s" %(index))
-        try:
-            v = self.df[index:index]
-        except IndexError:
-            logger.debug(traceback.format_exc())
+        # try:
+        #     v = self.df[index:index]
+        # except IndexError:
+        #     raise Exception
+        #     # logger.debug(traceback.format_exc())
 
         try:
             d = self.df.get_columns(index, as_dict=True)
         except ValueError:
             raise Exception(index, self.df)
         cls = d.get("_cls")
+        if cls:
+            if hasattr(cls, "__dataclass_fields__"):
+                # klass = type(f"DataTableRow_{cls.__name__}", [cls],
+                klass = make_dataclass(
+                    f"DataTableRow_{cls.__name__}",
+                    [
+                        ("_cls", typing.Optional[typing.Any], field(default=None)),
+                    ],
+                    bases=(cls,)
+                )
+                k = klass(
+                    **{k: d[k]
+                       for k in set(
+                               cls.__dataclass_fields__.keys())
+                    })
+
+                return k
+            else:
+                return cls(**d)
+        else:
+            return AttrDict(**d)
         # if isinstance(d, MutableMapping):
         #     cls = d.get("_cls")
         # else:
         #     cls = getattr(d, "_cls")
 
-        if cls:
-            return cls(**d)
-        else:
-            return AttrDict(**d)
+        # if cls:
+        #     return cls(**d)
+        # else:
+        #     return AttrDict(**d)
 
     def get_row(self, index):
         try:
@@ -1115,16 +1140,16 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["offset"] = offset
             kwargs["limit"] = limit
 
-        if self.data:
+        if self.data is not None:
             rows = self.data
         else:
             rows = list(self.query(**kwargs))
 
         for row in rows:
-            if isinstance(row, MutableMapping):
-                row["_cls"] = type(row)
-            else:
-                setattr(row, "_cls", type(row))
+            row["_cls"] = type(row)
+            # if isinstance(row, MutableMapping):
+            # else:
+            #     setattr(row, "_cls", type(row))
         df.append_rows(rows)
         df["_focus_position"] = self.sort_column
         if not offset:

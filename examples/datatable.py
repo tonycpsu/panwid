@@ -31,6 +31,13 @@ class BaseDataClass(MutableMapping):
     def keys(self):
         return self.__dataclass_fields__.keys()
 
+    def get(self, key, default=None):
+
+        try:
+            return self[key]
+        except (KeyError, AttributeError):
+            return default
+
     def __getitem__(self, key):
         return getattr(self, key)
 
@@ -58,7 +65,12 @@ class Foo(BaseDataClass):
     a: dict
     d: dict
     color: list
-    _details_open: bool
+    # _details_open: bool
+    # _cls: typing.Optional[type] = None
+
+    # @property
+    # def prop(self):
+    #     return "prop"
 
 def main():
 
@@ -68,8 +80,10 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.verbose:
-        formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-                                        datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(
+            "%(asctime)s [%(module)16s:%(lineno)-4d] [%(levelname)8s] %(message)s",
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
         fh = logging.FileHandler("datatable.log")
         # fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
@@ -102,8 +116,12 @@ def main():
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
         DataTableColumn("foo", label="Foo", width=5, align="right",
                         sort_key = lambda v: (v is None, v),
+                        # format_record=True,
+                        # format_fn = lambda r: r.foo,
+                        # value="{data.foo}",
                         attr="color", padding=0,
-                        footer_fn = lambda column, values: sum(v for v in values if v is not None)),
+                        footer_fn = lambda column, values: sum(v for v in values if v is not None)
+        ),
         DataTableColumn("bar", label="Bar", width=10, align="right",
                         format_fn = lambda v: round(v, 2) if v is not None else v,
                         decoration_fn = lambda v: ("cyan", v),
@@ -162,7 +180,7 @@ def main():
 
         def fixed_row(self, uniqueid):
             # return AttrDict(uniqueid=uniqueid,
-            return Foo(uniqueid=uniqueid,
+            f = Foo(uniqueid=uniqueid,
                         foo=uniqueid,
                         bar = (random.uniform(0, 1000)
                                if random.randint(0, 5)
@@ -183,8 +201,8 @@ def main():
                         a = dict(b=dict(c=random.randint(0, 100))),
                         d = dict(e=dict(f=random.randint(0, 100))),
                         color = ["red", "green", "blue"][random.randrange(3)],
-                        _details_open=True
             )
+            return f
 
 
         def random_row(self, uniqueid):
@@ -260,6 +278,7 @@ def main():
             elif key == "ctrl r":
                 self.reset(reset_sort=True)
             elif key == "ctrl d":
+                logger.info(type(self.selection.data))
                 self.log_dump(20)
             elif key == "meta d":
                 self.log_dump(20, columns=["foo", "baz"])
@@ -413,7 +432,6 @@ def main():
             limit=10,
             index="uniqueid",
             detail_fn=detail_fn,
-            detail_column="baz",
             cell_selection=True,
             sort_refocus = True,
             with_scrollbar=True,

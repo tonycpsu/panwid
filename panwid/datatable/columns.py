@@ -11,10 +11,10 @@ class NoSuchColumnException(Exception):
 def make_value_function(template):
 
     def inner(table, row):
+        pos = table.index_to_position(row.get(table.index))
         return template.format(
-            row=table.index_to_position(
-                row.get(table.index)
-            )+1,
+            data=row,
+            row=pos+1,
             rows_loaded = len(table),
             rows_total = table.query_result_count()
         )

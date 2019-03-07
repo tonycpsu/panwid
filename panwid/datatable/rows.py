@@ -206,8 +206,9 @@ class DataTableBodyRow(DataTableRow):
 
         super().__init__(*args, **kwargs)
 
-        if self.get("_details_open"):
-            self["_details_open"] = False
+        open_details = self["_details_open"]
+        self["_details_open"] = False
+        if open_details:
             self.open_details()
 
     @property
@@ -219,13 +220,38 @@ class DataTableBodyRow(DataTableRow):
         return self.table.get_dataframe_row(self.index)
 
     def __getitem__(self, column):
-        try:
-            return self.table.df[self.index, column]
-        except ValueError:
-            raise KeyError # o_O
+        cls = self.table.df[self.index, "_cls"]
+        # row = self.data
+        if (
+                hasattr(cls, "__dataclass_fields__")
+                and
+                type(getattr(cls, column, None)) == property):
+            # logger.info(f"__getitem__ property: {column}={getattr(self.data, column)}")
+            return getattr(self.data, column)
+        else:
+            if column in self.table.df.columns:
+                # logger.info(f"__getitem__: {column}={self.table.df.get(self.index, column)}")
+                return self.table.df[self.index, column]
+            else:
+                raise Exception(column, self.table.df.columns)
+
+        # try:
+        #     cls = self.table.df[self.index, "_cls"]
+        #     # row = self.data
+        #     if (hasattr(cls, "__dataclass_fields__")
+        #         and type(cls.__dataclass_fields__[column]) == property):
+        #         logger.info("property")
+        #         logger.info(f"__getitem__: {column}={getattr(self.data, column)}")
+        #         return getattr(self.data, column)
+        #     else:
+        #         logger.info(f"__getitem__: {column}={self.table.df[self.index, column]}")
+        #         return self.table.df[self.index, column]
+        # except ValueError:
+        #     raise KeyError # o_O
 
     def __setitem__(self, column, value):
         self.table.df[self.index, column] = value
+        # logger.info(f"__setitem__: {column}, {value}, {self.table.df[self.index, column]}")
 
     def get(self, key, default=None):
 
@@ -236,20 +262,20 @@ class DataTableBodyRow(DataTableRow):
 
     def open_details(self):
 
+        # logger.info(self.get("_details_open"))
         if not self.table.detail_fn or self.get("_details_open"):
             return
         content = self.table.detail_fn(self.data)
 
-        if self.table.detail_column:
-            try:
-                col_index = self.table.visible_column_index(self.table.detail_column)
-            except IndexError:
-                col_index = 0
-        else:
-            col_index = 0
+        # if self.table.detail_column:
+        #     try:
+        #         col_index = self.table.visible_column_index(self.table.detail_column)
+        #     except IndexError:
+        #         col_index = 0
+        # else:
+        #     col_index = 0
 
         row = DataTableDetailRow(self.table, content)
-        row.selectable = lambda: False
         self.contents.contents.append(
             (row, self.pile.options("pack"))
         )
@@ -265,7 +291,7 @@ class DataTableBodyRow(DataTableRow):
 
     def toggle_details(self):
 
-        if self.data._details_open:
+        if self.get("_details_open"):
             self.close_details()
         else:
             self.open_details()
@@ -318,6 +344,8 @@ class DataTableBodyRow(DataTableRow):
     def make_cells(self):
 
         def col_to_attr(col):
+            if col.attr is None:
+                return None
             if callable(col.attr):
                 return col.attr(self.data)
             elif col.attr in self.data:
@@ -350,6 +378,9 @@ class DataTableDetailRow(DataTableRow):
     def make_contents(self):
         col = DataTableColumn("details")
         return DataTableDetailCell(self.table, col, self)
+
+    def selectable(self):
+        return self.table.detail_selectable
 
 
 class DataTableHeaderRow(DataTableRow):
