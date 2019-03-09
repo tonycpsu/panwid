@@ -223,8 +223,8 @@ class ScrollingListBox(urwid.WidgetWrap):
                 self.queued_keypress = key
                 self._invalidate()
 
-        # elif command == "activate":
-        #     urwid.signals.emit_signal(self, "select", self, self.selection)
+        elif command == "activate":
+            urwid.signals.emit_signal(self, "select", self, self.selection)
 
         # else:
         return super(ScrollingListBox, self).keypress(size, key)

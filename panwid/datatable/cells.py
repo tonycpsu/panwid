@@ -43,6 +43,7 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.padding_widget = urwid.Padding(
             self.contents,
+            min_width = self.column.min_width,
             left=self.padding,
             right=self.padding
         )
@@ -80,7 +81,12 @@ class DataTableCell(urwid.WidgetWrap):
         v = self._format(self.value)
         if not self.width:
             return v
-        return v[:self.width-self.padding*2]
+        # try:
+        v = str(v)[:self.width-self.padding*2]
+        # logger.info(f"formatted_value: {v}")
+        return v
+        # except TypeError:
+            # raise Exception(f"{v}, {type(v)}")
 
     def update_contents(self):
         pass
@@ -232,19 +238,25 @@ class DataTableHeaderCell(DataTableCell):
         return next(i for i, c in enumerate(self.table.visible_columns)
                     if c.name == self.column.name)
 
-    @property
-    def contents_width(self):
-        return max([
-            (self.column.min_width
-                or
-             len(r.cells[self.index].formatted_value)
-            ) + self.padding*2
-            for r in (self.table.body)
-        ] + [self.min_width])
+    # @property
+    # def contents_width(self):
+    #     # logger.info(f"""{self.column.min_width}, {getattr(self.table.body[0].cells[self.index].value, "min_width", None)}, {len(str(self.table.body[0].cells[self.index].formatted_value))}""")
+    #     return max([
+    #         ( self.column.min_width
+    #          or
+    #          getattr(r.cells[self.index].value, "min_width", None)
+    #          or
+    #          len(str(r.cells[self.index].formatted_value))
+    #         ) + self.padding*2
+    #         for r in (self.table.body)
+    #     ] + [self.min_width])
 
-    @property
-    def min_width(self):
-        return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)
+    # @property
+    # def min_width(self):
+    #     if self.column.sizing == "pack":
+    #         return self.contents_width
+    #     else:
+    #         return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)
 
     def update_contents(self):
 

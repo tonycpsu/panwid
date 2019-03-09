@@ -126,7 +126,7 @@ def main():
                         format_fn = lambda v: round(v, 2) if v is not None else v,
                         decoration_fn = lambda v: ("cyan", v),
                         sort_reverse=True, sort_icon=False, padding=1),# margin=5),
-        DataTableColumn("baz", label="Baz!", width=("weight", 1), min_width=5,
+        DataTableColumn("baz", label="Baz!", width="pack", min_width=5,
                         truncate=True),
         DataTableColumn(
             "qux",

@@ -25,19 +25,19 @@ class DataTableColumnDivider(urwid.WidgetWrap):
 
     def mouse_event(self, size, event, button, col, row, focus):
         if event == "mouse press":
-            logger.info("divider press")
+            # logger.info("divider press")
             self.mouse_press = True
             if self.mouse_drag_start is None:
                 self.row.mouse_drag_source_column = col
             self.row.mouse_drag_source = self
             return False
         elif event == "mouse drag":
-            logger.info("divider drag")
+            # logger.info("divider drag")
             if self.mouse_press:
                 self.mouse_dragging = True
             return False
         elif event == "mouse release":
-            logger.info("divider release")
+            # logger.info("divider release")
             self.mouse_press = False
             if self.mouse_dragging:
                 self.row.mouse_drag_source = None
@@ -132,14 +132,22 @@ class DataTableRow(urwid.WidgetWrap):
 
     def make_columns(self):
 
+        # logger.info("make_columns")
         self.cells = self.make_cells()
 
         columns = urwid.Columns([])
 
         for i, cell in enumerate(self.cells):
             col = self.table.visible_columns[i]
+            if col.sizing == "pack":
+                options = columns.options("weight", 1)
+            else:
+                options = columns.options(col.sizing, col.width_with_padding(self.padding))
             columns.contents.append(
-                (cell, columns.options(col.sizing, col.width_with_padding(self.padding)))
+                # (cell, columns.options(col.sizing, col.width_with_padding(self.padding)))
+                # (cell, columns.options(col.sizing, col.contents_width))
+                (cell, options)
+
             )
 
         border_width = DEFAULT_TABLE_BORDER_WIDTH
@@ -279,7 +287,7 @@ class DataTableBodyRow(DataTableRow):
         self.contents.contents.append(
             (row, self.pile.options("pack"))
         )
-        self.contents.focus_position = 0
+        self.contents.focus_position = 1
         self["_details_open"] = True
 
     def close_details(self):
@@ -354,8 +362,8 @@ class DataTableBodyRow(DataTableRow):
                 return col.attr(self.data)
             elif col.attr in self.data:
                 return self.data[col.attr]
-            # elif isinstance(col.attr, str):
-            #     return col.attr
+            elif isinstance(col.attr, str):
+                return col.attr
             else:
                 return None
 
