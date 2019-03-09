@@ -273,8 +273,9 @@ def main():
             if key == "r":
                 self.refresh()
             elif key == "meta r":
-                self.randomize_query_data()
-                self.reset(reset_sort=True)
+                # self.randomize_query_data()
+                # self.reset(reset_sort=True)
+                self.refresh()
             elif key == "ctrl r":
                 self.reset(reset_sort=True)
             elif key == "ctrl d":

@@ -49,7 +49,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
 
-
     detail_fn = None
     detail_selectable = False
 
@@ -174,6 +173,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.listbox, "select",
             lambda source, selection: urwid.signals.emit_signal(
                 self, "select", self, self.get_dataframe_row(selection.index))
+            if self.selection
+            else None
         )
         urwid.connect_signal(
             self.listbox, "drag_start",
@@ -537,6 +538,17 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # elif attr == "body":
         #     return self.walker
         # raise AttributeError(attr)
+
+    def keypress(self, size, key):
+        if key == "enter" and not self.selection.details_focused:
+            self._emit("select", self.selection.data)
+        else:
+            key = super().keypress(size, key)
+            return key
+        # if key == "enter":
+        #     self._emit("select", self, self.selection)
+        # else:
+        #     return key
 
     def decorate(self, row, column, value):
         if column.decoration_fn:
@@ -981,18 +993,16 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def add_row(self, data, sort=True):
 
-        self.append_rows([data])
+        self.df.append_rows([data])
         if sort:
             self.sort_by_column()
         self.apply_filters()
-        # else:
-        #     self.invalidate()
 
     def delete_rows(self, indexes):
 
         self.df.delete_rows(indexes)
         self.apply_filters()
-        if self.focus_position >= len(self)-1:
+        if self.focus_position > 0 and self.focus_position >= len(self)-1:
             self.focus_position = len(self)-1
 
 
@@ -1119,17 +1129,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             limit = (self.page) * self.limit
             offset = 0
 
-        if offset:
-            df = self.df
-        else:
-            df = DataTableDataFrame(
-                columns = self.column_names,
-                use_blist=True,
-                sort=False,
-                index_name = self.index or None
-            )
-
-        # logger.info("requery")
         kwargs = {"load_all": load_all}
         if self.query_sort:
             kwargs["sort"] = self.sort_by
@@ -1147,25 +1146,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         for row in rows:
             row["_cls"] = type(row)
-            # if isinstance(row, MutableMapping):
-            # else:
-            #     setattr(row, "_cls", type(row))
-        df.append_rows(rows)
-        df["_focus_position"] = self.sort_column
-        if not offset:
-            self.df = df
+
+        self.df.update_rows(rows, limit=self.limit)
+        self.df["_focus_position"] = self.sort_column
 
         self.invalidate()
         self._modified()
-        # try:
-        #     self.append_rows(rows)
-        # except:
-        #     logger.error(f"{kwargs}, {rows}")
-        #     raise
+
         self.refresh_calculated_fields()
         self.apply_filters()
-        # if pos < len(self):
-        #     self.focus_position = pos
 
 
     def refresh(self, reset=False):
@@ -1177,6 +1166,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.page = 0
             offset = 0
             limit = self.limit
+            self.df.delete_all_rows()
         else:
             try:
                 idx = getattr(self.selection.data, self.index)

@@ -48,44 +48,75 @@ class DataTableDataFrame(rc.DataFrame):
             "..." if len(self.index) > n else "",
             df.head(n)))
 
+    def transpose_data(self, rows):
+        data_columns = list(set().union(*(list(d.keys()) for d in rows)))
+        data_columns += [
+            c for c in self.columns
+            if c not in data_columns
+            and c != self.index_name
+            and c not in self.DATA_TABLE_COLUMNS
+        ]
+        data_columns += ["_cls"]
+
+        data = dict(
+            list(zip((data_columns),
+                [ list(z) for z in zip(*[[
+                    d.get(k, None)
+                    if isinstance(d, collections.abc.MutableMapping)
+                    else getattr(d, k, None)
+                    # for k in data_columns + self.DATA_TABLE_COLUMNS] for d in rows])]
+                    for k in data_columns] for d in rows])]
+            ))
+        )
+        return data
+
+    def update_rows(self, rows, limit=None):
+
+        data = self.transpose_data(rows)
+
+        if not limit:
+            if len(rows):
+                indexes = [x for x in self.index if x not in data.get(self.index_name, [])]
+                if len(indexes):
+                    self.delete_rows(indexes)
+            else:
+                self.delete_all_rows()
+
+            # logger.info(f"update_rows: {self.index}, {data[self.index_name]}")
+
+        if not len(rows):
+            return
+
+        if self.index_name not in data:
+            index = list(range(len(self), len(self) + len(rows)))
+            data[self.index_name] = index
+        else:
+            index = data[self.index_name]
+
+        for c in data.keys():
+            try:
+                self.set(data[self.index_name], c, data[c])
+            except ValueError as e:
+                logger.error(e)
+                logger.info(f"update_rows: {self.index}, {data}")
+                raise Exception(c, len(self.index), len(data[c]))
 
     def append_rows(self, rows):
 
-        colnames = list(self.columns) + [c for c in self.DATA_TABLE_COLUMNS if c not in self.columns]
         length = len(rows)
-        if len(rows):
-
-            data_columns = list(set().union(*(list(d.keys()) for d in rows)))
-            colnames += [c for c in data_columns if c not in colnames]
-            data = dict(
-                list(zip((data_columns + self.DATA_TABLE_COLUMNS),
-                    [ list(z) for z in zip(*[[
-                        d.get(k, None)
-                        if isinstance(d, collections.abc.MutableMapping)
-                        else getattr(d, k, None)
-                        for k in data_columns + self.DATA_TABLE_COLUMNS] for d in rows])]
-                ))
-            )
-            if self.index_name not in data:
-                index = list(range(len(self), len(self) + length))
-                data[self.index_name] = index
-            else:
-                index = data[self.index_name]
-
-            for c in self.columns:
-                if not c in data:
-                    data[c] = [None]*len(rows)
-            # colnames = columns
-        else:
+        if not length:
             return
-            columns = colnames
-            data = { k: [] for k in colnames }
-            index = None
 
-        # if not self.index_name in colnames:
-        #     colnames.insert(0, self.index_name)
+        colnames = list(self.columns) + [c for c in self.DATA_TABLE_COLUMNS if c not in self.columns]
 
-        # raise Exception(colnames + [c for c in data_columns if c not in colnames])
+        # data_columns = list(set().union(*(list(d.keys()) for d in rows)))
+        data = self.transpose_data(rows)
+        colnames += [c for c in data.keys() if c not in colnames]
+
+        for c in self.columns:
+            if not c in data:
+                data[c] = [None]*length
+
         for c in colnames:
             if not c in self.columns:
                 self[c] = None
@@ -95,7 +126,7 @@ class DataTableDataFrame(rc.DataFrame):
             data = data,
             use_blist=True,
             sort=False,
-            index=index,
+            index=data[self.index_name],
             index_name = self.index_name,
         )
 

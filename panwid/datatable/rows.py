@@ -289,6 +289,10 @@ class DataTableBodyRow(DataTableRow):
         # del self.contents.contents[0]
         del self.contents.contents[1]
 
+    @property
+    def details_focused(self):
+        return self["_details_open"] and self.contents.focus_position > 0
+
     def toggle_details(self):
 
         if self.get("_details_open"):
