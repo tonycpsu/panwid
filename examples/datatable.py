@@ -464,6 +464,7 @@ def main():
             cell_selection=True,
             border=(1, u"\N{VERTICAL LINE}", "blue"),
             padding=3,
+            row_style = "grid"
         ),
         ExampleDataTableBox(
             5000,

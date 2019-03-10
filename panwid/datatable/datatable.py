@@ -48,6 +48,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     border = DEFAULT_TABLE_BORDER
     padding = DEFAULT_CELL_PADDING
+    row_style = None
 
     detail_fn = None
     detail_selectable = False
@@ -75,6 +76,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  sort_refocus = None,
                  no_load_on_init = None,
                  border = None, padding = None,
+                 row_style = None,
                  detail_fn = None, detail_selectable = None,
                  auto_expand_details = False,
                  ui_sort = None,
@@ -86,7 +88,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if columns is not None:
             self.columns = columns
         else:
-            self.columns = [copy.deepcopy(c) for c in self.columns]
+            self.columns = [copy.copy(c) for c in self.columns]
 
         if not self.columns:
             raise Exception("must define columns for data table")
@@ -130,6 +132,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if cell_selection is not None: self.cell_selection = cell_selection
         if border is not None: self.border = border
         if padding is not None: self.padding = padding
+        if row_style is not None: self.row_style = row_style
 
         if ui_sort is not None: self.ui_sort = ui_sort
         if ui_resize is not None: self.ui_resize = ui_resize
@@ -208,6 +211,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self,
             border = self.border,
             padding = self.padding,
+            style = self.row_style
         )
 
         if self.with_header:
@@ -239,7 +243,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.footer = DataTableFooterRow(
             self,
             border = self.border,
-            padding = self.padding
+            padding = self.padding,
+            style = self.row_style
         )
 
         if self.with_footer:
@@ -575,7 +580,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         w = sum([
             (c.contents_width + bwidth) for c in self.visible_columns#self.header.cells
         ])
-        logger.info(f"table {id(self)} min_width: {w}")
+        # logger.info(f"table {id(self)} min_width: {w}")
         return w
 
     @property
@@ -717,7 +722,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                                border = self.border,
                                padding = self.padding,
                                # index=data[self.index],
-                               cell_selection = self.cell_selection)
+                               cell_selection = self.cell_selection,
+                               style = self.row_style)
         return row
 
     def refresh_calculated_fields(self, indexes=None):
@@ -1246,8 +1252,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         ]
 
         other_widths = sum([c.width for c in other_columns]) + len(other_columns)*bw
+
         num_pack = len(pack_columns)
         available = self.width - (1 if self.with_scrollbar else 0) - other_widths
+        if self.row_style in ["boxed", "grid"]:
+            available -= 2
 
         for i, c in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))

@@ -57,6 +57,7 @@ class DataTableRow(urwid.WidgetWrap):
     def __init__(self, table, content=None,
                  border=None, padding=None,
                  cell_selection=False,
+                 style = None,
                  *args, **kwargs):
 
         self.table = table
@@ -66,6 +67,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.border = border
         self.padding = padding
         self.cell_selection = cell_selection
+        self.style = style
 
         self.sort = self.table.sort_by
         self.attr = self.ATTR
@@ -102,11 +104,19 @@ class DataTableRow(urwid.WidgetWrap):
         self.focus_map.update(table.focus_map)
 
         self.contents_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
+        w = self.contents_placeholder
+        if self.style == "boxed":
+            w = urwid.LineBox(w)
+        elif self.style == "grid":
+            box = urwid.LineBox(w, tlcorner="├", trcorner="┤",)
+            w = urwid.BoxAdapter(urwid.Filler(box), 2) # FIXME: assumes height=1
+
         self.attrmap = urwid.AttrMap(
-            self.contents_placeholder,
+            w,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
         )
+
         self.update()
         super(DataTableRow, self).__init__(self.attrmap)
 
