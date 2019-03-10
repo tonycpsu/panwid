@@ -30,6 +30,7 @@ class DataTableColumn(object):
                  min_width=None,
                  align="left", wrap="space",
                  padding = DEFAULT_CELL_PADDING, #margin=1,
+                 no_clip_header = False,
                  truncate=False,
                  hide=False,
                  format_fn=None,
@@ -49,11 +50,11 @@ class DataTableColumn(object):
                 self.value_fn = value
         else:
             self.value_fn = None
-        self.width = width
         self.min_width = min_width
         self.align = align
         self.wrap = wrap
         self.padding = padding
+        self.no_clip_header = no_clip_header
         self.truncate = truncate
         self.hide = hide
         self.format_fn = format_fn
@@ -66,20 +67,23 @@ class DataTableColumn(object):
         self.footer_fn = footer_fn
         self.footer_arg = footer_arg
 
-        if isinstance(self.width, tuple):
-            if self.width[0] != "weight":
+        if isinstance(width, tuple):
+            if width[0] != "weight":
                 raise Exception(
                     "Column width %s not supported" %(col.width[0])
                 )
-            self.sizing, self.width = self.width
+            self.initial_sizing, self.initial_width = width
         elif isinstance(width, int):
-            self.sizing = "given"
-            self.min_width = self.width # assume starting width is minimum
+            self.initial_sizing = "given"
+            self.min_width = self.initial_width = width # assume starting width is minimum
         elif width == "pack":
-            self.sizing = "pack"
-            self.width = 5
+            self.initial_sizing = "pack"
+            self.initial_width = 1
         else:
-            self.sizing = width
+            raise Exception
+
+        self.sizing = self.initial_sizing
+        self.width = self.initial_width
 
     def width_with_padding(self, table_padding=None):
         padding = 0
@@ -94,18 +98,21 @@ class DataTableColumn(object):
         except StopIteration:
             raise Exception(self.name, [ c.name for c in self.table.visible_columns])
         # logger.info(f"len: {len(self.table.body)}")
-        return max([
+
+        l = [
             (
              getattr(r.cells[index].value, "min_width", None)
              or
              len(str(r.cells[index].formatted_value))
             ) + self.padding*2
             for r in (self.table.body)
-        ] + [self.table.header.cells[index].min_width or 0] + [self.min_width or 0])
+        ] + [self.table.header.cells[index].min_width or 0] + [self.min_width or 0]
+        return max(l)
 
     @property
     def minimum_width(self):
         if self.sizing == "pack":
+            # logger.info(f"min: {self.name}, {self.contents_width}")
             return self.contents_width
         else:
             return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)

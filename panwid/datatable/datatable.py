@@ -1004,14 +1004,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         widths = [ c.width for c in self.header.cells ]
         # mins = [ c.contents_width for c in self.header.cells ]
         mins = [ c.minimum_width for c in self.visible_columns ]
-        logger.info(f"widths: {widths}, mins: {mins}")
         new_widths = resize_columns(widths, mins, index, delta, drag_direction)
 
         for i, c in enumerate(self.visible_columns):
             if self.header.cells[i].width != new_widths[i]:
                 self.resize_column(c.name, new_widths[i])
 
-        logger.info(f"{widths}, {new_widths}")
+        logger.trace(f"{widths}, {mins}, {new_widths}")
         if sum(widths) != sum(new_widths):
             logger.warning(f"{sum(widths)} != {sum(new_widths)}")
 
@@ -1237,6 +1236,16 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.focus_position = pos
         # self.focus_position = 0
 
+    def reset_columns(self):
+        for c in self.visible_columns:
+            if c.sizing == c.initial_sizing and c.width == c.initial_width:
+                continue
+            # print(c.initial_sizing, c.initial_width)
+            self.resize_column(c.name, (c.initial_sizing, c.initial_width) )
+            # c.sizing = c.initial_sizing
+            # c.width = c.initial_width
+
+
     def pack_columns(self):
 
         if isinstance(self.border, tuple):
@@ -1246,7 +1255,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         other_columns, pack_columns = [
             list(x) for x in partition(
-                lambda c: c.sizing == "pack",
+                lambda c: c.initial_sizing == "pack",
                 self.visible_columns
             )
         ]
@@ -1260,7 +1269,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         for i, c in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))
-            # logger.info(f"resize: {c.name}, {available}, {num_pack-i}, {c.contents_width}, {available//(num_pack-1)}, {w}")
+            logger.debug(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
             self.resize_column(c.name, w)
             available -= (w + bw)
 
@@ -1280,6 +1289,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.refresh(reset=True)
 
         if self._initialized:
+            self.reset_columns()
             self.pack_columns()
             if reset_sort:
                 self.sort_by_column(self.initial_sort)

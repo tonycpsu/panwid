@@ -258,14 +258,18 @@ class DataTableHeaderCell(DataTableCell):
     def update_contents(self):
 
         self.label = self.column.label
-        self.sort_icon = self.column.sort_icon if self.column.sort_icon else self.table.sort_icons
+        self.sort_icon = self.column.sort_icon or self.table.sort_icons
 
         self.columns = urwid.Columns([
             ('weight', 1,
              self.label
              if isinstance(self.label, urwid.Widget)
              else
-             DataTableText(self.label, align=self.column.align)
+             DataTableText(
+                 self.label,
+                 wrap = "space" if self.column.no_clip_header else "clip",
+                 align=self.column.align
+             )
             )
         ])
 
