@@ -101,7 +101,7 @@ class DataTableColumn(object):
              len(str(r.cells[index].formatted_value))
             ) + self.padding*2
             for r in (self.table.body)
-        ] + [self.min_width or 0])
+        ] + [self.table.header.cells[index].min_width or 0] + [self.min_width or 0])
 
     @property
     def minimum_width(self):

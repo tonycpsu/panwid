@@ -1231,33 +1231,49 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.focus_position = pos
         # self.focus_position = 0
 
-
-    def reset(self, reset_sort=False):
-        self.refresh(reset=True)
+    def pack_columns(self):
 
         if isinstance(self.border, tuple):
             bw = self.border[0]
         else:
             bw = self.border
 
-        if not self._initialized:
-            return
+        other_columns, pack_columns = [
+            list(x) for x in partition(
+                lambda c: c.sizing == "pack",
+                self.visible_columns
+            )
+        ]
 
-        w = self.width - (1 if self.with_scrollbar else 0)
-        rw = w
+        other_widths = sum([c.width for c in other_columns]) + len(other_columns)*bw
+        num_pack = len(pack_columns)
+        available = self.width - (1 if self.with_scrollbar else 0) - other_widths
 
-        for c in self.visible_columns:
-            # logger.info(f"{c.name}, w: {w}, sw: {sw}")
-            if c.sizing == "pack":
-                cw = min(rw, c.contents_width)
-                self.resize_column(c.name, cw)
+        for i, c in enumerate(pack_columns):
+            w = min(c.contents_width, available//(num_pack-i))
+            # logger.info(f"resize: {c.name}, {available}, {num_pack-i}, {c.contents_width}, {available//(num_pack-1)}, {w}")
+            self.resize_column(c.name, w)
+            available -= (w + bw)
 
-            rw -= c.width + bw
+        # w = self.width - (1 if self.with_scrollbar else 0)
+        # rw = w
 
-        # self.clear_filters()
-        # self.apply_filters()
-        if reset_sort:
-            self.sort_by_column(self.initial_sort)
+        # for c in self.visible_columns:
+        #     # logger.info(f"{c.name}, w: {w}, sw: {sw}")
+        #     if c.sizing == "pack":
+        #         cw = min(rw, c.contents_width)
+        #         self.resize_column(c.name, cw)
+
+        #     rw -= c.width + bw
+
+
+    def reset(self, reset_sort=False):
+        self.refresh(reset=True)
+
+        if self._initialized:
+            self.pack_columns()
+            if reset_sort:
+                self.sort_by_column(self.initial_sort)
 
     def load(self, path):
 

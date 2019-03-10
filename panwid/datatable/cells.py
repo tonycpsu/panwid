@@ -251,12 +251,9 @@ class DataTableHeaderCell(DataTableCell):
     #         for r in (self.table.body)
     #     ] + [self.min_width])
 
-    # @property
-    # def min_width(self):
-    #     if self.column.sizing == "pack":
-    #         return self.contents_width
-    #     else:
-    #         return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)
+    @property
+    def min_width(self):
+        return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)
 
     def update_contents(self):
 

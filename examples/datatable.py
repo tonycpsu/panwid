@@ -114,7 +114,8 @@ def main():
 
     COLUMNS = [
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-        DataTableColumn("foo", label="Foo", width=5, align="right",
+        # DataTableColumn("foo", label="Foo", width=5, align="right",
+        DataTableColumn("foo", label="Foo", width="pack", align="right",
                         sort_key = lambda v: (v is None, v),
                         # format_record=True,
                         # format_fn = lambda r: r.foo,
