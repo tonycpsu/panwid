@@ -9,53 +9,10 @@ from orderedattrdict import AttrDict
 
 intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
 
-class DataTableColumnDivider(urwid.WidgetWrap):
-
-    signals = ["drag"]
-
-    def __init__(self, row, char, attr_map):
-        self.row = row
-        self.text = urwid.Text(char)
-        self.attrmap = urwid.AttrMap(self.text, attr_map = attr_map)
-        self.mouse_press = False
-        self.mouse_dragging = False
-        self.mouse_drag_start = None
-        self.mouse_drag_end = None
-        super().__init__(self.attrmap)
-
-    def mouse_event(self, size, event, button, col, row, focus):
-        if event == "mouse press":
-            # logger.info("divider press")
-            self.mouse_press = True
-            if self.mouse_drag_start is None:
-                self.row.mouse_drag_source_column = col
-            self.row.mouse_drag_source = self
-            return False
-        elif event == "mouse drag":
-            # logger.info("divider drag")
-            if self.mouse_press:
-                self.mouse_dragging = True
-            return False
-        elif event == "mouse release":
-            # logger.info("divider release")
-            self.mouse_press = False
-            if self.mouse_dragging:
-                self.row.mouse_drag_source = None
-            if self.mouse_dragging:
-                self.mouse_dragging = False
-                self.mouse_drag_start = None
-
-def intersperse_dividers(cells, row, width, char, attr):
-    it = iter(cells)
-    yield next(it)
-    for cell in it:
-        yield (DataTableColumnDivider(row, char, attr), ('given', width, False))
-        yield cell
-
 class DataTableRow(urwid.WidgetWrap):
 
     def __init__(self, table, content=None,
-                 border=None, padding=None,
+                 divider=None, padding=None,
                  cell_selection=False,
                  style = None,
                  *args, **kwargs):
@@ -64,7 +21,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.content = content
         # if not isinstance(self.content, int):
         #     raise Exception(self.content, type(self))
-        self.border = border
+        self.divider = divider
         self.padding = padding
         self.cell_selection = cell_selection
         self.style = style
@@ -147,7 +104,10 @@ class DataTableRow(urwid.WidgetWrap):
 
         columns = urwid.Columns([])
 
+        idx = None
         for i, cell in enumerate(self.cells):
+            if not (idx or isinstance(cell, DataTableDividerCell)):
+                idx = i
             col = self.table.visible_columns[i]
             if col.sizing == "pack":
                 options = columns.options("weight", 1)
@@ -159,31 +119,19 @@ class DataTableRow(urwid.WidgetWrap):
                 (cell, options)
 
             )
-
-        border_width = DEFAULT_TABLE_BORDER_WIDTH
-        border_char = DEFAULT_TABLE_BORDER_CHAR
-        border_attr_map = self.attr_map.copy()
-
-        if isinstance(self.border, tuple):
-
-            try:
-                border_width, border_char, border_attr = self.border
-                border_attr_map.update({None: border_attr})
-                # border_focus_map.update({None: "%s focused" %(border_attr)})
-            except ValueError:
-                try:
-                    border_width, border_char = self.border
-                except ValueError:
-                    border_width = self.border
-
-        elif isinstance(self.border, int):
-            border_width = self.border
-
-
-        columns.contents = list(intersperse_dividers(
-            columns.contents, self, border_width, border_char, border_attr_map
-        ))
+        columns.focus_position = idx
         return columns
+
+    def intersperse_dividers(self, cells):
+        it = iter(cells)
+        yield next(it)
+        for cell in it:
+            yield (
+                self.DIVIDER_CLASS(self.table, self.divider, self),
+                (self.divider.sizing, self.divider.width, False)
+            )
+            yield cell
+
 
     def make_contents(self):
         self.columns = self.make_columns()
@@ -209,16 +157,21 @@ class DataTableRow(urwid.WidgetWrap):
         return len(self.columns.contents)
 
     def __iter__(self):
-        return iter( self.columns[i] for i in range(0, len(self.columns.contents), 2) )
+        return iter( self.columns[i] for i in range(0, len(self.columns.contents)) )
 
     @property
     def values(self):
         return AttrDict(list(zip([c.name for c in self.table.visible_columns], [ c.value for c in self ])))
 
+    @property
+    def data_cells(self):
+        return [ c for c in self.cells if not isinstance(c, DataTableDividerCell)]
 
 class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
+
+    DIVIDER_CLASS = DataTableDividerBodyCell
 
     def __init__(self, *args, **kwargs):
 
@@ -386,6 +339,8 @@ class DataTableBodyRow(DataTableRow):
                 value_attr=col_to_attr(col),
                 cell_selection=self.cell_selection
             )
+            if isinstance(col, DataTableColumn)
+            else DataTableDividerBodyCell(self.table, col, self)
             for i, col in enumerate(self.table.visible_columns)]
 
 
@@ -411,6 +366,8 @@ class DataTableHeaderRow(DataTableRow):
 
     ATTR = "table_row_header"
 
+    DIVIDER_CLASS = DataTableDividerHeaderCell
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mouse_press = False
@@ -428,13 +385,15 @@ class DataTableHeaderRow(DataTableRow):
                 self,
                 sort=self.sort,
             )
+            if isinstance(col, DataTableColumn)
+            else DataTableDividerHeaderCell(self.table, col, self)
             for i, col in enumerate(self.table.visible_columns)]
 
         def sort_by_index(source, index):
             urwid.emit_signal(self, "column_click", index)
 
         if self.table.ui_sort:
-            for i, cell in enumerate(cells):
+            for i, cell in enumerate([c for c in cells if not isinstance(c, DataTableDividerCell)]):
                 urwid.connect_signal(
                     cell,
                     'click',
@@ -452,7 +411,7 @@ class DataTableHeaderRow(DataTableRow):
         return self.table.ui_sort
 
     def update_sort(self, sort):
-        for c in self.cells:
+        for c in self.data_cells:
             c.update_sort(sort)
 
     def mouse_event(self, size, event, button, col, row, focus):
@@ -480,6 +439,7 @@ class DataTableHeaderRow(DataTableRow):
             elif event == "mouse release":
                 self.mouse_press = False
                 if self.mouse_dragging:
+                    # raise Exception(f"drag: {self.mouse_drag_source}")
                     self.mouse_dragging = False
                     self.mouse_drag_end = col
                     # raise Exception(self.mouse_drag_start)
@@ -500,6 +460,8 @@ class DataTableFooterRow(DataTableRow):
 
     ATTR = "table_row_footer"
 
+    DIVIDER_CLASS = DataTableDividerFooterCell
+
     def make_cells(self):
         return [
             DataTableFooterCell(
@@ -508,6 +470,8 @@ class DataTableFooterRow(DataTableRow):
                 self,
                 sort=self.sort,
             )
+            if isinstance(col, DataTableColumn)
+            else DataTableDividerBodyCell(self.table, col, self)
             for i, col in enumerate(self.table.visible_columns)]
 
     def selectable(self):

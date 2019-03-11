@@ -19,6 +19,8 @@ from .columns import *
 from .common import *
 
 
+DEFAULT_TABLE_DIVIDER = DataTableDivider(" ")
+
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
@@ -46,7 +48,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     sort_refocus = False
     no_load_on_init = None
 
-    border = DEFAULT_TABLE_BORDER
+    divider = DEFAULT_TABLE_DIVIDER
     padding = DEFAULT_CELL_PADDING
     row_style = None
 
@@ -75,7 +77,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  sort_by = None, query_sort = None, sort_icons = None,
                  sort_refocus = None,
                  no_load_on_init = None,
-                 border = None, padding = None,
+                 divider = None, padding = None,
                  row_style = None,
                  detail_fn = None, detail_selectable = None,
                  auto_expand_details = False,
@@ -130,8 +132,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
         if cell_selection is not None: self.cell_selection = cell_selection
-        if border is not None: self.border = border
+        if divider is not None: self.divider = divider
         if padding is not None: self.padding = padding
+
+        if isinstance(self.padding, tuple):
+            self.padding_left, self.padding_right = self.padding
+        else:
+            self.padding_left = self.padding_right = self.padding
+
         if row_style is not None: self.row_style = row_style
 
         if ui_sort is not None: self.ui_sort = ui_sort
@@ -207,9 +215,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             urwid.connect_signal(self.listbox, "load_more", self.load_more)
             # self.offset = 0
 
+        if self.divider:
+            self.columns = intersperse(self.divider, self.columns)
+
         self.header = DataTableHeaderRow(
             self,
-            border = self.border,
             padding = self.padding,
             style = self.row_style
         )
@@ -242,7 +252,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.footer = DataTableFooterRow(
             self,
-            border = self.border,
             padding = self.padding,
             style = self.row_style
         )
@@ -285,6 +294,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
         foreground_map = {
+            "table_divider": [ "light gray", "light gray" ],
             "table_row_body": [ "light gray", "light gray" ],
             "table_row_header": [ "light gray", "white" ],
             "table_row_footer": [ "light gray", "white" ],
@@ -353,7 +363,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     foreground_high = header_foreground_map[suffix][1],
                     background_high = header_background_map[suffix][1],
                 )
-
 
         for name, entry in list(user_entries.items()):
             DataTable.focus_map[name] = "%s focused" %(name)
@@ -555,43 +564,38 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # raise AttributeError(attr)
 
     def render(self, size, focus=False):
+        # raise Exception(self.header.cells[0].width)
         self._width = size[0]
         if len(size) > 1:
             self._height = size[1]
-
         if not self._initialized:
             self._initialized = True
             self.reset()
-            if self.sort_by:
-                self.sort_by_column(self.sort_by)
-
         return super().render(size, focus)
+        # return super().render(size, focus)
+            # if self.sort_by:
+            #     self.sort_by_column(self.sort_by)
+
     @property
     def width(self):
         return self._width
 
     @property
     def min_width(self):
-        if isinstance(self.border, tuple):
-            bwidth = self.border[0]
-        else:
-            bwidth = self.border
-        # raise Exception([(c.contents_width + bwidth) for c in self.header.cells])
-        w = sum([
-            (c.contents_width + bwidth) for c in self.visible_columns#self.header.cells
+        return sum([
+            c.contents_width for c in self.visible_columns
         ])
-        # logger.info(f"table {id(self)} min_width: {w}")
-        return w
 
     @property
     def height(self):
         return self._height
 
     def keypress(self, size, key):
+        key = super().keypress(size, key)
         if key == "enter" and not self.selection.details_focused:
             self._emit("select", self.selection.data)
         else:
-            key = super().keypress(size, key)
+            # key = super().keypress(size, key)
             return key
         # if key == "enter":
         #     self._emit("select", self, self.selection)
@@ -612,7 +616,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     @property
     def column_names(self):
-        return [c.name for c in self.columns]
+        return [c.name for c in self.data_columns]
 
     @property
     def focus_position(self):
@@ -719,7 +723,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def render_item(self, index):
         row = DataTableBodyRow(self, index,
-                               border = self.border,
+                               divider = self.divider,
                                padding = self.padding,
                                # index=data[self.index],
                                cell_selection = self.cell_selection,
@@ -731,15 +735,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             indexes = self.df.index[:]
         if not hasattr(indexes, "__len__"):
             indexes = [indexes]
-        for col in self.columns:
+        for col in self.data_columns:
             if not col.value_fn: continue
             for index in indexes:
                 if self.df[index, "_dirty"]:
                     self.df.set(index, col.name, col.value_fn(self, self.get_dataframe_row(index)))
 
-    def visible_column_index(self, column_name):
+    def visible_data_column_index(self, column_name):
         try:
-            return next(i for i, c in enumerate(self.visible_columns)
+            return next(i for i, c in enumerate(self.visible_data_columns)
                      if c.name == column_name)
 
         except StopIteration:
@@ -758,16 +762,17 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if isinstance(col, int):
             try:
-                column_name = self.visible_columns[col].name
+                column_name = self.visible_data_columns[col].name
             except IndexError:
                 raise Exception("bad column number: %d" %(col))
             column_number = col
+            # column_number = next(i for i, c in enumerate(self.columns) if c.name == column_name)
         elif isinstance(col, str):
             column_name = col
             try:
-                column_number = self.visible_column_index(column_name)
+                column_number = self.visible_data_column_index(column_name)
             except:
-                column_number = None
+                raise
 
         self.sort_column = column_number
 
@@ -817,14 +822,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
     def set_focus_column(self, index):
+        idx = [i for i, c in enumerate(self.visible_columns)
+                   if not isinstance(c, DataTableDivider)
+        ][index]
+
+        logger.info(f"{index}, {idx}")
         if self.with_header:
-            self.header.set_focus_column(self.sort_column)
+            self.header.set_focus_column(idx)
 
         if self.with_footer:
-            self.footer.set_focus_column(self.sort_column)
+            self.footer.set_focus_column(idx)
 
         # logger.debug("set_focus_column: %d" %(index))
-        self.df["_focus_position"] = index
+        self.df["_focus_position"] = idx
         self.df["_dirty"] = True
 
     def cycle_sort_column(self, step):
@@ -835,8 +845,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             index = 0
         else:
             index = (self.sort_column + step)
-            if index < 0: index = len(self.visible_columns)-1
-            if index > len(self.visible_columns)-1: index = 0
+            if index < 0: index = len(self.visible_data_columns)-1
+            if index > len(self.visible_data_columns)-1: index = 0
         logger.debug("index: %d" %(index))
         self.sort_by_column(index)
 
@@ -906,7 +916,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def resize_column(self, name, size):
 
-        index, col = next( (i, c) for i, c in enumerate(self.columns) if c.name == name)
+        try:
+            index, col = next( (i, c) for i, c in enumerate(self.data_columns) if c.name == name)
+        except StopIteration:
+            raise Exception(self.data_columns, name)
         if isinstance(size, tuple):
             col.sizing, col.width = size
         elif isinstance(size, int):
@@ -945,7 +958,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 if delta < 0:
                     # can only shrink down to minimum for this column
                     # logger.debug(f"{d}, {-deltas[i]}")
-                    d = max(delta, -deltas[i])
+                    try:
+                        d = max(delta, -deltas[i])
+                    except:
+                        raise Exception(cols, mins, deltas, list(indexes))
                     # logger.debug(f"shrinking: {d}")
                 elif delta > 0:
                     # can only grow to maximum of remaining deltas?
@@ -968,49 +984,56 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
             return new_cols
 
-        try:
-            index = next(
-                i for i, c in enumerate(self.header.columns.contents)
-                if c[0] == source
-            )
-        except StopIteration:
-            return
+        # try:
+        #     index = next(
+        #         i for i, c in enumerate(self.header.columns.contents)
+        #         if c[0] == source
+        #     )
+        # except StopIteration:
+        #     return
 
-        if isinstance(source, DataTableHeaderCell):
-            cell = source
+        if isinstance(source, DataTableDividerCell):
+            index, cell = list(enumerate([ c for c in itertools.takewhile(
+                lambda c: c != source,
+                [ x[0] for x in self.header.columns.contents ]
+            ) if not isinstance(c, DataTableDividerCell)]))[-1]
         else:
-            # index+=1
-            cell = self.header.columns.contents[index-1][0]
+            cell = source
+            index = next(i for i, c in enumerate([
+                x[0] for x in self.header.columns.contents
+                if not isinstance(x[0], DataTableDividerCell)
+            ]) if c == cell)
 
+        logger.info(f"{cell}, {index}")
         colname = cell.column.name
-        # logger.debug(colname)
-        column = next( c for c in self.visible_columns if c.name == colname)
-        index = index//2
+        column = next( c for c in self.visible_data_columns if c.name == colname)
+        # index = index//2
 
         new_width = old_width = column.width
 
         delta = end-start
-        if isinstance(source, DataTableColumnDivider):
+        if isinstance(source, DataTableDividerCell):
             # logger.debug("divider")
             drag_direction= 1#abs(delta)//delta
         elif index != 0 and source_column <= int(round(column.width / 3)):
             drag_direction=-1
             delta = -delta
-        elif index != len(self.visible_columns)-1 and source_column >= int(round( (2*cell.width) / 3)):
+        elif index != len(self.visible_data_columns)-1 and source_column >= int(round( (2*cell.width) / 3)):
             drag_direction=1
         else:
            return
 
-        widths = [ c.width for c in self.header.cells ]
+        widths = [ c.width for c in self.visible_data_columns ]
         # mins = [ c.contents_width for c in self.header.cells ]
-        mins = [ c.minimum_width for c in self.visible_columns ]
+        mins = [ c.minimum_width for c in self.visible_data_columns ]
         new_widths = resize_columns(widths, mins, index, delta, drag_direction)
 
-        for i, c in enumerate(self.visible_columns):
+        # raise Exception(widths, mins, new_widths)
+        for i, c in enumerate(self.visible_data_columns):
             if self.header.cells[i].width != new_widths[i]:
                 self.resize_column(c.name, new_widths[i])
 
-        logger.trace(f"{widths}, {mins}, {new_widths}")
+        logger.debug(f"{widths}, {mins}, {new_widths}")
         if sum(widths) != sum(new_widths):
             logger.warning(f"{sum(widths)} != {sum(new_widths)}")
 
@@ -1038,8 +1061,17 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.enable_cell_selection()
 
     @property
+    def data_columns(self):
+        return [ c for c in self.columns if not isinstance(c, DataTableDivider) ]
+
+    @property
     def visible_columns(self):
         return [ c for c in self.columns if not c.hide ]
+
+    @property
+    def visible_data_columns(self):
+        return [ c for c in self.data_columns if not c.hide ]
+
 
     def add_row(self, data, sort=True):
 
@@ -1131,12 +1163,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
         self.filters = filters
-        self.invalidate()
+        # self.invalidate()
 
     def clear_filters(self):
         self.filtered_rows = blist(range(len(self.df)))
         self.filters = None
-        self.invalidate()
+        # self.invalidate()
 
 
     def load_all(self):
@@ -1200,10 +1232,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.df.update_rows(rows, limit=self.limit)
         self.df["_focus_position"] = self.sort_column
 
-        self.invalidate()
         self._modified()
 
         self.refresh_calculated_fields()
+        self.invalidate()
         self.apply_filters()
 
 
@@ -1213,6 +1245,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         pos = 0
         # limit = len(self)-1
         if reset:
+
             self.page = 0
             offset = 0
             limit = self.limit
@@ -1246,21 +1279,35 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             # c.width = c.initial_width
 
 
+    def reset(self, reset_sort=False):
+        self.refresh(reset=True)
+
+        if self._initialized:
+            # self.reset_columns()
+            self.pack_columns()
+            if reset_sort and self.initial_sort is not None:
+                self.sort_by_column(self.initial_sort)
+        self._invalidate()
+
     def pack_columns(self):
 
-        if isinstance(self.border, tuple):
-            bw = self.border[0]
-        else:
-            bw = self.border
+        # if isinstance(self.divider, tuple):
+        #     bw = self.divider[0]
+        # else:
+        #     bw = self.divider
 
         other_columns, pack_columns = [
             list(x) for x in partition(
                 lambda c: c.initial_sizing == "pack",
-                self.visible_columns
+                [ c for c in self.visible_columns ]
             )
         ]
+        # raise Exception(self.visible_columns)
 
-        other_widths = sum([c.width for c in other_columns]) + len(other_columns)*bw
+        self.header.render((self.width,), False)
+
+        other_widths = sum([c.width for i, c in enumerate(other_columns)])
+        # logger.info(f"{self.width}, {other_widths}, {[self.header.cells[i].width for i, c in enumerate(self.visible_columns)]}")
 
         num_pack = len(pack_columns)
         available = self.width - (1 if self.with_scrollbar else 0) - other_widths
@@ -1269,9 +1316,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         for i, c in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))
-            logger.debug(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
+            # logger.debug(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
             self.resize_column(c.name, w)
-            available -= (w + bw)
+            available -= w
+
 
         # w = self.width - (1 if self.with_scrollbar else 0)
         # rw = w
@@ -1283,16 +1331,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         #         self.resize_column(c.name, cw)
 
         #     rw -= c.width + bw
-
-
-    def reset(self, reset_sort=False):
-        self.refresh(reset=True)
-
-        if self._initialized:
-            self.reset_columns()
-            self.pack_columns()
-            if reset_sort:
-                self.sort_by_column(self.initial_sort)
 
     def load(self, path):
 

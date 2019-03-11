@@ -21,26 +21,76 @@ def make_value_function(template):
 
     return inner
 
-class DataTableColumn(object):
+class DataTableBaseColumn(object):
+
+    _width = ("weight", 1)
+
+    def __init__(
+            self,
+            padding = DEFAULT_CELL_PADDING,
+            hide=False,
+            width=None,
+            min_width=None,
+            attr = None
+
+    ):
+        self.hide = hide
+        self.padding = padding
+
+        if isinstance(self.padding, tuple):
+            self.padding_left, self.padding_right = self.padding
+        else:
+            self.padding_left = self.padding_right = self.padding
+
+        if width is not None:  self._width = width
+        self.min_width = min_width
+        self.attr = attr
+
+        if isinstance(self._width, tuple):
+            if self._width[0] != "weight":
+                raise Exception(
+                    "Column width %s not supported" %(self._width[0])
+                )
+            self.initial_sizing, self.initial_width = self._width
+        elif isinstance(self._width, int):
+            self.initial_sizing = "given"
+            self.min_width = self.initial_width = self._width # assume starting width is minimum
+        elif self._width == "pack":
+            self.initial_sizing = "pack"
+            self.initial_width = 1
+        else:
+            raise Exception(self._width)
+
+        self.sizing = self.initial_sizing
+        self.width = self.initial_width
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.name}>"
+
+    def width_with_padding(self, table_padding=None):
+        padding = 0
+        if self.padding is None and table_padding is not None:
+            padding = table_padding
+        return self.width + self.padding_left + self.padding_right
+
+
+
+class DataTableColumn(DataTableBaseColumn):
 
     def __init__(self, name,
                  label=None,
                  value=None,
-                 width=('weight', 1),
-                 min_width=None,
                  align="left", wrap="space",
-                 padding = DEFAULT_CELL_PADDING, #margin=1,
                  no_clip_header = False,
                  truncate=False,
-                 hide=False,
                  format_fn=None,
                  decoration_fn=None,
                  format_record = None, # format_fn is passed full row data
-                 attr = None,
                  sort_key = None, sort_reverse=False,
                  sort_icon = None,
-                 footer_fn = None, footer_arg = "values"):
+                 footer_fn = None, footer_arg = "values", **kwargs):
 
+        super().__init__(**kwargs)
         self.name = name
         self.label = label if label is not None else name
         if value:
@@ -50,51 +100,23 @@ class DataTableColumn(object):
                 self.value_fn = value
         else:
             self.value_fn = None
-        self.min_width = min_width
         self.align = align
         self.wrap = wrap
-        self.padding = padding
         self.no_clip_header = no_clip_header
         self.truncate = truncate
-        self.hide = hide
         self.format_fn = format_fn
         self.decoration_fn = decoration_fn
         self.format_record = format_record
-        self.attr = attr
         self.sort_key = sort_key
         self.sort_reverse = sort_reverse
         self.sort_icon = sort_icon
         self.footer_fn = footer_fn
         self.footer_arg = footer_arg
 
-        if isinstance(width, tuple):
-            if width[0] != "weight":
-                raise Exception(
-                    "Column width %s not supported" %(col.width[0])
-                )
-            self.initial_sizing, self.initial_width = width
-        elif isinstance(width, int):
-            self.initial_sizing = "given"
-            self.min_width = self.initial_width = width # assume starting width is minimum
-        elif width == "pack":
-            self.initial_sizing = "pack"
-            self.initial_width = 1
-        else:
-            raise Exception
-
-        self.sizing = self.initial_sizing
-        self.width = self.initial_width
-
-    def width_with_padding(self, table_padding=None):
-        padding = 0
-        if self.padding is None and table_padding is not None:
-            padding = table_padding
-        return self.width + 2*padding
-
     @property
     def contents_width(self):
         try:
-            index = next(i for i, c in enumerate(self.table.visible_columns) if c.name == self.name)
+            index = next(i for i, c in enumerate(self.table.visible_columns) if getattr(c, "name", None) == self.name)
         except StopIteration:
             raise Exception(self.name, [ c.name for c in self.table.visible_columns])
         # logger.info(f"len: {len(self.table.body)}")
@@ -115,7 +137,7 @@ class DataTableColumn(object):
             # logger.info(f"min: {self.name}, {self.contents_width}")
             return self.contents_width
         else:
-            return len(self.label) + self.padding*2 + (1 if self.sort_icon else 0)
+            return len(self.label) + self.padding_left + self.padding_right + (1 if self.sort_icon else 0)
 
 
     def _format(self, v):
@@ -145,3 +167,28 @@ class DataTableColumn(object):
         elif isinstance(v, datetype):
             v = v.strftime("%Y-%m-%d")
         return v
+
+
+class DataTableDivider(DataTableBaseColumn):
+
+    _width = 1
+
+    def __init__(self, char=" ", **kwargs):
+        super().__init__(**kwargs)
+        self.char = char
+
+    @property
+    def name(self):
+        return "divider"
+
+    @property
+    def minimum_width(self):
+        return len(self.char)
+
+    @property
+    def value(self):
+        return urwid.Divider(self.char)
+
+    @property
+    def contents_width(self):
+        return len(self.char)

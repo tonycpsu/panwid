@@ -10,7 +10,6 @@ class DataTableCell(urwid.WidgetWrap):
     signals = ["click", "select"]
 
     ATTR = "table_cell"
-    PADDING_ATTR = "table_row_padding"
 
     def __init__(self, table, column, row,
                  value_attr=None,
@@ -66,6 +65,9 @@ class DataTableCell(urwid.WidgetWrap):
             focus_map = self.normal_focus_map
         )
         super(DataTableCell, self).__init__(self.attrmap)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.column.name}>"
 
     @property
     def value(self):
@@ -163,7 +165,7 @@ class DataTableCell(urwid.WidgetWrap):
         (maxcol,) = size
         self.width = size[0]
         contents_rows = self.contents.rows((maxcol,), focus)
-        if (self.column.truncate
+        if (getattr(self.column, "truncate", None)
             and isinstance(self.contents, urwid.Widget)
             and hasattr(self.contents, "truncate")
         ):
@@ -173,15 +175,27 @@ class DataTableCell(urwid.WidgetWrap):
         return super().render((maxcol,), focus)
 
     def rows(self, size, focus=False):
-        if self.column.truncate:
+        if getattr(self.column, "truncate", None):
             return 1
         return super().rows(size, focus)
+
+class DataTableDividerCell(DataTableCell):
+
+    def selectable(self):
+        return False
+
+    def update_contents(self):
+
+        self.contents = urwid.Padding(
+            self.column.value,
+            left = self.column.padding_left,
+            right = self.column.padding_right
+        )
 
 
 class DataTableBodyCell(DataTableCell):
 
     ATTR = "table_row_body"
-    PADDING_ATTR = "table_row_body_padding"
 
     # @property
     # def formatted_value(self):
@@ -205,6 +219,10 @@ class DataTableBodyCell(DataTableCell):
             self.formatted_value
         )
 
+
+class DataTableDividerBodyCell(DataTableDividerCell, DataTableBodyCell):
+    pass
+
 class DataTableDetailCell(DataTableBodyCell):
 
     @property
@@ -222,7 +240,6 @@ class DataTableDetailCell(DataTableBodyCell):
 class DataTableHeaderCell(DataTableCell):
 
     ATTR = "table_row_header"
-    PADDING_ATTR = "table_row_header_padding"
 
     ASCENDING_SORT_MARKER = u"\N{UPWARDS ARROW}"
     DESCENDING_SORT_MARKER = u"\N{DOWNWARDS ARROW}"
@@ -330,8 +347,6 @@ class DataTableHeaderCell(DataTableCell):
         #     self.mouse_drag_start = None
         super().mouse_event(size, event, button, col, row, focus)
 
-
-
     def update_sort(self, sort):
         if not self.sort_icon: return
 
@@ -342,10 +357,14 @@ class DataTableHeaderCell(DataTableCell):
         else:
             self.columns.contents[index][0].set_text("")
 
+
+class DataTableDividerHeaderCell(DataTableDividerCell, DataTableHeaderCell):
+    pass
+
+
 class DataTableFooterCell(DataTableCell):
 
     ATTR = "table_row_footer"
-    PADDING_ATTR = "table_row_footer_padding"
 
     def update_contents(self):
         if self.column.footer_fn and len(self.table.df):
@@ -365,3 +384,7 @@ class DataTableFooterCell(DataTableCell):
             )
         else:
             self.contents = DataTableText("")
+
+class DataTableDividerFooterCell(DataTableDividerCell, DataTableHeaderCell):
+
+    DIVIDER_ATTR = "table_divider_footer"

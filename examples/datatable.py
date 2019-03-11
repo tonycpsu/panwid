@@ -123,10 +123,11 @@ def main():
                         attr="color", padding=0,
                         footer_fn = lambda column, values: sum(v for v in values if v is not None)
         ),
+        DataTableDivider(u"\N{DOUBLE VERTICAL LINE}"),
         DataTableColumn("bar", label="Bar", width=10, align="right",
                         format_fn = lambda v: round(v, 2) if v is not None else v,
                         decoration_fn = lambda v: ("cyan", v),
-                        sort_reverse=True, sort_icon=False, padding=1),# margin=5),
+                        sort_reverse=True, sort_icon=False, padding=0),# margin=5),
         DataTableColumn("baz", label="Baz!", width="pack", min_width=5,
                         truncate=True),
         DataTableColumn(
@@ -256,7 +257,6 @@ def main():
                     start = offset
                     end = offset + limit
                     r = self.query_data[start:end]
-                    logger.debug("%s:%s (%s)" %(start, end, len(r)))
                 else:
                     r = self.query_data[offset:]
             else:
@@ -288,6 +288,8 @@ def main():
                 self.focus_position = 0
             elif key == "ctrl t":
                 logger.info(self.selection.data)
+            elif key == "ctrl k":
+                logger.info(self.header.columns.contents)
                 # logger.info(f"{self.selection.data['bar']}, {self.selection['bar']}")
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
@@ -384,10 +386,10 @@ def main():
         def __init__(self, *args, **kwargs):
 
             self.table = ExampleDataTable(*args, **kwargs)
-            urwid.connect_signal(
-                self.table, "select",
-                lambda source, selection: logger.info("selection: %s" %(selection))
-            )
+            # urwid.connect_signal(
+            #     self.table, "select",
+            #     lambda source, selection: logger.info("selection: %s" %(selection))
+            # )
             label = "sz:%d pgsz:%s sort:%s%s hdr:%s ftr:%s ui_sort:%s cell_sel:%s" %(
                 self.table.query_result_count(),
                 self.table.limit if self.table.limit else "-",
@@ -428,11 +430,11 @@ def main():
 
     boxes = [
 
-
         ExampleDataTableBox(
             100,
             limit=10,
             index="uniqueid",
+            divider = DataTableDivider("   "),
             detail_fn=detail_fn,
             cell_selection=True,
             sort_refocus = True,
@@ -462,7 +464,6 @@ def main():
             with_footer=True,
             with_scrollbar=True,
             cell_selection=True,
-            border=(1, u"\N{VERTICAL LINE}", "blue"),
             padding=3,
             row_style = "grid"
         ),
@@ -471,7 +472,6 @@ def main():
             limit=500,
             index="uniqueid",
             sort_by = ("foo", True),
-            border=3,
             query_sort=True,
             with_scrollbar=True,
             with_header=False,
