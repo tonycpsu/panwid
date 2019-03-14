@@ -7,17 +7,18 @@ from .cells import *
 from .columns import *
 from orderedattrdict import AttrDict
 
-intersperse = lambda e,l: sum([[x, e] for x in l],[])[:-1]
-
 class DataTableRow(urwid.WidgetWrap):
 
-    def __init__(self, table, content=None,
+    def __init__(self, table,
+                 content=None,
+                 row_height=None,
                  divider=None, padding=None,
                  cell_selection=False,
                  style = None,
                  *args, **kwargs):
 
         self.table = table
+        self.row_height = row_height
         self.content = content
         # if not isinstance(self.content, int):
         #     raise Exception(self.content, type(self))
@@ -61,21 +62,41 @@ class DataTableRow(urwid.WidgetWrap):
         self.focus_map.update(table.focus_map)
 
         self.contents_placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
-        w = self.contents_placeholder
-        if self.style == "boxed":
-            w = urwid.LineBox(w)
-        elif self.style == "grid":
-            box = urwid.LineBox(w, tlcorner="├", trcorner="┤",)
-            w = urwid.BoxAdapter(urwid.Filler(box), 2) # FIXME: assumes height=1
 
+        w = self.contents_placeholder
+
+        self.update()
+
+        # if self.row_height:
+        w = urwid.BoxAdapter(w, self.row_height or 1)
+        self.box = w
         self.attrmap = urwid.AttrMap(
             w,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
         )
 
-        self.update()
         super(DataTableRow, self).__init__(self.attrmap)
+
+    def on_resize(self):
+
+        if self.row_height is not None:
+            return
+        l = [1]
+        for i, c in enumerate(self.cells):
+            try:
+                c.contents.render( (self.table.visible_columns[i].width,), False)
+            except Exception as e:
+                raise Exception(c, c.contents, e)
+
+            try:
+                rows = c.contents.rows( (self.table.visible_columns[i].width,) )
+                # logger.info(f"{c}, {c.contents}, {self.table.visible_columns[i].width}, {rows}")
+            except Exception as e:
+                raise Exception(type(self), type(self.contents), e)
+            # print(c, rows)
+            l.append(rows)
+        self.box.height = max(l)
 
     def keypress(self, size, key):
         try:
@@ -114,24 +135,11 @@ class DataTableRow(urwid.WidgetWrap):
             else:
                 options = columns.options(col.sizing, col.width_with_padding(self.padding))
             columns.contents.append(
-                # (cell, columns.options(col.sizing, col.width_with_padding(self.padding)))
-                # (cell, columns.options(col.sizing, col.contents_width))
                 (cell, options)
 
             )
         columns.focus_position = idx
         return columns
-
-    def intersperse_dividers(self, cells):
-        it = iter(cells)
-        yield next(it)
-        for cell in it:
-            yield (
-                self.DIVIDER_CLASS(self.table, self.divider, self),
-                (self.divider.sizing, self.divider.width, False)
-            )
-            yield cell
-
 
     def make_contents(self):
         self.columns = self.make_columns()
@@ -142,7 +150,11 @@ class DataTableRow(urwid.WidgetWrap):
         return self.contents_placeholder.original_widget
 
     def update(self):
-        self.contents_placeholder.original_widget = self.make_contents()
+        contents = self.make_contents()
+        # if self.row_height is None:
+        #     contents = urwid.Filler(contents)
+        self.contents_placeholder.original_widget = contents
+        # self._invalidate()
 
     def selectable(self):
         return True
@@ -308,12 +320,15 @@ class DataTableBodyRow(DataTableRow):
         super().update()
         self.pile = urwid.Pile([
             ('weight', 1, self.columns)
+            # ('pack', self.columns)
         ])
 
     def make_contents(self):
         self.columns = self.make_columns()
+        return self.columns
         return urwid.Pile([
             ("weight", 1, self.columns)
+            # ('pack', self.columns)
         ])
 
     def make_cells(self):

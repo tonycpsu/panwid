@@ -238,7 +238,11 @@ class ScrollingListBox(urwid.WidgetWrap):
 
     def render(self, size, focus=False):
 
-        maxcol, maxrow = size
+        maxcol = size[0]
+        self.width = maxcol
+        if len(size) > 1:
+            maxrow = size[1]
+            self.height = maxrow
 
         # print
         # print
@@ -271,8 +275,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         if self.with_scrollbar and len(self.body):
             self.scroll_bar.update(size)
 
-        self.height = maxrow
-        return super(ScrollingListBox, self).render( (maxcol, maxrow), focus)
+        return super(ScrollingListBox, self).render(size, focus)
 
 
     def disable(self):

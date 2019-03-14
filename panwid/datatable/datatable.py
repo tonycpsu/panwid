@@ -21,6 +21,13 @@ from .common import *
 
 DEFAULT_TABLE_DIVIDER = DataTableDivider(" ")
 
+def intersperse_divider(columns, divider):
+    for i, col in enumerate(columns):
+        yield col
+        if ( not isinstance(col, DataTableDivider)
+             and not (col.hide or columns[i+1].hide)):
+            yield divider
+
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
@@ -40,6 +47,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     with_header = True
     with_footer = False
     with_scrollbar = False
+    row_height = None
     cell_selection = False
 
     sort_by = (None, None)
@@ -73,6 +81,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  limit = None,
                  index = None,
                  with_header = None, with_footer = None, with_scrollbar = None,
+                 row_height = None,
                  cell_selection = None,
                  sort_by = None, query_sort = None, sort_icons = None,
                  sort_refocus = None,
@@ -131,6 +140,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
+        if row_height is not None: self.row_height = row_height
+
         if cell_selection is not None: self.cell_selection = cell_selection
         if divider is not None: self.divider = divider
         if padding is not None: self.padding = padding
@@ -216,12 +227,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             # self.offset = 0
 
         if self.divider:
-            self.columns = intersperse(self.divider, self.columns)
-
+            self.columns = list(intersperse_divider(self.columns, self.divider))
+            # self.columns = intersperse(self.divider, self.columns)
         self.header = DataTableHeaderRow(
             self,
             padding = self.padding,
-            style = self.row_style
+            style = self.row_style,
+            row_height=1 # FIXME
         )
 
         if self.with_header:
@@ -253,7 +265,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.footer = DataTableFooterRow(
             self,
             padding = self.padding,
-            style = self.row_style
+            style = self.row_style,
+            row_height=1
         )
 
         if self.with_footer:
@@ -570,7 +583,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self._height = size[1]
         if not self._initialized:
             self._initialized = True
-            self.reset()
+            self._invalidate()
+            self.reset(reset_sort=True)
         return super().render(size, focus)
         # return super().render(size, focus)
             # if self.sort_by:
@@ -648,8 +662,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         try:
             d = self.df.get_columns(index, as_dict=True)
-        except ValueError:
-            raise Exception(index, self.df)
+        except ValueError as e:
+            raise Exception(e, index, self.df)
         cls = d.get("_cls")
         if cls:
             if hasattr(cls, "__dataclass_fields__"):
@@ -723,6 +737,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def render_item(self, index):
         row = DataTableBodyRow(self, index,
+                               row_height= self.row_height,
                                divider = self.divider,
                                padding = self.padding,
                                # index=data[self.index],
@@ -937,16 +952,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def on_header_drag(self, source, source_column, start, end):
 
+        if not source:
+            return
+
         def resize_columns(cols, mins, index, delta, direction):
-            # logger.info(f"cols: {cols}, mins: {mins}, index: {index}, delta: {delta}, direction: {direction}")
+            logger.debug(f"cols: {cols}, mins: {mins}, index: {index}, delta: {delta}, direction: {direction}")
             new_cols = [c for c in cols]
 
-            if direction == 1 or index == 0:
+            if (index == 0) or (direction == 1 and index != len(cols)-1):
                 indexes = range(index, len(cols))
             else:
                 indexes = range(index, -1, -1)
-            if len(indexes) < 2:
-                raise Exception
+            # if len(indexes) < 2:
+            #     raise Exception(indexes, cols, mins, index, delta, direction)
 
             deltas = [a-b for a, b in zip(cols, mins)]
             # logger.debug(f"deltas: {deltas}")
@@ -984,19 +1002,17 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
             return new_cols
 
-        # try:
-        #     index = next(
-        #         i for i, c in enumerate(self.header.columns.contents)
-        #         if c[0] == source
-        #     )
-        # except StopIteration:
-        #     return
-
         if isinstance(source, DataTableDividerCell):
-            index, cell = list(enumerate([ c for c in itertools.takewhile(
-                lambda c: c != source,
-                [ x[0] for x in self.header.columns.contents ]
-            ) if not isinstance(c, DataTableDividerCell)]))[-1]
+            try:
+                index, cell = list(enumerate([ c for c in itertools.takewhile(
+                    lambda c: c != source,
+                    [ x[0] for x in self.header.columns.contents ]
+                ) if not isinstance(c, DataTableDividerCell)]))[-1]
+            except IndexError:
+                index, cell = list(enumerate([ c for c in itertools.takewhile(
+                    lambda c: c != source,
+                    [ x[0] for x in self.header.columns.contents ]
+                ) if not isinstance(c, DataTableDividerCell)]))[-1]
         else:
             cell = source
             index = next(i for i, c in enumerate([
@@ -1004,7 +1020,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 if not isinstance(x[0], DataTableDividerCell)
             ]) if c == cell)
 
-        logger.info(f"{cell}, {index}")
         colname = cell.column.name
         column = next( c for c in self.visible_data_columns if c.name == colname)
         # index = index//2
@@ -1012,9 +1027,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         new_width = old_width = column.width
 
         delta = end-start
+
         if isinstance(source, DataTableDividerCell):
-            # logger.debug("divider")
-            drag_direction= 1#abs(delta)//delta
+            drag_direction= 1
+        elif index == 0 and source_column <= int(round(column.width / 3)):
+            return
         elif index != 0 and source_column <= int(round(column.width / 3)):
             drag_direction=-1
             delta = -delta
@@ -1024,14 +1041,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
            return
 
         widths = [ c.width for c in self.visible_data_columns ]
-        # mins = [ c.contents_width for c in self.header.cells ]
         mins = [ c.minimum_width for c in self.visible_data_columns ]
         new_widths = resize_columns(widths, mins, index, delta, drag_direction)
 
-        # raise Exception(widths, mins, new_widths)
         for i, c in enumerate(self.visible_data_columns):
             if self.header.cells[i].width != new_widths[i]:
                 self.resize_column(c.name, new_widths[i])
+
+        for r in self.body:
+            r.on_resize()
 
         logger.debug(f"{widths}, {mins}, {new_widths}")
         if sum(widths) != sum(new_widths):
@@ -1235,8 +1253,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._modified()
 
         self.refresh_calculated_fields()
-        self.invalidate()
         self.apply_filters()
+        # self.invalidate()
 
 
     def refresh(self, reset=False):
@@ -1283,10 +1301,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.refresh(reset=True)
 
         if self._initialized:
-            # self.reset_columns()
             self.pack_columns()
-            if reset_sort and self.initial_sort is not None:
-                self.sort_by_column(self.initial_sort)
+        if reset_sort and self.initial_sort is not None:
+            self.sort_by_column(self.initial_sort)
+        self._modified()
         self._invalidate()
 
     def pack_columns(self):
@@ -1320,6 +1338,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.resize_column(c.name, w)
             available -= w
 
+        for r in self:
+            r.on_resize()
+        # logger.info(f"pack_columns: {self.visible_columns[2].width}")
+        # self.header.render((self.width,), False)
 
         # w = self.width - (1 if self.with_scrollbar else 0)
         # rw = w

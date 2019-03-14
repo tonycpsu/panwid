@@ -129,7 +129,7 @@ def main():
                         decoration_fn = lambda v: ("cyan", v),
                         sort_reverse=True, sort_icon=False, padding=0),# margin=5),
         DataTableColumn("baz", label="Baz!", width="pack", min_width=5,
-                        truncate=True),
+                        truncate=False),
         DataTableColumn(
             "qux",
             label=urwid.Text([("red", "q"), ("green", "u"), ("blue", "x")]),
@@ -191,7 +191,7 @@ def main():
                             string.ascii_uppercase
                             + string.ascii_lowercase
                             + string.digits + ' ' * 10
-                        ) for _ in range(random.randint(5, 80)))
+                        ) for _ in range(random.randint(20, 80)))
                               if random.randint(0, 5)
                               else None),
                         qux = urwid.Text([("red", "1"),("green", "2"), ("blue", "3")]),
@@ -377,8 +377,8 @@ def main():
                 return super(ExampleDataTable, self).keypress(size, key)
 
         def decorate(self, row, column, value):
-            if column.name == "baz":
-                return BazColumns(value)
+            # if column.name == "baz":
+            #     return BazColumns(value)
             return super().decorate(row, column, value)
 
     class ExampleDataTableBox(urwid.WidgetWrap):
@@ -434,49 +434,52 @@ def main():
             100,
             limit=10,
             index="uniqueid",
-            divider = DataTableDivider("   "),
+            divider = DataTableDivider("."),
+            # divider = False,
             detail_fn=detail_fn,
             cell_selection=True,
             sort_refocus = True,
             with_scrollbar=True,
             row_attr_fn = row_attr_fn,
+            row_height=2,
             # no_load_on_init = True
 
         ),
-        ExampleDataTableBox(
-            1000,
-            index="uniqueid",
-            sort_by = "foo",
-            query_sort=False,
-            ui_sort=False,
-            ui_resize=False,
-            with_footer=True,
-            with_scrollbar=True,
-        ),
-        ExampleDataTableBox(
-            500,
-            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
-            limit=25,
-            index="uniqueid",
-            sort_by = ("bar", True),
-            sort_icons = False,
-            query_sort=True,
-            with_footer=True,
-            with_scrollbar=True,
-            cell_selection=True,
-            padding=3,
-            row_style = "grid"
-        ),
-        ExampleDataTableBox(
-            5000,
-            limit=500,
-            index="uniqueid",
-            sort_by = ("foo", True),
-            query_sort=True,
-            with_scrollbar=True,
-            with_header=False,
-            with_footer=False,
-        ),
+
+        # ExampleDataTableBox(
+        #     1000,
+        #     index="uniqueid",
+        #     sort_by = "foo",
+        #     query_sort=False,
+        #     ui_sort=False,
+        #     ui_resize=False,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        # ),
+        # ExampleDataTableBox(
+        #     500,
+        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
+        #     limit=25,
+        #     index="uniqueid",
+        #     sort_by = ("bar", True),
+        #     sort_icons = False,
+        #     query_sort=True,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     cell_selection=True,
+        #     padding=3,
+        #     row_style = "grid"
+        # ),
+        # ExampleDataTableBox(
+        #     5000,
+        #     limit=500,
+        #     index="uniqueid",
+        #     sort_by = ("foo", True),
+        #     query_sort=True,
+        #     with_scrollbar=True,
+        #     with_header=False,
+        #     with_footer=False,
+        # ),
 
     ]
 
@@ -498,8 +501,25 @@ def main():
     l[4] = 'undefined'
     screen.tty_signal_keys(*l)
 
+    grid_box = urwid.LineBox(grid_flow)
+
+    table = ExampleDataTable(
+        100,
+        limit=10,
+        index="uniqueid",
+        divider = DataTableDivider(".q", width=3),
+        detail_fn=detail_fn,
+        cell_selection=True,
+        sort_refocus = True,
+        with_scrollbar=True,
+        row_attr_fn = row_attr_fn,
+    )
+
     main = urwid.MainLoop(
-        urwid.Frame(urwid.Filler(urwid.LineBox(grid_flow), valign="top")),
+        urwid.Pile([
+            ("pack", grid_box),
+            ("weight", 1, table),
+        ]),
         palette = palette,
         screen = screen,
         unhandled_input=global_input

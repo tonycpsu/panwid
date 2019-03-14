@@ -182,13 +182,7 @@ class DataTableDivider(DataTableBaseColumn):
         return "divider"
 
     @property
-    def minimum_width(self):
-        return len(self.char)
-
-    @property
     def value(self):
-        return urwid.Divider(self.char)
-
-    @property
-    def contents_width(self):
-        return len(self.char)
+        # FIXME: should use SolidFill for rows that span multiple screen rows
+        w = urwid.Divider(self.char)
+        return w
