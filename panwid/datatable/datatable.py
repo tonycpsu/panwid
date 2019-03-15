@@ -1300,10 +1300,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def reset(self, reset_sort=False):
         self.refresh(reset=True)
 
-        if self._initialized:
-            self.pack_columns()
         if reset_sort and self.initial_sort is not None:
             self.sort_by_column(self.initial_sort)
+        if self._initialized:
+            self.pack_columns()
         self._modified()
         self._invalidate()
 

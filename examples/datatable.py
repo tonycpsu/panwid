@@ -413,11 +413,18 @@ def main():
 
     def detail_fn(data):
 
-        return urwid.Padding(urwid.Columns([
-            ("weight", 1, data.get("qux")),
-            # ("weight", 1, urwid.Text(str(data.get("baz_len")))),
-            ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
-        ]))
+        # return urwid.Padding(urwid.Columns([
+        #     ("weight", 1, data.get("qux")),
+        #     # ("weight", 1, urwid.Text(str(data.get("baz_len")))),
+        #     ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
+        # ]))
+
+        return urwid.Pile([
+            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+        ])
 
     def row_attr_fn(row):
         if row.baz and "R" in row.baz:

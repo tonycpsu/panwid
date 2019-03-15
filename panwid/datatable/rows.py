@@ -69,8 +69,13 @@ class DataTableRow(urwid.WidgetWrap):
 
         # if self.row_height:
         self.box = urwid.BoxAdapter(w, self.row_height or 1)
+
+        self.pile = urwid.Pile([
+            ("weight", 1, self.box)
+        ])
+
         self.attrmap = urwid.AttrMap(
-            self.box,
+            self.pile,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
         )
@@ -80,6 +85,7 @@ class DataTableRow(urwid.WidgetWrap):
     def on_resize(self):
 
         if self.row_height is not None:
+            logger.info(f"{self}, nope")
             return
         l = [1]
         for i, c in enumerate(self.cells):
@@ -90,12 +96,15 @@ class DataTableRow(urwid.WidgetWrap):
 
             try:
                 rows = c.contents.rows( (self.table.visible_columns[i].width,) )
-                # logger.info(f"{c}, {c.contents}, {self.table.visible_columns[i].width}, {rows}")
             except Exception as e:
                 raise Exception(type(self), type(self.contents), e)
             # print(c, rows)
             l.append(rows)
+        logger.info(f"{c}, {c.contents}, {self.table.visible_columns[i].width}, {max(l)}")
         self.box.height = max(l)
+        # (w, o) = self.pile.contents[0]
+        # self.pile.contents[0] = (w, self.pile.options("given", max(l)))
+
 
     def keypress(self, size, key):
         try:
@@ -178,6 +187,23 @@ class DataTableRow(urwid.WidgetWrap):
     def data_cells(self):
         return [ c for c in self.cells if not isinstance(c, DataTableDividerCell)]
 
+    def render(self, size, focus=False):
+        maxcol = size[0]
+        self._width = size[0]
+        if len(size) > 1:
+            maxrow = size[1]
+            self._height = maxrow
+        return super().render(size, focus)
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
+
+
 class DataTableBodyRow(DataTableRow):
 
     ATTR = "table_row_body"
@@ -256,15 +282,12 @@ class DataTableBodyRow(DataTableRow):
         #         col_index = 0
         # else:
         #     col_index = 0
-
-        row = DataTableDetailRow(self.table, content)
-
+        # row = DataTableDetailRow(self.table, content)
+        height = content.rows( (self.table.width,) )
         self.pile.contents.append(
-            (content, self.pile.options("given", 1)),
+            (content, self.pile.options("pack"))
         )
-
-        # self.box.height += 3
-        self._invalidate()
+        # self.box.height += content.rows( (self.table.width,) )
         self.pile.focus_position = 1
         self["_details_open"] = True
 
@@ -273,6 +296,8 @@ class DataTableBodyRow(DataTableRow):
             return
         self["_details_open"] = False
         # del self.contents.contents[0]
+
+        # self.box.height -= self.pile.contents[1][0].rows( (self.table.width,) )
         del self.pile.contents[1]
 
     @property
