@@ -68,10 +68,9 @@ class DataTableRow(urwid.WidgetWrap):
         self.update()
 
         # if self.row_height:
-        w = urwid.BoxAdapter(w, self.row_height or 1)
-        self.box = w
+        self.box = urwid.BoxAdapter(w, self.row_height or 1)
         self.attrmap = urwid.AttrMap(
-            w,
+            self.box,
             attr_map = self.attr_map,
             focus_map = self.focus_map,
         )
@@ -259,10 +258,14 @@ class DataTableBodyRow(DataTableRow):
         #     col_index = 0
 
         row = DataTableDetailRow(self.table, content)
-        self.contents.contents.append(
-            (row, self.pile.options("pack"))
+
+        self.pile.contents.append(
+            (content, self.pile.options("given", 1)),
         )
-        self.contents.focus_position = 1
+
+        # self.box.height += 3
+        self._invalidate()
+        self.pile.focus_position = 1
         self["_details_open"] = True
 
     def close_details(self):
@@ -270,7 +273,7 @@ class DataTableBodyRow(DataTableRow):
             return
         self["_details_open"] = False
         # del self.contents.contents[0]
-        del self.contents.contents[1]
+        del self.pile.contents[1]
 
     @property
     def details_focused(self):
@@ -316,20 +319,20 @@ class DataTableBodyRow(DataTableRow):
         focus_map[self.ATTR] = "%s focused" %(self.ATTR)
         self.attrmap.set_focus_map(focus_map)
 
-    def update(self):
-        super().update()
-        self.pile = urwid.Pile([
-            ('weight', 1, self.columns)
-            # ('pack', self.columns)
-        ])
+    # def update(self):
+    #     super().update()
+    #     self.pile = urwid.Pile([
+    #         ('weight', 1, self.columns)
+    #         # ('pack', self.columns)
+    #     ])
 
-    def make_contents(self):
-        self.columns = self.make_columns()
-        return self.columns
-        return urwid.Pile([
-            ("weight", 1, self.columns)
-            # ('pack', self.columns)
-        ])
+    # def make_contents(self):
+    #     self.columns = self.make_columns()
+    #     return self.columns
+    #     return urwid.Pile([
+    #         ("weight", 1, self.columns)
+    #         # ('pack', self.columns)
+    #     ])
 
     def make_cells(self):
 

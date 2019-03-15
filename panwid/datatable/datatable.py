@@ -25,7 +25,7 @@ def intersperse_divider(columns, divider):
     for i, col in enumerate(columns):
         yield col
         if ( not isinstance(col, DataTableDivider)
-             and not (col.hide or columns[i+1].hide)):
+             and not (col.hide or (i < len(columns)-1 and columns[i+1].hide))):
             yield divider
 
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
@@ -1048,7 +1048,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             if self.header.cells[i].width != new_widths[i]:
                 self.resize_column(c.name, new_widths[i])
 
-        for r in self.body:
+        for r in self:
             r.on_resize()
 
         logger.debug(f"{widths}, {mins}, {new_widths}")
@@ -1334,7 +1334,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         for i, c in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))
-            # logger.debug(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
+            logger.info(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
             self.resize_column(c.name, w)
             available -= w
 

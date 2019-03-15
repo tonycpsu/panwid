@@ -116,7 +116,9 @@ class DataTableColumn(DataTableBaseColumn):
     @property
     def contents_width(self):
         try:
-            index = next(i for i, c in enumerate(self.table.visible_columns) if getattr(c, "name", None) == self.name)
+            index = next(i for i, c
+                         in enumerate(self.table.visible_columns)
+                         if getattr(c, "name", None) == self.name)
         except StopIteration:
             raise Exception(self.name, [ c.name for c in self.table.visible_columns])
         # logger.info(f"len: {len(self.table.body)}")
@@ -186,3 +188,7 @@ class DataTableDivider(DataTableBaseColumn):
         # FIXME: should use SolidFill for rows that span multiple screen rows
         w = urwid.Divider(self.char)
         return w
+
+    @property
+    def contents_width(self):
+        return len(self.char)

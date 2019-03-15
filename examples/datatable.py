@@ -441,13 +441,13 @@ def main():
             sort_refocus = True,
             with_scrollbar=True,
             row_attr_fn = row_attr_fn,
-            row_height=2,
+            # row_height=2,
             # no_load_on_init = True
 
         ),
 
         # ExampleDataTableBox(
-        #     1000,
+        #     500,
         #     index="uniqueid",
         #     sort_by = "foo",
         #     query_sort=False,
@@ -455,7 +455,9 @@ def main():
         #     ui_resize=False,
         #     with_footer=True,
         #     with_scrollbar=True,
+        #     row_height=2,
         # ),
+
         # ExampleDataTableBox(
         #     500,
         #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
