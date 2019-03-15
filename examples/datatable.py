@@ -87,7 +87,7 @@ def main():
         fh = logging.FileHandler("datatable.log")
         # fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
-        if options.verbose > 1:
+        if options.verbose > 0:
             logger.setLevel(logging.DEBUG)
             logging.getLogger("panwid.datatable").setLevel(logging.DEBUG)
         else:
@@ -115,7 +115,7 @@ def main():
     COLUMNS = [
         # DataTableColumn("uniqueid", width=10, align="right", padding=1),
         # DataTableColumn("foo", label="Foo", width=5, align="right",
-        DataTableColumn("foo", label="Foo", width="pack", align="right",
+        DataTableColumn("foo", label="Foo", align="right",
                         sort_key = lambda v: (v is None, v),
                         # format_record=True,
                         # format_fn = lambda r: r.foo,
@@ -289,7 +289,9 @@ def main():
             elif key == "ctrl t":
                 logger.info(self.selection.data)
             elif key == "ctrl k":
-                logger.info(self.header.columns.contents)
+                # logger.info(self.header.columns.contents)
+                col = next(c for c in self.columns if c.name == "foo")
+                logger.info(f"{col.sizing}, {col.width}")
                 # logger.info(f"{self.selection.data['bar']}, {self.selection['bar']}")
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
@@ -419,12 +421,24 @@ def main():
         #     ("weight", 2, urwid.Text(str(data.get("xyzzy")))),
         # ]))
 
-        return urwid.Pile([
-            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
-            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
-            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
-            (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
-        ])
+        # return urwid.Pile([
+        #     (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+        #     (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+        #     (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+        #     (1, urwid.Filler(urwid.Padding(urwid.Text("adassdda")))),
+        # ])
+
+        return urwid.BoxAdapter(ExampleDataTable(
+            100,
+            limit=10,
+            index="uniqueid",
+            divider = DataTableDivider(".q", width=3),
+            detail_fn=detail_fn,
+            cell_selection=True,
+            sort_refocus = True,
+            with_scrollbar=True,
+            row_attr_fn = row_attr_fn,
+        ), 20)
 
     def row_attr_fn(row):
         if row.baz and "R" in row.baz:
@@ -448,6 +462,7 @@ def main():
             sort_refocus = True,
             with_scrollbar=True,
             row_attr_fn = row_attr_fn,
+            detail_selectable = True,
             # row_height=2,
             # no_load_on_init = True
 

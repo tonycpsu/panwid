@@ -1048,12 +1048,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             if self.header.cells[i].width != new_widths[i]:
                 self.resize_column(c.name, new_widths[i])
 
-        for r in self:
-            r.on_resize()
-
+        self.resize_body_rows()
         logger.debug(f"{widths}, {mins}, {new_widths}")
         if sum(widths) != sum(new_widths):
             logger.warning(f"{sum(widths)} != {sum(new_widths)}")
+
+    def resize_body_rows(self):
+        for r in self:
+            r.on_resize()
 
     def toggle_details(self):
         self.selection.toggle_details()
@@ -1338,8 +1340,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.resize_column(c.name, w)
             available -= w
 
-        for r in self:
-            r.on_resize()
+        self.resize_body_rows()
         # logger.info(f"pack_columns: {self.visible_columns[2].width}")
         # self.header.render((self.width,), False)
 

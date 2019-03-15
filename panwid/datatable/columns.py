@@ -112,6 +112,8 @@ class DataTableColumn(DataTableBaseColumn):
         self.sort_icon = sort_icon
         self.footer_fn = footer_fn
         self.footer_arg = footer_arg
+        logger.debug(f"column {self.name}, width: {self.sizing}, {self.width}")
+
 
     @property
     def contents_width(self):

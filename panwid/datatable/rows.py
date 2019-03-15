@@ -99,8 +99,8 @@ class DataTableRow(urwid.WidgetWrap):
             except Exception as e:
                 raise Exception(type(self), type(self.contents), e)
             # print(c, rows)
+            # logger.debug(f"{c}, {c.contents}, {self.table.visible_columns[i].width}, {max(l)}")
             l.append(rows)
-        logger.info(f"{c}, {c.contents}, {self.table.visible_columns[i].width}, {max(l)}")
         self.box.height = max(l)
         # (w, o) = self.pile.contents[0]
         # self.pile.contents[0] = (w, self.pile.options("given", max(l)))
@@ -162,7 +162,6 @@ class DataTableRow(urwid.WidgetWrap):
         # if self.row_height is None:
         #     contents = urwid.Filler(contents)
         self.contents_placeholder.original_widget = contents
-        # self._invalidate()
 
     def selectable(self):
         return True
@@ -283,10 +282,14 @@ class DataTableBodyRow(DataTableRow):
         # else:
         #     col_index = 0
         # row = DataTableDetailRow(self.table, content)
+
         height = content.rows( (self.table.width,) )
         self.pile.contents.append(
             (content, self.pile.options("pack"))
         )
+
+        self.pile.selectable = lambda: self.table.detail_selectable
+        self._invalidate()
         # self.box.height += content.rows( (self.table.width,) )
         self.pile.focus_position = 1
         self["_details_open"] = True
