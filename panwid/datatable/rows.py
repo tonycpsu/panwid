@@ -191,7 +191,9 @@ class DataTableRow(urwid.WidgetWrap):
     def data_cells(self):
         return [ c for c in self.cells if not isinstance(c, DataTableDividerCell)]
 
-    def column_widths(self, size):
+    def column_widths(self, size=None):
+        if not size:
+            size = (self.table.width,)
         return self.columns.column_widths(size)
 
     def render(self, size, focus=False):
