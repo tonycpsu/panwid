@@ -52,6 +52,7 @@ class DataTableBaseColumn(object):
                     "Column width %s not supported" %(self._width[0])
                 )
             self.initial_sizing, self.initial_width = self._width
+            self.min_width = 3 # FIXME
         elif isinstance(self._width, int):
             self.initial_sizing = "given"
             self.min_width = self.initial_width = self._width # assume starting width is minimum
@@ -73,6 +74,14 @@ class DataTableBaseColumn(object):
             padding = table_padding
         return self.width + self.padding_left + self.padding_right
 
+    @property
+    def index(self):
+        return self.table.visible_columns.index(self)
+
+    @property
+    def header(self):
+        return self.table.header.cells[self.index]
+
 
 
 class DataTableColumn(DataTableBaseColumn):
@@ -81,6 +90,7 @@ class DataTableColumn(DataTableBaseColumn):
                  label=None,
                  value=None,
                  align="left", wrap="space",
+                 pack=False,
                  no_clip_header = False,
                  truncate=False,
                  format_fn=None,
@@ -101,6 +111,7 @@ class DataTableColumn(DataTableBaseColumn):
         else:
             self.value_fn = None
         self.align = align
+        self.pack = pack
         self.wrap = wrap
         self.no_clip_header = no_clip_header
         self.truncate = truncate
@@ -137,7 +148,8 @@ class DataTableColumn(DataTableBaseColumn):
 
     @property
     def minimum_width(self):
-        if self.sizing == "pack":
+        # if self.sizing == "pack":
+        if self.pack:
             # logger.info(f"min: {self.name}, {self.contents_width}")
             return self.contents_width
         else:
@@ -194,3 +206,7 @@ class DataTableDivider(DataTableBaseColumn):
     @property
     def contents_width(self):
         return len(self.char)
+
+    @property
+    def pack(self):
+        return False

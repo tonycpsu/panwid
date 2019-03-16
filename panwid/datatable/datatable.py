@@ -26,7 +26,7 @@ def intersperse_divider(columns, divider):
         yield col
         if ( not isinstance(col, DataTableDivider)
              and not (col.hide or (i < len(columns)-1 and columns[i+1].hide))):
-            yield divider
+            yield copy.copy(divider)
 
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
@@ -112,10 +112,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 DataTableColumn(self.index, hide=True)
             )
 
-        for c in self.columns:
-            c.table = self
-
-
         if data is not None:
             self.data = data
 
@@ -174,6 +170,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.filters = None
         self.filtered_rows = blist()
 
+        if self.divider:
+            self.columns = list(intersperse_divider(self.columns, self.divider))
+            # self.columns = intersperse(self.divider, self.columns)
+
+        for c in self.columns:
+            c.table = self
+
         kwargs = dict(
             columns = self.column_names,
             use_blist=True,
@@ -226,9 +229,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             urwid.connect_signal(self.listbox, "load_more", self.load_more)
             # self.offset = 0
 
-        if self.divider:
-            self.columns = list(intersperse_divider(self.columns, self.divider))
-            # self.columns = intersperse(self.divider, self.columns)
         self.header = DataTableHeaderRow(
             self,
             padding = self.padding,
@@ -1024,15 +1024,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         column = next( c for c in self.visible_data_columns if c.name == colname)
         # index = index//2
 
-        new_width = old_width = column.width
+        new_width = old_width = column.header.width
 
         delta = end-start
 
         if isinstance(source, DataTableDividerCell):
             drag_direction= 1
-        elif index == 0 and source_column <= int(round(column.width / 3)):
+        elif index == 0 and source_column <= int(round(column.header.width / 3)):
             return
-        elif index != 0 and source_column <= int(round(column.width / 3)):
+        elif index != 0 and source_column <= int(round(column.header.width / 3)):
             drag_direction=-1
             delta = -delta
         elif index != len(self.visible_data_columns)-1 and source_column >= int(round( (2*cell.width) / 3)):
@@ -1040,12 +1040,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         else:
            return
 
-        widths = [ c.width for c in self.visible_data_columns ]
-        mins = [ c.minimum_width for c in self.visible_data_columns ]
+        widths = [ c.header.width for c in self.visible_data_columns ]
+        mins = [ c.min_width for c in self.visible_data_columns ]
         new_widths = resize_columns(widths, mins, index, delta, drag_direction)
 
         for i, c in enumerate(self.visible_data_columns):
-            if self.header.cells[i].width != new_widths[i]:
+            if c.header.width != new_widths[i]:
                 self.resize_column(c.name, new_widths[i])
 
         self.resize_body_rows()
@@ -1311,49 +1311,32 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def pack_columns(self):
 
-        # if isinstance(self.divider, tuple):
-        #     bw = self.divider[0]
-        # else:
-        #     bw = self.divider
+        widths = self.header.column_widths( (self.width,) )
+        logger.info(f"{self}, {widths}")
 
         other_columns, pack_columns = [
             list(x) for x in partition(
-                lambda c: c.initial_sizing == "pack",
-                [ c for c in self.visible_columns ]
+                # lambda c: c.initial_sizing == "pack",
+                lambda c: c[0].pack == True,
+                zip(self.visible_columns, widths)
             )
         ]
-        # raise Exception(self.visible_columns)
 
-        self.header.render((self.width,), False)
-
-        other_widths = sum([c.width for i, c in enumerate(other_columns)])
-        # logger.info(f"{self.width}, {other_widths}, {[self.header.cells[i].width for i, c in enumerate(self.visible_columns)]}")
+        other_widths = sum([c[1] for c in other_columns])
 
         num_pack = len(pack_columns)
         available = self.width - (1 if self.with_scrollbar else 0) - other_widths
         if self.row_style in ["boxed", "grid"]:
             available -= 2
 
-        for i, c in enumerate(pack_columns):
+        for i, (c, cw) in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))
             logger.info(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
             self.resize_column(c.name, w)
             available -= w
 
         self.resize_body_rows()
-        # logger.info(f"pack_columns: {self.visible_columns[2].width}")
-        # self.header.render((self.width,), False)
 
-        # w = self.width - (1 if self.with_scrollbar else 0)
-        # rw = w
-
-        # for c in self.visible_columns:
-        #     # logger.info(f"{c.name}, w: {w}, sw: {sw}")
-        #     if c.sizing == "pack":
-        #         cw = min(rw, c.contents_width)
-        #         self.resize_column(c.name, cw)
-
-        #     rw -= c.width + bw
 
     def load(self, path):
 

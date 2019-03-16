@@ -85,23 +85,28 @@ class DataTableRow(urwid.WidgetWrap):
     def on_resize(self):
 
         if self.row_height is not None:
-            logger.info(f"{self}, nope")
             return
         l = [1]
-        for i, c in enumerate(self.cells):
-            try:
-                c.contents.render( (self.table.visible_columns[i].width,), False)
-            except Exception as e:
-                raise Exception(c, c.contents, e)
+        # for i, c in enumerate(self.cells):
+        for c, w in zip(self.cells, self.column_widths( (self.table.width,) )):
+            # try:
+            # c.contents.render( (self.table.visible_columns[i].width,), False)
+            # except Exception as e:
+            #     raise Exception(c, c.contents, e)
 
-            try:
-                rows = c.contents.rows( (self.table.visible_columns[i].width,) )
-            except Exception as e:
-                raise Exception(type(self), type(self.contents), e)
+            # try:
+            rows = c.contents.rows( (w,) )
+            logger.debug(f"{c}, {c.contents}, {w}, {rows}")
+
+            # self.table.header.render((self.table.width, self.row_height), False)
+            # raise Exception(self.table.header.data_cells[i].width)
+            # rows = self.table.header.rows( (self.table.header.cells[i].width,) )
+            # except Exception as e:
+                # raise Exception(type(self), type(self.contents), e)
             # print(c, rows)
-            # logger.debug(f"{c}, {c.contents}, {self.table.visible_columns[i].width}, {max(l)}")
             l.append(rows)
         self.box.height = max(l)
+        logger.debug(f"height: {self.box.height}")
         # (w, o) = self.pile.contents[0]
         # self.pile.contents[0] = (w, self.pile.options("given", max(l)))
 
@@ -185,6 +190,9 @@ class DataTableRow(urwid.WidgetWrap):
     @property
     def data_cells(self):
         return [ c for c in self.cells if not isinstance(c, DataTableDividerCell)]
+
+    def column_widths(self, size):
+        return self.columns.column_widths(size)
 
     def render(self, size, focus=False):
         maxcol = size[0]
@@ -284,12 +292,13 @@ class DataTableBodyRow(DataTableRow):
         # row = DataTableDetailRow(self.table, content)
 
         height = content.rows( (self.table.width,) )
+
         self.pile.contents.append(
             (content, self.pile.options("pack"))
         )
 
-        self.pile.selectable = lambda: self.table.detail_selectable
-        self._invalidate()
+        # self.pile.selectable = lambda: self.table.detail_selectable
+        # self._invalidate()
         # self.box.height += content.rows( (self.table.width,) )
         self.pile.focus_position = 1
         self["_details_open"] = True

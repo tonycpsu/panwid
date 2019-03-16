@@ -183,10 +183,10 @@ class DataTableCell(urwid.WidgetWrap):
             self.contents.truncate(
                 self.width - (self.padding*2), end_char=self.column.truncate
             )
-        try:
-            return super().render(size, focus)
-        except Exception as e:
-            raise Exception(self, size, self.contents, e)
+        # try:
+        return super().render(size, focus)
+        # except Exception as e:
+        #     raise Exception(self, size, self.contents, e)
 
     @property
     def width(self):
