@@ -25,6 +25,7 @@ def intersperse_divider(columns, divider):
     for i, col in enumerate(columns):
         yield col
         if ( not isinstance(col, DataTableDivider)
+             and not i == len(columns)-1
              and not (col.hide or (i < len(columns)-1 and columns[i+1].hide))):
             yield copy.copy(divider)
 
