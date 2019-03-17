@@ -113,15 +113,11 @@ def main():
 
 
     COLUMNS = [
-        # DataTableColumn("uniqueid", width=10, align="right", padding=1),
-        # DataTableColumn("foo", label="Foo", width=5, align="right",
         DataTableColumn("foo", label="Foo", align="right",
-                        width=("weight", 1),
+                        # width=("weight", 1),
+                        width=3,
                         sort_key = lambda v: (v is None, v),
                         pack=True,
-                        # format_record=True,
-                        # format_fn = lambda r: r.foo,
-                        # value="{data.foo}",
                         attr="color", padding=0,
                         footer_fn = lambda column, values: sum(v for v in values if v is not None)
         ),
@@ -135,6 +131,7 @@ def main():
                         width=("weight", 5),
                         pack=True,
                         min_width=5,
+                        align="right",
                         truncate=False),
         DataTableColumn(
             "qux",
@@ -469,47 +466,48 @@ def main():
             with_scrollbar=True,
             row_attr_fn = row_attr_fn,
             detail_selectable = True,
+            sort_icons=False,
             # row_height=2,
             # no_load_on_init = True
 
         ),
 
-        ExampleDataTableBox(
-            500,
-            index="uniqueid",
-            sort_by = "foo",
-            query_sort=False,
-            ui_sort=False,
-            ui_resize=False,
-            with_footer=True,
-            with_scrollbar=True,
-            row_height=2,
-        ),
+        # ExampleDataTableBox(
+        #     500,
+        #     index="uniqueid",
+        #     sort_by = "foo",
+        #     query_sort=False,
+        #     ui_sort=False,
+        #     ui_resize=False,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     row_height=2,
+        # ),
 
-        ExampleDataTableBox(
-            500,
-            columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
-            limit=25,
-            index="uniqueid",
-            sort_by = ("bar", True),
-            sort_icons = False,
-            query_sort=True,
-            with_footer=True,
-            with_scrollbar=True,
-            cell_selection=True,
-            padding=3,
-            row_style = "grid"
-        ),
-        ExampleDataTableBox(
-            5000,
-            limit=500,
-            index="uniqueid",
-            sort_by = ("foo", True),
-            query_sort=True,
-            with_scrollbar=True,
-            with_header=False,
-            with_footer=False,
-        ),
+        # ExampleDataTableBox(
+        #     500,
+        #     columns = [DataTableColumn("row", width=7, value="{row}/{rows_total}")] + ExampleDataTable.columns,
+        #     limit=25,
+        #     index="uniqueid",
+        #     sort_by = ("bar", True),
+        #     sort_icons = False,
+        #     query_sort=True,
+        #     with_footer=True,
+        #     with_scrollbar=True,
+        #     cell_selection=True,
+        #     padding=3,
+        #     row_style = "grid"
+        # ),
+        # ExampleDataTableBox(
+        #     5000,
+        #     limit=500,
+        #     index="uniqueid",
+        #     sort_by = ("foo", True),
+        #     query_sort=True,
+        #     with_scrollbar=True,
+        #     with_header=False,
+        #     with_footer=False,
+        # ),
 
     ]
 
@@ -535,6 +533,29 @@ def main():
 
     table = ExampleDataTable(
         100,
+        columns = [
+        DataTableColumn("bar", label="Bar", width=10, align="right",
+                        format_fn = lambda v: round(v, 2) if v is not None else v,
+                        decoration_fn = lambda v: ("cyan", v),
+                        sort_reverse=True, sort_icon=False, padding=0),# margin=5),
+        DataTableColumn("baz", label="Baz!",
+                        #width="pack",
+                        width=("weight", 5),
+                        pack=True,
+                        min_width=5,
+                        truncate=False),
+        DataTableColumn(
+            "qux",
+            label=urwid.Text([("red", "q"), ("green", "u"), ("blue", "x")]),
+            width=5, hide=True),
+        DataTableColumn("foo", label="Foo", align="right",
+                        width=("weight", 1),
+                        sort_key = lambda v: (v is None, v),
+                        pack=True,
+                        attr="color", padding=0,
+                        footer_fn = lambda column, values: sum(v for v in values if v is not None)
+        ),
+        ],
         limit=10,
         index="uniqueid",
         divider = DataTableDivider(".", width=3),

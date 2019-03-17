@@ -55,10 +55,9 @@ class DataTableBaseColumn(object):
             self.min_width = 3 # FIXME
         elif isinstance(self._width, int):
             self.initial_sizing = "given"
+            self.initial_width = self._width
             self.min_width = self.initial_width = self._width # assume starting width is minimum
-        elif self._width == "pack":
-            self.initial_sizing = "pack"
-            self.initial_width = 1
+
         else:
             raise Exception(self._width)
 
@@ -153,7 +152,7 @@ class DataTableColumn(DataTableBaseColumn):
             # logger.info(f"min: {self.name}, {self.contents_width}")
             return self.contents_width
         else:
-            return len(self.label) + self.padding_left + self.padding_right + (1 if self.sort_icon else 0)
+            return self.min_width or len(self.label) + self.padding_left + self.padding_right + (1 if self.sort_icon else 0)
 
 
     def _format(self, v):
@@ -210,3 +209,7 @@ class DataTableDivider(DataTableBaseColumn):
     @property
     def pack(self):
         return False
+
+    @property
+    def align(self):
+        return "left"

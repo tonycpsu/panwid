@@ -96,7 +96,7 @@ class DataTableRow(urwid.WidgetWrap):
 
             # try:
             rows = c.contents.rows( (w,) )
-            logger.debug(f"{c}, {c.contents}, {w}, {rows}")
+            # logger.debug(f"{c}, {c.contents}, {w}, {rows}")
 
             # self.table.header.render((self.table.width, self.row_height), False)
             # raise Exception(self.table.header.data_cells[i].width)
@@ -106,7 +106,7 @@ class DataTableRow(urwid.WidgetWrap):
             # print(c, rows)
             l.append(rows)
         self.box.height = max(l)
-        logger.debug(f"height: {self.box.height}")
+        # logger.debug(f"height: {self.box.height}")
         # (w, o) = self.pile.contents[0]
         # self.pile.contents[0] = (w, self.pile.options("given", max(l)))
 

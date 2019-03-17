@@ -598,7 +598,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     @property
     def min_width(self):
         return sum([
-            c.contents_width for c in self.visible_columns
+            c.min_width for c in self.visible_columns
         ])
 
     @property
@@ -624,7 +624,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             if not isinstance(value, tuple):
                 value = str(value)
             try:
-                value = DataTableText(value, align=column.align, wrap=column.wrap)
+                # logger.info(f"{column.name}, {column.align}")
+                value = DataTableText(value, wrap=column.wrap)
             except:
                 raise Exception(value, type(value))
         return value

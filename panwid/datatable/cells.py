@@ -44,14 +44,10 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.update_contents()
 
-        self.cell_widget = urwid.Padding(
-            self.contents,
-            min_width = self.column.min_width,
-            left=self.padding,
-            right=self.padding
-        )
+        logger.info(f"{self.column.name}, {self.column.width}, {self.column.align}")
         # if self.row.row_height is not None:
-        self.cell_widget = urwid.Filler(self.cell_widget)
+
+        self.filler = urwid.Filler(self.contents)
 
         self.normal_attr_map = {}
         self.highlight_attr_map = {}
@@ -66,7 +62,7 @@ class DataTableCell(urwid.WidgetWrap):
         self.highlight_focus_map.update(self.table.highlight_focus_map)
 
         self.attrmap = urwid.AttrMap(
-            self.cell_widget,
+            self.filler,
             attr_map = self.normal_attr_map,
             focus_map = self.normal_focus_map
         )
@@ -245,10 +241,19 @@ class DataTableBodyCell(DataTableCell):
 
 
     def update_contents(self):
-        self.contents = self.table.decorate(
+
+        contents = self.table.decorate(
             self.row,
             self.column,
             self.formatted_value
+        )
+
+        self.contents = urwid.Padding(
+            contents,
+            align=self.column.align,
+            width="pack",
+            left=self.padding,
+            right=self.padding
         )
 
 
@@ -296,29 +301,42 @@ class DataTableHeaderCell(DataTableCell):
         self.label = self.column.label
         self.sort_icon = self.column.sort_icon or self.table.sort_icons
 
-        self.columns = urwid.Columns([
-            ('weight', 1,
-             self.label
-             if isinstance(self.label, urwid.Widget)
-             else
-             DataTableText(
-                 self.label,
-                 wrap = "space" if self.column.no_clip_header else "clip",
-                 align=self.column.align
-             )
-            )
+        label = (self.label
+                 if isinstance(self.label, urwid.Widget)
+                 else
+                 DataTableText(
+                     self.label,
+                     wrap = "space" if self.column.no_clip_header else "clip",
+                 )
+        )
+
+        padding = urwid.Padding(
+            label,
+            align=self.column.align,
+            width="pack",
+            left=self.padding,
+            right=self.padding
+        )
+
+        columns = urwid.Columns([
+            ("weight", 1, padding)
         ])
 
         if self.sort_icon:
             if self.column.align == "right":
-                self.columns.contents.insert(0,
-                    (DataTableText(""), self.columns.options("given", 1))
+                columns.contents.insert(0,
+                    (DataTableText(""), columns.options("given", 1))
                 )
             else:
-                self.columns.contents.append(
-                    (DataTableText(""), self.columns.options("given", 1))
+                columns.contents.append(
+                    (DataTableText(""), columns.options("given", 1))
                 )
-        self.contents = self.columns
+        self.contents = columns
+
+        # self.contents = DataTableText(
+        #     self.label,
+        #     wrap = "space" if self.column.no_clip_header else "clip"
+        # )
         self.update_sort(self.table.sort_by)
 
     def set_attr_maps(self):
@@ -372,9 +390,9 @@ class DataTableHeaderCell(DataTableCell):
         index = 0 if self.column.align=="right" else 1
         if sort and sort[0] == self.column.name:
             direction = self.DESCENDING_SORT_MARKER if sort[1] else self.ASCENDING_SORT_MARKER
-            self.columns.contents[index][0].set_text(direction)
+            self.contents.contents[index][0].set_text(direction)
         else:
-            self.columns.contents[index][0].set_text("")
+            self.contents.contents[index][0].set_text("")
 
 
 class DataTableDividerHeaderCell(DataTableDividerCell, DataTableHeaderCell):
