@@ -44,7 +44,7 @@ class DataTableCell(urwid.WidgetWrap):
 
         self.update_contents()
 
-        logger.info(f"{self.column.name}, {self.column.width}, {self.column.align}")
+        # logger.info(f"{self.column.name}, {self.column.width}, {self.column.align}")
         # if self.row.row_height is not None:
 
         self.filler = urwid.Filler(self.contents)
@@ -164,6 +164,7 @@ class DataTableCell(urwid.WidgetWrap):
         self.attrmap.set_focus_map(focus_map)
 
     def render(self, size, focus=False):
+        # logger.info("cell render")
         maxcol = size[0]
         self._width = size[0]
         if len(size) > 1:
@@ -179,10 +180,7 @@ class DataTableCell(urwid.WidgetWrap):
             self.contents.truncate(
                 self.width - (self.padding*2), end_char=self.column.truncate
             )
-        # try:
         return super().render(size, focus)
-        # except Exception as e:
-        #     raise Exception(self, size, self.contents, e)
 
     @property
     def width(self):

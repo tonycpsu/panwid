@@ -580,7 +580,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # raise AttributeError(attr)
 
     def render(self, size, focus=False):
-        # raise Exception(self.header.cells[0].width)
+        logger.info("table render")
         self._width = size[0]
         if len(size) > 1:
             self._height = size[1]
@@ -589,9 +589,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self._invalidate()
             self.reset(reset_sort=True)
         return super().render(size, focus)
-        # return super().render(size, focus)
-            # if self.sort_by:
-            #     self.sort_by_column(self.sort_by)
 
     @property
     def width(self):
@@ -1006,6 +1003,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
             return new_cols
 
+
+        old_widths = self.header.column_widths( (self.width,) )
+
         if isinstance(source, DataTableDividerCell):
             try:
                 index, cell = list(enumerate([ c for c in itertools.takewhile(
@@ -1028,18 +1028,22 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         column = next( c for c in self.visible_data_columns if c.name == colname)
         # index = index//2
 
-        new_width = old_width = column.header.width
+
+        # new_width = old_width = column.header.width
+        new_width = old_width = old_widths[index]
 
         delta = end-start
 
+
         if isinstance(source, DataTableDividerCell):
             drag_direction= 1
-        elif index == 0 and source_column <= int(round(column.header.width / 3)):
+        # elif index == 0 and source_column <= int(round(column.header.width / 3)):
+        elif index == 0 and source_column <= int(old_width / 3):
             return
-        elif index != 0 and source_column <= int(round(column.header.width / 3)):
+        elif index != 0 and source_column <= int(round(old_width / 3)):
             drag_direction=-1
             delta = -delta
-        elif index != len(self.visible_data_columns)-1 and source_column >= int(round( (2*cell.width) / 3)):
+        elif index != len(self.visible_data_columns)-1 and source_column >= int(round( (2*old_width) / 3)):
             drag_direction=1
         else:
            return
@@ -1225,7 +1229,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return True
 
     def requery(self, offset=None, limit=None, load_all=False, **kwargs):
-        # logger.debug(f"requery: {offset}, {limit}")
+        logger.debug(f"requery: {offset}, {limit}")
         if (offset is not None) and self.limit:
             self.page = offset // self.limit
             offset = self.page*self.limit
@@ -1264,6 +1268,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
     def refresh(self, reset=False):
+        logger.debug(f"refresh: {reset}")
         offset = None
         idx = None
         pos = 0
@@ -1315,8 +1320,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def pack_columns(self):
 
+        # logger.info("pack_columns")
         widths = self.header.column_widths( (self.width,) )
-        logger.info(f"{self}, {widths}")
+        logger.debug(f"{self}, {widths}")
 
         other_columns, pack_columns = [
             list(x) for x in partition(
@@ -1335,7 +1341,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         for i, (c, cw) in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))
-            logger.info(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
+            logger.debug(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
             self.resize_column(c.name, w)
             available -= w
 

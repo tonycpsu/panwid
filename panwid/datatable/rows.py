@@ -143,10 +143,7 @@ class DataTableRow(urwid.WidgetWrap):
             if not (idx or isinstance(cell, DataTableDividerCell)):
                 idx = i
             col = self.table.visible_columns[i]
-            if col.sizing == "pack":
-                options = columns.options("weight", 1)
-            else:
-                options = columns.options(col.sizing, col.width_with_padding(self.padding))
+            options = columns.options(col.sizing, col.width_with_padding(self.padding))
             columns.contents.append(
                 (cell, options)
 
@@ -196,13 +193,13 @@ class DataTableRow(urwid.WidgetWrap):
             size = (self.table.width,)
         return self.columns.column_widths(size)
 
-    def render(self, size, focus=False):
-        maxcol = size[0]
-        self._width = size[0]
-        if len(size) > 1:
-            maxrow = size[1]
-            self._height = maxrow
-        return super().render(size, focus)
+    # def render(self, size, focus=False):
+    #     maxcol = size[0]
+    #     self._width = size[0]
+    #     if len(size) > 1:
+    #         maxrow = size[1]
+    #         self._height = maxrow
+    #     return super().render(size, focus)
 
     @property
     def width(self):
