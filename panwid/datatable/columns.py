@@ -172,7 +172,7 @@ class DataTableColumn(DataTableBaseColumn):
 
         # Do our best to make the value into something presentable
         if v is None:
-            v = ""
+            v = " "
         elif isinstance(v, int):
             v = "%d" %(v)
         elif isinstance(v, float):

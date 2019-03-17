@@ -240,11 +240,15 @@ class DataTableBodyCell(DataTableCell):
 
     def update_contents(self):
 
-        contents = self.table.decorate(
-            self.row,
-            self.column,
-            self.formatted_value
-        )
+        try:
+            contents = self.table.decorate(
+                self.row,
+                self.column,
+                self.formatted_value
+            )
+        except Exception as e:
+            logger.exception(e)
+            contents = urwid.Text("")
 
         self.contents = urwid.Padding(
             contents,
