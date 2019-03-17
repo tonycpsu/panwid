@@ -580,7 +580,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # raise AttributeError(attr)
 
     def render(self, size, focus=False):
-        logger.info("table render")
+        # logger.info("table render")
         self._width = size[0]
         if len(size) > 1:
             self._height = size[1]
@@ -622,11 +622,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not isinstance(value, urwid.Widget):
             if not isinstance(value, tuple):
                 value = str(value)
-            try:
-                # logger.info(f"{column.name}, {column.align}")
-                value = DataTableText(value, wrap=column.wrap)
-            except:
-                raise Exception(value, type(value))
+            value = DataTableText(value, wrap=column.wrap)
         return value
 
     @property
@@ -698,10 +694,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         #     return AttrDict(**d)
 
     def get_row(self, index):
-        try:
-            row = self.df.get(index, "_rendered_row")
-        except:
-            raise
+        row = self.df.get(index, "_rendered_row")
 
         if self.df.get(index, "_dirty") or row is None:
             self.refresh_calculated_fields([index])

@@ -73,7 +73,10 @@ class DataTableCell(urwid.WidgetWrap):
 
     @property
     def value(self):
-        return self.row[self.column.name]
+        try:
+            return self.row[self.column.name]
+        except:
+            raise Exception
 
     @value.setter
     def value(self, value):
@@ -82,7 +85,7 @@ class DataTableCell(urwid.WidgetWrap):
     @property
     def formatted_value(self):
 
-        v = self._format(self.value)
+        v = self.column._format(self.value)
         if not self.width:
             return v
         # try:
@@ -135,9 +138,6 @@ class DataTableCell(urwid.WidgetWrap):
             pass
         return key
         # return super(DataTableCell, self).keypress(size, key)
-
-    def _format(self, v):
-        return self.column._format(v)
 
     def set_attr_map(self, attr_map):
         self.attrmap.set_attr_map(attr_map)
@@ -345,10 +345,6 @@ class DataTableHeaderCell(DataTableCell):
         self.normal_focus_map[None] = self.attr_column_focused
         self.highlight_focus_map[None] = self.attr_highlight_column_focused
 
-
-    def _format(self, v):
-        return self.column.format(v)
-
     def selectable(self):
         return self.table.ui_sort
 
@@ -415,7 +411,7 @@ class DataTableFooterCell(DataTableCell):
             self.contents = self.table.decorate(
                 self.row,
                 self.column,
-                self._format(self.column.footer_fn(self.column, footer_arg))
+                self.column._format(self.column.footer_fn(self.column, footer_arg))
             )
         else:
             self.contents = DataTableText("")
