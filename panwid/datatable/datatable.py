@@ -141,6 +141,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if cell_selection is not None: self.cell_selection = cell_selection
         if divider is not None: self.divider = divider
+        if isinstance(self.divider, str):
+            self.divider = DataTableDivider(self.divider)
         if padding is not None: self.padding = padding
 
         if isinstance(self.padding, tuple):
