@@ -79,7 +79,10 @@ class DataTableBaseColumn(object):
 
     @property
     def header(self):
-        return self.table.header.cells[self.index]
+        try:
+            return self.table.header.cells[self.index]
+        except ValueError:
+            return None
 
 
 

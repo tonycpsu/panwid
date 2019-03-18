@@ -63,6 +63,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     detail_fn = None
     detail_selectable = False
+    detail_hanging_indent = None
 
     ui_sort = True
     ui_resize = True
@@ -90,6 +91,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  divider = None, padding = None,
                  row_style = None,
                  detail_fn = None, detail_selectable = None,
+                 detail_hanging_indent = None,
                  ui_sort = None,
                  ui_resize = None,
                  row_attr_fn = None):
@@ -160,7 +162,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if detail_fn is not None: self.detail_fn = detail_fn
         if detail_selectable is not None: self.detail_selectable = detail_selectable
-
+        if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
         # self.offset = 0
         if limit:
             self.limit = limit

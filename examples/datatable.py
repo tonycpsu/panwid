@@ -131,7 +131,7 @@ def main():
                         # pack=True,
                         min_width=5,
                         align="right",
-                        truncate=False),
+                        truncate=True),
         DataTableColumn(
             "qux",
             label=urwid.Text([("red", "q"), ("green", "u"), ("blue", "x")]),
@@ -559,6 +559,7 @@ def main():
         index="uniqueid",
         divider = DataTableDivider(".", width=3),
         detail_fn=detail_fn,
+        detail_hanging_indent=1,
         cell_selection=True,
         sort_refocus = True,
         with_scrollbar=True,

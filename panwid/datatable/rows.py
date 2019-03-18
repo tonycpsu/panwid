@@ -1,5 +1,6 @@
 import functools
 from collections import MutableMapping
+import itertools
 
 import urwid
 
@@ -292,10 +293,28 @@ class DataTableBodyRow(DataTableRow):
         #     col_index = 0
         # row = DataTableDetailRow(self.table, content)
 
-        height = content.rows( (self.table.width,) )
+        # height = content.rows( (self.table.width,) )
+
+        self.table.header.render( (self.table.width,) )
+        indent_width = 0
+        visible_count = itertools.count()
+        if self.table.detail_hanging_indent:
+            indent_width = sum([
+                x[1].header.width if x[1].header else 0
+                for x in itertools.takewhile(
+                    lambda x: x[2] is None or x[2] <= self.table.detail_hanging_indent,
+                    [ (i, c, next(visible_count) if not c.hide else None)
+                      for i, c in enumerate(self.table._columns) ]
+                )
+            ])
+
+        columns = urwid.Columns([
+            (indent_width, urwid.Padding(urwid.Text(""))),
+            ("weight", 1, content)
+        ])
 
         self.pile.contents.append(
-            (content, self.pile.options("pack"))
+            (columns, self.pile.options("pack"))
         )
 
         # self.pile.selectable = lambda: self.table.detail_selectable
