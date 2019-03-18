@@ -73,10 +73,11 @@ class DataTableCell(urwid.WidgetWrap):
 
     @property
     def value(self):
-        try:
-            return self.row[self.column.name]
-        except:
-            raise Exception
+        if self.column.value_fn:
+            val = self.column.value_fn(self.table, self.row)
+        else:
+            val = self.row[self.column.name]
+        return val
 
     @value.setter
     def value(self, value):
