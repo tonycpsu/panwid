@@ -569,6 +569,7 @@ def main():
         urwid.Pile([
             ("pack", grid_box),
             ("weight", 1, table),
+            ("weight", 1, DataTable(columns=[DataTableColumn("a")], data={})),
         ]),
         palette = palette,
         screen = screen,

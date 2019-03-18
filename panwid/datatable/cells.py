@@ -242,13 +242,15 @@ class DataTableBodyCell(DataTableCell):
             logger.exception(e)
             contents = urwid.Text("")
 
-        self.contents = urwid.Padding(
+        contents = urwid.Padding(
             contents,
             align=self.column.align,
             width="pack",
             left=self.padding,
             right=self.padding
         )
+
+        self.contents = contents
 
 
 class DataTableDividerBodyCell(DataTableDividerCell, DataTableBodyCell):

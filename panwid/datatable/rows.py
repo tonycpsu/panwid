@@ -94,8 +94,10 @@ class DataTableRow(urwid.WidgetWrap):
             # except Exception as e:
             #     raise Exception(c, c.contents, e)
 
-            # try:
-            rows = c.contents.rows( (w,) )
+            try:
+                rows = c.contents.rows( (w,) )
+            except AttributeError:
+                continue
             # logger.debug(f"{c}, {c.contents}, {w}, {rows}")
 
             # self.table.header.render((self.table.width, self.row_height), False)
@@ -396,7 +398,6 @@ class DataTableBodyRow(DataTableRow):
             if isinstance(col, DataTableColumn)
             else DataTableDividerBodyCell(self.table, col, self)
             for i, col in enumerate(self.table.visible_columns)]
-
 
 class DataTableDetailRow(DataTableRow):
 

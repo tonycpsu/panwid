@@ -48,6 +48,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     with_header = True
     with_footer = False
     with_scrollbar = False
+    empty_message = "(no data)"
     row_height = None
     cell_selection = False
 
@@ -82,6 +83,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  limit = None,
                  index = None,
                  with_header = None, with_footer = None, with_scrollbar = None,
+                 empty_message = None,
                  row_height = None,
                  cell_selection = None,
                  sort_by = None, query_sort = None, sort_icons = None,
@@ -137,6 +139,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if with_header is not None: self.with_header = with_header
         if with_footer is not None: self.with_footer = with_footer
         if with_scrollbar is not None: self.with_scrollbar = with_scrollbar
+        if empty_message is not None: self.empty_message = empty_message
+
         if row_height is not None: self.row_height = row_height
 
         if cell_selection is not None: self.cell_selection = cell_selection
@@ -169,6 +173,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._width = None
         self._height = None
         self._initialized = False
+        self._message_showing = False
 
         self.filters = None
         self.filtered_rows = blist()
@@ -260,8 +265,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             if self.ui_resize:
                 urwid.connect_signal(self.header, "drag", self.on_header_drag)
 
+        self.listbox_placeholder = urwid.WidgetPlaceholder(self.listbox)
         self.pile.contents.append(
-            (self.listbox, self.pile.options('weight', 1))
+            (self.listbox_placeholder, self.pile.options('weight', 1))
          )
         self.pile.focus_position = len(self.pile.contents)-1
 
@@ -495,6 +501,13 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     background_high = background_high,
                 )
 
+            entries["table_message"] = urwid_utils.palette.PaletteEntry(
+                mono = "white",
+                foreground = "black",
+                background = "white",
+                foreground_high = "black",
+                background_high = "white",
+            )
 
         # raise Exception(entries)
         return entries
@@ -572,7 +585,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             return getattr(self.df, attr)
         elif attr in ["body"]:
             return getattr(self.listbox, attr)
-        raise AttributeError
+        raise AttributeError(attr)
         # else:
         #     return object.__getattribute__(self, attr)
         # elif attr == "body":
@@ -1265,6 +1278,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.refresh_calculated_fields()
         self.apply_filters()
+
+        if not len(self) and self.empty_message:
+            self.show_message(self.empty_message)
+        else:
+            self.hide_message()
         # self.invalidate()
 
 
@@ -1348,6 +1366,33 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.resize_body_rows()
 
+    def show_message(self, message):
+
+        if self._message_showing:
+            self.hide_message()
+
+        overlay = urwid.Overlay(
+            urwid.Filler(
+                urwid.Pile([
+                    ( "pack", urwid.Padding(
+                        urwid.Text( ("table_message", message) ),
+                        width="pack",
+                        align="center"
+                    )),
+                    (1, urwid.Filler(urwid.Text("")))
+                ]),
+                valign="top"
+            ),
+            self.listbox,
+            "center", ("relative", 100), "top", ("relative", 100)
+        )
+        self.listbox_placeholder.original_widget = overlay
+        self._message_showing = True
+
+    def hide_message(self):
+        if not self._message_showing:
+            return
+        self.listbox_placeholder.original_widget = self.listbox
 
     def load(self, path):
 
