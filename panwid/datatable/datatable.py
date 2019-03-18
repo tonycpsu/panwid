@@ -793,6 +793,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             return
         try:
             column = next((c for c in self.columns if c.name == column_name))
+            column = self.column_named(column_name)
         except:
             return # FIXME
 
@@ -1084,6 +1085,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.disable_cell_selection()
         else:
             self.enable_cell_selection()
+
+    def column_named(self, name):
+        return next( (c for c in self.columns if c.name == name) )
 
     @property
     def data_columns(self):
