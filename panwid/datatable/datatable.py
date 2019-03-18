@@ -99,17 +99,17 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._focus = 0
         self.page = 0
         if columns is not None:
-            self.columns = columns
+            self._columns = columns
         else:
-            self.columns = [copy.copy(c) for c in self.columns]
+            self._columns = [copy.copy(c) for c in self.columns]
 
-        if not self.columns:
+        if not self._columns:
             raise Exception("must define columns for data table")
 
         if index: self.index = index
 
         if not self.index in self.column_names:
-            self.columns.insert(
+            self._columns.insert(
                 0,
                 DataTableColumn(self.index, hide=True)
             )
@@ -178,10 +178,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.filtered_rows = blist()
 
         if self.divider:
-            self.columns = list(intersperse_divider(self.columns, self.divider))
-            # self.columns = intersperse(self.divider, self.columns)
+            self._columns = list(intersperse_divider(self._columns, self.divider))
+            # self._columns = intersperse(self.divider, self._columns)
 
-        for c in self.columns:
+        for c in self._columns:
             c.table = self
 
         kwargs = dict(
@@ -791,7 +791,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             except IndexError:
                 raise Exception("bad column number: %d" %(col))
             column_number = col
-            # column_number = next(i for i, c in enumerate(self.columns) if c.name == column_name)
+            # column_number = next(i for i, c in enumerate(self._columns) if c.name == column_name)
         elif isinstance(col, str):
             column_name = col
             try:
@@ -804,7 +804,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not column_name:
             return
         try:
-            column = next((c for c in self.columns if c.name == column_name))
+            column = next((c for c in self._columns if c.name == column_name))
             column = self.column_named(column_name)
         except:
             return # FIXME
@@ -887,7 +887,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             if data:
                 data = [data]
 
-        self.columns += columns
+        self._columns += columns
         for i, column in enumerate(columns):
             self.df[column.name] = data=data[i] if data else None
 
@@ -898,16 +898,16 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not isinstance(columns, list):
             columns = [columns]
 
-        columns = [ self.columns[column].name
+        columns = [ self._columns[column].name
                     if isinstance(column, int)
                     else column for column in columns ]
 
-        self.columns = [ c for c in self.columns if c.name not in columns ]
+        self._columns = [ c for c in self._columns if c.name not in columns ]
         self.df.delete_columns(columns)
         self.invalidate()
 
     def set_columns(self, columns):
-        self.remove_columns([c.name for c in self.columns])
+        self.remove_columns([c.name for c in self._columns])
         self.add_columns(columns)
         self.reset()
 
@@ -919,12 +919,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         for column in columns:
             if isinstance(column, int):
                 try:
-                    column = self.columns[column]
+                    column = self._columns[column]
                 except IndexError:
                     raise Exception("bad column number: %d" %(column))
             else:
                 try:
-                    column = next(( c for c in self.columns if c.name == column))
+                    column = next(( c for c in self._columns if c.name == column))
                 except IndexError:
                     raise Exception("column %s not found" %(column))
 
@@ -1099,15 +1099,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.enable_cell_selection()
 
     def column_named(self, name):
-        return next( (c for c in self.columns if c.name == name) )
+        return next( (c for c in self._columns if c.name == name) )
 
     @property
     def data_columns(self):
-        return [ c for c in self.columns if not isinstance(c, DataTableDivider) ]
+        return [ c for c in self._columns if not isinstance(c, DataTableDivider) ]
 
     @property
     def visible_columns(self):
-        return [ c for c in self.columns if not c.hide ]
+        return [ c for c in self._columns if not c.hide ]
 
     @property
     def visible_data_columns(self):
