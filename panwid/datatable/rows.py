@@ -298,13 +298,23 @@ class DataTableBodyRow(DataTableRow):
         self.table.header.render( (self.table.width,) )
         indent_width = 0
         visible_count = itertools.count()
+
+        def should_indent(x):
+            if (isinstance(self.table.detail_hanging_indent, int)
+                and (x[2] is None or x[2] <= self.table.detail_hanging_indent)):
+                return True
+            elif (isinstance(self.table.detail_hanging_indent, str)
+                and x[1].name != self.table.detail_hanging_indent):
+                  return True
+            return False
+
         if self.table.detail_hanging_indent:
             indent_width = sum([
                 x[1].header.width if x[1].header else 0
                 for x in itertools.takewhile(
-                    lambda x: x[2] is None or x[2] <= self.table.detail_hanging_indent,
-                    [ (i, c, next(visible_count) if not c.hide else None)
-                      for i, c in enumerate(self.table._columns) ]
+                        should_indent,
+                        [ (i, c, next(visible_count) if not c.hide else None)
+                          for i, c in enumerate(self.table._columns) ]
                 )
             ])
 
