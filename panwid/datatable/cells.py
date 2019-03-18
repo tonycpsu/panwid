@@ -211,7 +211,13 @@ class DataTableDividerCell(DataTableCell):
         return False
 
     def update_contents(self):
-        divider = self.column.value
+        if not (
+                (isinstance(self, DataTableHeaderCell) and not self.column.in_header)
+                or (isinstance(self, DataTableFooterCell) and not self.column.in_footer)
+        ):
+            divider = self.column.value
+        else:
+            divider = urwid.Divider(" ")
         contents = urwid.Padding(
             divider,
             left = self.column.padding_left,
@@ -223,21 +229,6 @@ class DataTableDividerCell(DataTableCell):
 class DataTableBodyCell(DataTableCell):
 
     ATTR = "table_row_body"
-
-    # @property
-    # def formatted_value(self):
-    #     v = self._format(
-    #         self.value
-    #         if not self.column.format_record
-    #         else self.table.get_dataframe_row(self.row.index)
-    #     )
-    #     # if self.column.format_record:
-    #     #     raise Exception(v)
-    #     if not self.width:
-    #         return v
-    #     # raise Exception(self.width)
-    #     return v[:self.width-self.padding*2]
-
 
     def update_contents(self):
 

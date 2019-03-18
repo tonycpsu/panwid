@@ -188,9 +188,11 @@ class DataTableDivider(DataTableBaseColumn):
 
     _width = 1
 
-    def __init__(self, char=" ", **kwargs):
+    def __init__(self, char=" ", in_header=False, in_footer=False, **kwargs):
         super().__init__(**kwargs)
         self.char = char
+        self.in_header = in_header
+        self.in_footer = in_footer
 
     @property
     def name(self):
