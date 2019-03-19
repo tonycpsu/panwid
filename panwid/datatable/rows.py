@@ -219,15 +219,6 @@ class DataTableBodyRow(DataTableRow):
 
     DIVIDER_CLASS = DataTableDividerBodyCell
 
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
-        open_details = self["_details_open"]
-        self["_details_open"] = False
-        if open_details:
-            self.open_details()
-
     @property
     def index(self):
         return self.content
@@ -252,19 +243,6 @@ class DataTableBodyRow(DataTableRow):
             else:
                 raise Exception(column, self.table.df.columns)
 
-        # try:
-        #     cls = self.table.df[self.index, "_cls"]
-        #     # row = self.data
-        #     if (hasattr(cls, "__dataclass_fields__")
-        #         and type(cls.__dataclass_fields__[column]) == property):
-        #         logger.info("property")
-        #         logger.info(f"__getitem__: {column}={getattr(self.data, column)}")
-        #         return getattr(self.data, column)
-        #     else:
-        #         logger.info(f"__getitem__: {column}={self.table.df[self.index, column]}")
-        #         return self.table.df[self.index, column]
-        # except ValueError:
-        #     raise KeyError # o_O
 
     def __setitem__(self, column, value):
         self.table.df[self.index, column] = value
@@ -279,21 +257,9 @@ class DataTableBodyRow(DataTableRow):
 
     def open_details(self):
 
-        # logger.info(self.get("_details_open"))
-        if not self.table.detail_fn or self.get("_details_open"):
+        if not self.table.detail_fn: #or self.get("_details_open"):
             return
         content = self.table.detail_fn(self.data)
-
-        # if self.table.detail_column:
-        #     try:
-        #         col_index = self.table.visible_column_index(self.table.detail_column)
-        #     except IndexError:
-        #         col_index = 0
-        # else:
-        #     col_index = 0
-        # row = DataTableDetailRow(self.table, content)
-
-        # height = content.rows( (self.table.width,) )
 
         self.table.header.render( (self.table.width,) )
         indent_width = 0
@@ -310,7 +276,7 @@ class DataTableBodyRow(DataTableRow):
 
         if self.table.detail_hanging_indent:
             indent_width = sum([
-                x[1].header.width if x[1].header else 0
+                x[1].width if not x[1].hide else 0
                 for x in itertools.takewhile(
                         should_indent,
                         [ (i, c, next(visible_count) if not c.hide else None)
@@ -385,21 +351,6 @@ class DataTableBodyRow(DataTableRow):
                 del focus_map[a]
         focus_map[self.ATTR] = "%s focused" %(self.ATTR)
         self.attrmap.set_focus_map(focus_map)
-
-    # def update(self):
-    #     super().update()
-    #     self.pile = urwid.Pile([
-    #         ('weight', 1, self.columns)
-    #         # ('pack', self.columns)
-    #     ])
-
-    # def make_contents(self):
-    #     self.columns = self.make_columns()
-    #     return self.columns
-    #     return urwid.Pile([
-    #         ("weight", 1, self.columns)
-    #         # ('pack', self.columns)
-    #     ])
 
     def make_cells(self):
 

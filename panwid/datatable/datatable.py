@@ -1332,8 +1332,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.sort_by_column(self.initial_sort)
         if self._initialized:
             self.pack_columns()
+            for r in self:
+                if r.data.get("_details_open"):
+                    r.open_details()
         self._modified()
-        self._invalidate()
+        # self._invalidate()
 
     def pack_columns(self):
 
@@ -1343,7 +1346,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         other_columns, pack_columns = [
             list(x) for x in partition(
-                # lambda c: c.initial_sizing == "pack",
                 lambda c: c[0].pack == True,
                 zip(self.visible_columns, widths)
             )
@@ -1358,7 +1360,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         for i, (c, cw) in enumerate(pack_columns):
             w = min(c.contents_width, available//(num_pack-i))
-            logger.debug(f"resize: {c.name}, available: {available}, contents: {c.contents_width}, min({available//(num_pack-i)}, {w})")
+            logger.debug(f"resize: {c.name}, available: {available}, contents: min({c.contents_width}, {available//(num_pack-i)}), {w})")
             self.resize_column(c.name, w)
             available -= w
 
