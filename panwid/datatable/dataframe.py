@@ -5,7 +5,7 @@ import collections
 
 class DataTableDataFrame(rc.DataFrame):
 
-    DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_cls", "_details_open", "_rendered_row"]
+    DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_cls", "_details", "_rendered_row"]
 
     def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sort=None):
 
@@ -56,14 +56,14 @@ class DataTableDataFrame(rc.DataFrame):
             and c != self.index_name
             and c not in self.DATA_TABLE_COLUMNS
         ]
-        data_columns += ["_cls"]
+        data_columns += ["_cls", "_details"]
 
         data = dict(
             list(zip((data_columns),
                 [ list(z) for z in zip(*[[
-                    d.get(k, None)
+                    d.get(k, None if k != "_details" else {"open": False, "disabled": False})
                     if isinstance(d, collections.abc.MutableMapping)
-                    else getattr(d, k, None)
+                    else getattr(d, k, None if k != "_details" else {"open": False, "disabled": False})
                     # for k in data_columns + self.DATA_TABLE_COLUMNS] for d in rows])]
                     for k in data_columns] for d in rows])]
             ))
@@ -73,6 +73,9 @@ class DataTableDataFrame(rc.DataFrame):
     def update_rows(self, rows, limit=None):
 
         data = self.transpose_data(rows)
+        # data["_details"] = [{"open": False, "disabled": False}] * len(rows)
+        # if not "_details" in data:
+        #     data["_details"] = [{"open": False, "disabled": False}] * len(rows)
 
         if not limit:
             if len(rows):
@@ -82,7 +85,7 @@ class DataTableDataFrame(rc.DataFrame):
             else:
                 self.delete_all_rows()
 
-            # logger.info(f"update_rows: {self.index}, {data[self.index_name]}")
+            # logger.info(f"update_rowGs: {self.index}, {data[self.index_name]}")
 
         if not len(rows):
             return

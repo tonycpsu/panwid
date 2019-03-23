@@ -11,7 +11,7 @@ import os
 import random
 import string
 from optparse import OptionParser
-from dataclasses import dataclass
+from dataclasses import *
 import typing
 from collections.abc import MutableMapping
 
@@ -65,12 +65,11 @@ class Foo(BaseDataClass):
     a: dict
     d: dict
     color: list
-    # _details_open: bool
+    # _details: dict = field(default_factory=lambda: {"open": True, "disabled": False})
     # _cls: typing.Optional[type] = None
-
-    # @property
-    # def prop(self):
-    #     return "prop"
+    @property
+    def _details(self):
+        return {"open": True, "disabled": False}
 
 def main():
 
@@ -291,10 +290,8 @@ def main():
             elif key == "ctrl t":
                 logger.info(self.selection.data)
             elif key == "ctrl k":
-                # logger.info(self.header.columns.contents)
-                col = next(c for c in self.columns if c.name == "foo")
-                logger.info(f"{col.sizing}, {col.width}")
-                # logger.info(f"{self.selection.data['bar']}, {self.selection['bar']}")
+                self.selection.details_disabled = not self.selection.details_disabled
+                logger.info(self.selection.details_disabled)
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
                                                     self.selection.get("baz")))
@@ -341,7 +338,7 @@ def main():
             elif key == "F":
                 self.clear_filters()
             elif key == ".":
-                self.toggle_details()
+                self.selection.toggle_details()
             elif key == "s":
                 self.selection.set_attr("red")
             elif key == "S":
@@ -435,7 +432,7 @@ def main():
             limit=10,
             index="uniqueid",
             divider = DataTableDivider(".q", width=3),
-            detail_fn=detail_fn,
+            # detail_fn=detail_fn,
             cell_selection=True,
             sort_refocus = True,
             with_scrollbar=True,

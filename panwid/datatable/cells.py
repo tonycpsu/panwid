@@ -256,20 +256,6 @@ class DataTableBodyCell(DataTableCell):
 class DataTableDividerBodyCell(DataTableDividerCell, DataTableBodyCell):
     pass
 
-class DataTableDetailCell(DataTableBodyCell):
-
-    @property
-    def value(self):
-        return self.row.content
-
-
-    def update_contents(self):
-        self.contents = self.table.decorate(
-            self.row,
-            self.column,
-            self.value
-        )
-
 class DataTableHeaderCell(DataTableCell):
 
     ATTR = "table_row_header"

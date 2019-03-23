@@ -196,14 +196,6 @@ class DataTableRow(urwid.WidgetWrap):
             size = (self.table.width,)
         return self.columns.column_widths(size)
 
-    # def render(self, size, focus=False):
-    #     maxcol = size[0]
-    #     self._width = size[0]
-    #     if len(size) > 1:
-    #         maxrow = size[1]
-    #         self._height = maxrow
-    #     return super().render(size, focus)
-
     @property
     def width(self):
         return self._width
@@ -211,6 +203,28 @@ class DataTableRow(urwid.WidgetWrap):
     @property
     def height(self):
         return self._height
+
+
+class DataTableDetails(urwid.WidgetWrap):
+
+    def __init__(self, row, content, indent=None):
+
+        self.row = row
+
+        self.columns = urwid.Columns([
+            ("weight", 1, content)
+        ])
+        if indent:
+            self.columns.contents.insert(0,
+                (urwid.Padding(urwid.Text(" ")),
+                 self.columns.options("given", indent)
+                )
+            )
+
+        super().__init__(self.columns)
+
+    def selectable(self):
+        return not self.row.details_disabled
 
 
 class DataTableBodyRow(DataTableRow):
@@ -231,6 +245,8 @@ class DataTableBodyRow(DataTableRow):
         cls = self.table.df[self.index, "_cls"]
         # row = self.data
         if (
+                column not in self.table.df.columns
+                and
                 hasattr(cls, "__dataclass_fields__")
                 and
                 type(getattr(cls, column, None)) == property):
@@ -254,6 +270,40 @@ class DataTableBodyRow(DataTableRow):
             return self[key]
         except KeyError:
             return default
+
+    @property
+    def details_open(self):
+        # logger.info(f"{self['_details']}")
+        return self.get("_details", {}).get("open")
+
+    @details_open.setter
+    def details_open(self, value):
+        details = self["_details"]
+        details["open"] = value
+        self["_details"] = details
+
+    @property
+    def details_disabled(self):
+        return self.get("_details", {}).get("disabled")
+
+    @details_disabled.setter
+    def details_disabled(self, value):
+        details = self["_details"]
+        details["disabled"] = value
+        if value == True:
+            self.details_focused = False
+        self["_details"] = details
+
+    @property
+    def details_focused(self):
+        return self.details_open and self.contents.focus_position > 0
+
+    @details_focused.setter
+    def details_focused(self, value):
+        if value:
+            self.pile.focus_position = 1
+        else:
+            self.pile.focus_position = 0
 
     def open_details(self):
 
@@ -284,40 +334,44 @@ class DataTableBodyRow(DataTableRow):
                 )
             ])
 
-        columns = urwid.Columns([
-            (indent_width, urwid.Padding(urwid.Text(""))),
-            ("weight", 1, content)
-        ])
-
+        self.details = DataTableDetails(self, content, indent_width)
         self.pile.contents.append(
-            (columns, self.pile.options("pack"))
+            (self.details, self.pile.options("pack"))
         )
 
-        # self.pile.selectable = lambda: self.table.detail_selectable
-        # self._invalidate()
-        # self.box.height += content.rows( (self.table.width,) )
-        self.pile.focus_position = 1
-        self["_details_open"] = True
+        if not self.details_focused:
+            self.focus_details()
+        self["_details"]["open"] = True
+
 
     def close_details(self):
-        if not self.table.detail_fn or not self.get("_details_open"):
+        if not self.table.detail_fn or not self.details_open:
             return
-        self["_details_open"] = False
+        self["_details"]["open"] = False
         # del self.contents.contents[0]
 
         # self.box.height -= self.pile.contents[1][0].rows( (self.table.width,) )
         del self.pile.contents[1]
 
-    @property
-    def details_focused(self):
-        return self["_details_open"] and self.contents.focus_position > 0
-
     def toggle_details(self):
 
-        if self.get("_details_open"):
+        if self.details_open:
             self.close_details()
         else:
             self.open_details()
+
+    # def enable_details(self):
+    #     self["_details"]["disabled"] = False
+
+    # def disable_details(self):
+    #     self["_details"]["disabled"] = True
+
+    # def focus_details(self):
+    #     self.pile.focus_position = 1
+
+    # def unfocus_details(self):
+    #     self.pile.focus_position = 0
+
 
     def set_attr(self, attr):
         attr_map = self.attrmap.get_attr_map()
@@ -379,20 +433,20 @@ class DataTableBodyRow(DataTableRow):
             else DataTableDividerBodyCell(self.table, col, self)
             for i, col in enumerate(self.table.visible_columns)]
 
-class DataTableDetailRow(DataTableRow):
+# class DataTableDetailRow(DataTableRow):
 
-    ATTR = "table_row_detail"
+#     ATTR = "table_row_detail"
 
-    @property
-    def details(self):
-        return self.content
+#     @property
+#     def details(self):
+#         return self.content
 
-    def make_contents(self):
-        col = DataTableColumn("details")
-        return DataTableDetailCell(self.table, col, self)
+#     def make_contents(self):
+#         col = DataTableColumn("details")
+#         return DataTableDetailCell(self.table, col, self)
 
-    def selectable(self):
-        return self.table.detail_selectable
+#     def selectable(self):
+#         return self.table.detail_selectable
 
 
 class DataTableHeaderRow(DataTableRow):

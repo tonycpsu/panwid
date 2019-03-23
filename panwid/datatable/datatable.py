@@ -1074,8 +1074,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         for r in self:
             r.on_resize()
 
-    def toggle_details(self):
-        self.selection.toggle_details()
+    # def toggle_details(self):
+    #     self.selection.toggle_details()
 
     def enable_cell_selection(self):
         logger.debug("enable_cell_selection")
@@ -1333,7 +1333,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if self._initialized:
             self.pack_columns()
             for r in self:
-                if r.data.get("_details_open"):
+                if r.details_open:
                     r.open_details()
         self._modified()
         # self._invalidate()
