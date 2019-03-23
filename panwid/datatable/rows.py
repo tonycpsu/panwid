@@ -296,7 +296,7 @@ class DataTableBodyRow(DataTableRow):
 
     @property
     def details_focused(self):
-        return self.details_open and self.contents.focus_position > 0
+        return self.details_open and (self.pile.focus_position > 0)
 
     @details_focused.setter
     def details_focused(self, value):
@@ -338,10 +338,6 @@ class DataTableBodyRow(DataTableRow):
         self.pile.contents.append(
             (self.details, self.pile.options("pack"))
         )
-
-        if not self.details_focused:
-            self.focus_details()
-        self["_details"]["open"] = True
 
 
     def close_details(self):
