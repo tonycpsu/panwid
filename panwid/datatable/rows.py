@@ -151,7 +151,8 @@ class DataTableRow(urwid.WidgetWrap):
                 (cell, options)
 
             )
-        columns.focus_position = idx
+        if idx:
+            columns.focus_position = idx
         return columns
 
     def make_contents(self):
@@ -274,7 +275,7 @@ class DataTableBodyRow(DataTableRow):
     @property
     def details_open(self):
         # logger.info(f"{self['_details']}")
-        return self.get("_details", {}).get("open")
+        return (self.get("_details") or {}).get("open")
 
     @details_open.setter
     def details_open(self, value):
@@ -284,7 +285,7 @@ class DataTableBodyRow(DataTableRow):
 
     @property
     def details_disabled(self):
-        return self.get("_details", {}).get("disabled")
+        return (self.get("_details") or {}).get("disabled")
 
     @details_disabled.setter
     def details_disabled(self, value):

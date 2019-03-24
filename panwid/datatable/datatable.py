@@ -595,7 +595,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._width = size[0]
         if len(size) > 1:
             self._height = size[1]
-        if not self._initialized:
+        if not self._initialized and not self.no_load_on_init:
             self._initialized = True
             self._invalidate()
             self.reset(reset_sort=True)
@@ -897,9 +897,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if not isinstance(columns, list):
             columns = [columns]
 
-        columns = [ self._columns[column].name
-                    if isinstance(column, int)
-                    else column for column in columns ]
+        # FIXME
+        columns = [ column
+                    for column in columns
+                    if column != "divider"]
 
         self._columns = [ c for c in self._columns if c.name not in columns ]
         self.df.delete_columns(columns)
@@ -1269,13 +1270,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         for row in rows:
             row["_cls"] = type(row)
 
-        self.df.update_rows(rows, limit=self.limit)
+        updated = self.df.update_rows(rows, limit=self.limit)
         self.df["_focus_position"] = self.sort_column
 
-        self._modified()
 
         self.refresh_calculated_fields()
         self.apply_filters()
+
+        if len(updated):
+            for i in updated:
+                pos = self.index_to_position(i)
+                self[pos].update()
+
+        self._modified()
 
         if not len(self) and self.empty_message:
             self.show_message(self.empty_message)
@@ -1291,7 +1298,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         pos = 0
         # limit = len(self)-1
         if reset:
-
             self.page = 0
             offset = 0
             limit = self.limit

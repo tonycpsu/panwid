@@ -88,7 +88,7 @@ class DataTableDataFrame(rc.DataFrame):
             # logger.info(f"update_rowGs: {self.index}, {data[self.index_name]}")
 
         if not len(rows):
-            return
+            return []
 
         if self.index_name not in data:
             index = list(range(len(self), len(self) + len(rows)))
@@ -103,6 +103,7 @@ class DataTableDataFrame(rc.DataFrame):
                 logger.error(e)
                 logger.info(f"update_rows: {self.index}, {data}")
                 raise Exception(c, len(self.index), len(data[c]))
+        return data.get(self.index_name, [])
 
     def append_rows(self, rows):
 

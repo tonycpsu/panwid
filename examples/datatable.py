@@ -290,8 +290,11 @@ def main():
             elif key == "ctrl t":
                 logger.info(self.selection.data)
             elif key == "ctrl k":
-                self.selection.details_disabled = not self.selection.details_disabled
-                logger.info(self.selection.details_disabled)
+                self.selection["foo"] = 123
+                logger.info(self.selection.data["foo"])
+                self.selection.update()
+                # self.selection.details_disabled = not self.selection.details_disabled
+                # logger.info(self.selection.details_disabled)
             elif key == "meta i":
                 logger.info("foo %s, baz: %s" %(self.selection.get("foo"),
                                                     self.selection.get("baz")))
