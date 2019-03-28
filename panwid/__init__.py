@@ -8,6 +8,8 @@ from . import dropdown
 from .dropdown import *
 from . import keymap
 from .keymap import *
+from . import scroll
+from .scroll import *
 from . import tabview
 from .tabview import *
 
@@ -19,5 +21,6 @@ __all__ = (
     + dialog.__all__
     + dropdown.__all__
     + keymap.__all__
+    + scroll.__all__
     + tabview.__all__
 )
