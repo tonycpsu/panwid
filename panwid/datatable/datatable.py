@@ -1273,7 +1273,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         updated = self.df.update_rows(rows, limit=self.limit)
         self.df["_focus_position"] = self.sort_column
 
-
         self.refresh_calculated_fields()
         self.apply_filters()
 
@@ -1281,6 +1280,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             for i in updated:
                 pos = self.index_to_position(i)
                 self[pos].update()
+            self.sort_by_column(*self.sort_by)
 
         self._modified()
 
@@ -1311,7 +1311,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             limit = len(self)
         # del self[:]
         self.requery(offset=offset, limit=limit)
-
 
         if idx:
             try:
