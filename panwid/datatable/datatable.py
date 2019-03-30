@@ -1311,6 +1311,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             limit = len(self)
         # del self[:]
         self.requery(offset=offset, limit=limit)
+        if self._initialized:
+            self.pack_columns()
 
         if idx:
             try:
@@ -1336,7 +1338,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if reset_sort and self.initial_sort is not None:
             self.sort_by_column(self.initial_sort)
         if self._initialized:
-            self.pack_columns()
+            # self.pack_columns()
             for r in self:
                 if r.details_open:
                     r.open_details()
