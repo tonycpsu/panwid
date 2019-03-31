@@ -348,7 +348,8 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
 
     @property
     def selected_value(self):
-
+        if not self.focus_position:
+            return None
         return self.body[self.focus_position].value
 
     @keymap_command()
@@ -703,7 +704,6 @@ class Dropdown(urwid.PopUpLauncher):
     def selection(self):
         return self.pop_up.selection
 
-
     def select_label(self, label, case_sensitive=False):
 
         old_value = self.value
@@ -775,6 +775,8 @@ class Dropdown(urwid.PopUpLauncher):
 
     @property
     def selected_value(self):
+        if not self.selection:
+            return None
         return self.selection.value
 
     @selected_value.setter
