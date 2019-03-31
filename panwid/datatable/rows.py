@@ -109,6 +109,10 @@ class DataTableRow(urwid.WidgetWrap):
             # print(c, rows)
             l.append(rows)
         self.box.height = max(l)
+
+        if self.details_open:
+            self.open_details()
+
         # logger.debug(f"height: {self.box.height}")
         # (w, o) = self.pile.contents[0]
         # self.pile.contents[0] = (w, self.pile.options("given", max(l)))
@@ -308,7 +312,7 @@ class DataTableBodyRow(DataTableRow):
 
     def open_details(self):
 
-        if not self.table.detail_fn: #or self.get("_details_open"):
+        if not self.table.detail_fn or len(self.pile.contents) > 1:
             return
         content = self.table.detail_fn(self.data)
 

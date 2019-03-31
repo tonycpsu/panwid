@@ -1320,6 +1320,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             except:
                 pass
         self.focus_position = pos
+
         # self.focus_position = 0
 
     def reset_columns(self):
@@ -1337,11 +1338,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if reset_sort and self.initial_sort is not None:
             self.sort_by_column(self.initial_sort)
-        if self._initialized:
-            # self.pack_columns()
-            for r in self:
-                if r.details_open:
-                    r.open_details()
+        # if self._initialized:
+        #     for r in self:
+        #         if r.details_open:
+        #             r.open_details()
         self._modified()
         # self._invalidate()
 
