@@ -11,6 +11,8 @@ matrix:
   - stage: deploy
     deploy:
       provider: pypi
+      python: 3.7
+      dist: xenial
       user: tonycpsu
       password:
         secure: aXjV+Yc94YdW4Q0vGo2HOp+u29PyRkYTMTxhf8kjWW9eKRNfOhL0LKVF86UXPxxZYMUJUD1Ep/H212ofUqbCL3xvBoMZsMbfzvC3NQMtEfIjMX5rn8pWRloPmJvLZUnNj5j60xR+ku2PLEZMrxtIZrGtAH95BZpKPg3mU6Gn3NIgJY2MHEkrwg1ywfDAiZNhL+hhhIpVyxtwSqd8SZUsh0VmUJ+93pmqmUtqXG7cvYeBy3tPIQkLodh4TmtsGki9brcxcJ3rBRfYxIDEOOfrM83HRSH+ZBHh6x0fV2uJRq7ZdFeea3e0aEdJYdm955K9TvvFzRkZhVUWOj+a0A3++JUzaaQGkFa/jUG+ll01EuN5+LgwwKdPcsi/z3ULhyhdusZrLUqJbGA1eahaSZdZCq7vG57qa6+wReG6pz/aLduayLP/cjAp0RxOqQsyh61e+nvY4CW9F2r+njQiO2UlkqOHp4WxVe4Finlbi1Nm77k+sFIrJFEF8b/LV7teV4QoQlhz+J+ODaA/VEbwqxVx5GAE5AC5fMLMblZufVHT0nw08nwVh59SF7lEAWLkmKAN6X704kp7wSrZAkRPgC/oYHNUx6lgfED0b9YghuGRk8d454ge9nY25wayMli/WuTTng3NoI/Amh13+NaQXLfKDOhqGEPIaQcX97JQv1QuQcM=
