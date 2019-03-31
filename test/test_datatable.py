@@ -21,21 +21,25 @@ class TestDataTableWithIndex(unittest.TestCase):
     def test_create(self):
 
         dt = DataTable(self.columns, data=self.data, index="a")
+        dt.refresh()
         self.assertEqual(len(dt), 3)
 
     def test_create_without_index(self):
 
         dt = DataTable(self.columns, data=self.data)
+        dt.refresh()
         self.assertEqual(len(dt), 3)
 
     def test_add_row_with_index(self):
 
         dt = DataTable(self.columns, data=self.data, index="a")
+        dt.refresh()
         dt.add_row(dict(a=4, b=7.142, c="qux"))
         self.assertEqual(len(dt), 4)
 
     def test_add_row_without_index(self):
 
         dt = DataTable(self.columns, data=self.data)
+        dt.refresh()
         dt.add_row(dict(a=4, b=7.142, c="qux"))
         self.assertEqual(len(dt), 4)
