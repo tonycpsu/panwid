@@ -1,6 +1,6 @@
 language: python
 install:
-- pip install
+- pip install .
 script:
 - python setup.py test
 matrix:
