@@ -27,6 +27,10 @@ Listbox with an optional scrollbar.  Can signal to other widgets
 (e.g. DataTable) when to fetch more data.  Used by both Dropdown and
 DataTable, but can be used separately.
 
+## TabView ##
+
+A container widget that allows selection of content via tab handles.
+
 **TODOs**:
 
 * Documentation
