@@ -297,7 +297,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         super(DataTable, self).__init__(self.attr)
 
 
-    def query(self, sort=None, offset=None):
+    def query(self, sort=(None, None), offset=None, limit=None, load_all=False):
         raise Exception("query method must be overriden")
 
     def query_result_count(self):
