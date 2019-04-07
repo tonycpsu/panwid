@@ -1,7 +1,7 @@
 panwid
 ======
 
-A collection of widgets for [urwid](https://urwid.org/).
+A collection of widgets for [Urwid](https://urwid.org/).
 
 Currently consists of the following:
 
@@ -10,6 +10,7 @@ Currently consists of the following:
 Dropdown menu widget with autocomplete support.
 
 [![asciicast](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN.png)](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN?autoplay=1)
+
 ## DataTable ##
 
 Widget for displaying tabular data.
