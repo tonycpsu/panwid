@@ -230,7 +230,9 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
                 )
                 for l, v in self.items.items()
         ]
-        self.dropdown_buttons = ScrollingListBox(buttons, with_scrollbar=scrollbar)
+        self.dropdown_buttons = ScrollingListBox(
+            urwid.SimpleListWalker(buttons), with_scrollbar=scrollbar
+        )
 
         urwid.connect_signal(
             self.dropdown_buttons,
@@ -554,9 +556,12 @@ class Dropdown(urwid.PopUpLauncher):
 
         if self.default is not None:
             try:
-                self.select_value(self.default)
+                self.select_label(self.default)
             except StopIteration:
-                self.focus_position = 0
+                try:
+                    self.select_value(self.default)
+                except StopIteration:
+                    self.focus_position = 0
 
         if len(self):
             self.select(self.selection)
