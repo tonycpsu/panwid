@@ -13,7 +13,7 @@ from .scroll import *
 from . import tabview
 from .tabview import *
 
-__version__ = "0.3.0.dev12"
+__version__ = "0.3.0.dev13"
 
 __all__ = (
     listbox.__all__
