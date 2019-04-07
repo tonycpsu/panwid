@@ -556,7 +556,10 @@ class Dropdown(urwid.PopUpLauncher):
 
         if self.default is not None:
             try:
-                self.select_label(self.default)
+                if isinstance(self.default, str):
+                    self.select_label(self.default)
+                else:
+                    raise StopIteration
             except StopIteration:
                 try:
                     self.select_value(self.default)
