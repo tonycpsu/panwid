@@ -343,6 +343,7 @@ class DataTableBodyRow(DataTableRow):
         self.pile.contents.append(
             (self.details, self.pile.options("pack"))
         )
+        self["_details"]["open"] = True
 
 
     def close_details(self):
