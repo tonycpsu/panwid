@@ -1279,7 +1279,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if len(updated):
             for i in updated:
-                if i in [ getattr(r, self.df.index) for r in self.filtered_rows]:
+                if i in self.filtered_rows:
                     pos = self.index_to_position(i)
             self.sort_by_column(*self.sort_by)
 
