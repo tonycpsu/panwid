@@ -1281,6 +1281,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             for i in updated:
                 if i in self.filtered_rows:
                     pos = self.index_to_position(i)
+                    self[pos].update()
             self.sort_by_column(*self.sort_by)
 
         self._modified()
