@@ -13,6 +13,7 @@ setup(name=name,
       author='Tony Cebzanov',
       author_email='tonycpsu@gmail.com',
       url='https://github.com/tonycpsu/panwid',
+      python_requires='>=3.6',
       classifiers=[
           'Environment :: Console',
           'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
