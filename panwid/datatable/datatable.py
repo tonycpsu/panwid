@@ -1204,12 +1204,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
         self.filters = filters
-        # self.invalidate()
+        self.invalidate()
 
     def clear_filters(self):
         self.filtered_rows = blist(range(len(self.df)))
         self.filters = None
-        # self.invalidate()
+        self.invalidate()
 
 
     def load_all(self):
@@ -1234,10 +1234,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
             return False
 
-        try:
-            self.requery(offset=offset)
-        except Exception as e:
-            raise Exception(f"{position}, {len(self)}, {self.row_count()}, {offset}, {self.limit}, {e}")
+        self.requery(offset=offset)
+        # try:
+        #     self.requery(offset=offset)
+        # except Exception as e:
+        #     raise Exception(f"{position}, {len(self)}, {self.row_count()}, {offset}, {self.limit}, {e}")
 
         return True
 
@@ -1278,8 +1279,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if len(updated):
             for i in updated:
-                pos = self.index_to_position(i)
-                self[pos].update()
+                if i in [ getattr(r, self.df.index) for r in self.filtered_rows]:
+                    pos = self.index_to_position(i)
             self.sort_by_column(*self.sort_by)
 
         self._modified()

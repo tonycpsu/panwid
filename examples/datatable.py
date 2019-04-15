@@ -69,7 +69,7 @@ class Foo(BaseDataClass):
     # _cls: typing.Optional[type] = None
     @property
     def _details(self):
-        return {"open": True, "disabled": False}
+        return {"open": False, "disabled": False}
 
 def main():
 
@@ -337,7 +337,7 @@ def main():
             elif key == "D":
                 self.remove_columns(len(self.columns)-1)
             elif key == "f":
-                self.apply_filters([lambda x: x["foo"] > 20, lambda x: x["bar"] < 800])
+                self.apply_filters([lambda x: x["foo"] < 5])
             elif key == "F":
                 self.clear_filters()
             elif key == ".":
