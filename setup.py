@@ -26,7 +26,7 @@ setup(name=name,
           "urwid",
           "urwid-utils>=0.1.2",
           "six",
-          "raccoon==2.1.5",
+          "raccoon>=3.0.0",
           "orderedattrdict"
       ],
       test_suite="test",
