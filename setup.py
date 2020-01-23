@@ -8,7 +8,7 @@ from glob import glob
 
 name = 'panwid'
 setup(name=name,
-      version='0.3.0.dev14',
+      version='0.3.0.dev15',
       description='Useful widgets for urwid',
       author='Tony Cebzanov',
       author_email='tonycpsu@gmail.com',
