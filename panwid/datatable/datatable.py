@@ -9,7 +9,6 @@ import itertools
 import copy
 import traceback
 import math
-from blist import blist
 from dataclasses import *
 import typing
 
@@ -174,7 +173,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._message_showing = False
 
         self.filters = None
-        self.filtered_rows = blist()
+        self.filtered_rows = list()
 
         if self.divider:
             self._columns = list(intersperse_divider(self._columns, self.divider))
@@ -185,7 +184,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         kwargs = dict(
             columns = self.column_names,
-            use_blist=True,
             sort=False,
             index_name = self.index or None
             # sorted=True,
@@ -196,7 +194,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # self.df = DataTableDataFrame(**kwargs)
         self.df = DataTableDataFrame(
             columns = self.column_names,
-            use_blist=True,
             sort=False,
             index_name = self.index or None
         )
@@ -1189,7 +1186,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         elif not isinstance(filters, list):
             filters = [filters]
 
-        self.filtered_rows = blist(
+        self.filtered_rows = list(
             i
             for i, row in enumerate(self.df.iterrows())
             if not filters or all(
@@ -1207,7 +1204,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # self.invalidate()
 
     def clear_filters(self):
-        self.filtered_rows = blist(range(len(self.df)))
+        self.filtered_rows = list(range(len(self.df)))
         self.filters = None
         # self.invalidate()
 

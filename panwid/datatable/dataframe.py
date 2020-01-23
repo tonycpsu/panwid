@@ -7,7 +7,7 @@ class DataTableDataFrame(rc.DataFrame):
 
     DATA_TABLE_COLUMNS = ["_dirty", "_focus_position", "_value_fn", "_cls", "_details", "_rendered_row"]
 
-    def __init__(self, data=None, columns=None, index=None, index_name="index", use_blist=False, sort=None):
+    def __init__(self, data=None, columns=None, index=None, index_name="index", sort=None):
 
         if columns and not index_name in columns:
             columns.insert(0, index_name)
@@ -17,7 +17,6 @@ class DataTableDataFrame(rc.DataFrame):
             columns=columns,
             index=index,
             index_name=index_name,
-            use_blist=use_blist,
             sort=sort
         )
         # for c in self.DATA_TABLE_COLUMNS:
@@ -128,7 +127,6 @@ class DataTableDataFrame(rc.DataFrame):
         kwargs = dict(
             columns =  colnames,
             data = data,
-            use_blist=True,
             sort=False,
             index=data[self.index_name],
             index_name = self.index_name,
