@@ -815,8 +815,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.sort_by = sort_by
         logger.debug("sort_by: %s (%s), %s" %(column_name, self.sort_column, reverse))
-        if self.query_sort:
-            self.reset()
+        # if self.query_sort:
+        #     self.reset()
 
         row_index = None
         if self.sort_refocus:
