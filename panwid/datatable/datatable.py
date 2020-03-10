@@ -793,7 +793,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             try:
                 column_number = self.visible_data_column_index(column_name)
             except:
-                raise
+                column_number = 0
+                # raise
 
         self.sort_column = column_number
 
