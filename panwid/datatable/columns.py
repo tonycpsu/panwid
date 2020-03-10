@@ -65,7 +65,7 @@ class DataTableBaseColumn(object):
         self.width = self.initial_width
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.name}>"
+        return f"<{self.__class__.__name__}: {self.name} ({self.width}, {self.sizing})>"
 
     def width_with_padding(self, table_padding=None):
         padding = 0
