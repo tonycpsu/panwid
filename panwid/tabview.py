@@ -142,6 +142,10 @@ class TabView(urwid.WidgetWrap):
         if selected is not None:
             self.set_active_tab(selected)
 
+    @property
+    def active_tab(self):
+        return self._contents[self.active_tab_idx]
+
     @classmethod
     def get_palette_entries(cls):
         return {
@@ -199,7 +203,7 @@ class TabView(urwid.WidgetWrap):
             ),
             self._w.contents[1][1]
         )
-        self.active_tab = idx
+        self.active_tab_idx = idx
         urwid.signals.emit_signal(self, "activate", self, self._contents[idx])
 
     def get_tab_by_label(self, label):
@@ -218,24 +222,24 @@ class TabView(urwid.WidgetWrap):
 
 
     def set_active_next(self):
-        if self.active_tab < (len(self._contents)-1):
-            self.set_active_tab(self.active_tab+1)
+        if self.active_tab_idx < (len(self._contents)-1):
+            self.set_active_tab(self.active_tab_idx+1)
         else:
             self.set_active_tab(0)
 
     def set_active_prev(self):
-        if self.active_tab > 0:
-            self.set_active_tab(self.active_tab-1)
+        if self.active_tab_idx > 0:
+            self.set_active_tab(self.active_tab_idx-1)
         else:
             self.set_active_tab(len(self._contents)-1)
 
     def close_active_tab(self):
-        if not self.tab_bar.contents[self.active_tab][0].locked:
-            del self.tab_bar.contents[self.active_tab]
-            new_idx = self.active_tab
-            if len(self._contents) <= self.active_tab:
+        if not self.tab_bar.contents[self.active_tab_idx][0].locked:
+            del self.tab_bar.contents[self.active_tab_idx]
+            new_idx = self.active_tab_idx
+            if len(self._contents) <= self.active_tab_idx:
                 new_idx -= 1
-            del self._contents[self.active_tab]
+            del self._contents[self.active_tab_idx]
             self.set_active_tab(new_idx)
 
     def _set_active_by_tab(self, tab):
