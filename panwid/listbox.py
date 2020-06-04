@@ -263,10 +263,10 @@ class ScrollingListBox(urwid.WidgetWrap):
             urwid.signals.emit_signal(
                 self, "load_more", focus)
             if (self.queued_keypress
-                and focus
-                and focus < len(self.body)
+                and focus is not None
+                # and focus < len(self.body)-1
             ):
-                # logger.info("send queued keypress")
+                # logger.info(f"send queued keypress: {focus}, {len(self.body)}")
                 self.keypress(size, self.queued_keypress)
             self.queued_keypress = None
             # self.listbox._invalidate()

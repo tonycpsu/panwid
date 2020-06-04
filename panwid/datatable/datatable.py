@@ -30,8 +30,7 @@ def intersperse_divider(columns, divider):
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
-    signals = ["select", "refresh", "focus", "blur",
-               # "focus", "unfocus", "row_focus", "row_unfocus",
+    signals = ["select", "refresh", "focus", "blur", "end",
                "drag_start", "drag_continue", "drag_stop"]
 
     ATTR = "table"
@@ -1231,7 +1230,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # logger.debug(f"offset: {offset}, row count: {self.row_count()}")
         if (self.row_count() is not None
             and len(self) >= self.row_count()):
-
+            self._emit("end", self.row_count())
             return False
 
         try:
