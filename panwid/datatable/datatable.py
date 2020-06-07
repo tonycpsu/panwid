@@ -178,6 +178,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self._columns = list(intersperse_divider(self._columns, self.divider))
             # self._columns = intersperse(self.divider, self._columns)
 
+        # FIXME: pass reference
         for c in self._columns:
             c.table = self
 
@@ -887,6 +888,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self._columns += columns
         for i, column in enumerate(columns):
+            # FIXME: pass reference
+            column.table = self
             self.df[column.name] = data=data[i] if data else None
 
         self.invalidate()
@@ -906,8 +909,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.invalidate()
 
     def set_columns(self, columns):
+        # logger.info(self._columns)
         self.remove_columns([c.name for c in self._columns])
         self.add_columns(columns)
+        # logger.info(self._columns)
         self.reset()
 
     def toggle_columns(self, columns, show=None):
