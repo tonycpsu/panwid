@@ -97,7 +97,6 @@ class DataTableColumn(DataTableBaseColumn):
                  truncate=False,
                  format_fn=None,
                  decoration_fn=None,
-                 format_record = None, # format_fn is passed full row data
                  sort_key = None, sort_reverse=False,
                  sort_icon = None,
                  footer_fn = None, footer_arg = "values", **kwargs):
@@ -119,7 +118,6 @@ class DataTableColumn(DataTableBaseColumn):
         self.truncate = truncate
         self.format_fn = format_fn
         self.decoration_fn = decoration_fn
-        self.format_record = format_record
         self.sort_key = sort_key
         self.sort_reverse = sort_reverse
         self.sort_icon = sort_icon
