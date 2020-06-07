@@ -332,6 +332,8 @@ def main():
                 self.add_columns(col, data=data)
             elif key == "t":
                 self.toggle_columns("qux")
+            elif key == ";":
+                self.set_columns(COLUMNS)
             elif key == "T":
                 self.toggle_columns(["foo", "baz"])
             elif key == "D":
@@ -459,7 +461,7 @@ def main():
             index="uniqueid",
             divider = DataTableDivider("."),
             # divider = False,
-            detail_fn=detail_fn,
+            # detail_fn=detail_fn,
             cell_selection=True,
             sort_refocus = True,
             with_scrollbar=True,
