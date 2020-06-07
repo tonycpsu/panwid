@@ -262,7 +262,8 @@ class DataTableBodyRow(DataTableRow):
                 # logger.info(f"__getitem__: {column}={self.table.df.get(self.index, column)}")
                 return self.table.df[self.index, column]
             else:
-                raise Exception(column, self.table.df.columns)
+                raise KeyError
+                # raise Exception(column, self.table.df.columns)
 
 
     def __setitem__(self, column, value):
