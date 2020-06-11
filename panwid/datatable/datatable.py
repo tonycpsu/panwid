@@ -522,7 +522,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return index
 
     def set_focus(self, position):
-        # logger.debug("walker set_focus: %d" %(position))
         self._emit("blur", self._focus)
         self._focus = position
         self._emit("focus", position)

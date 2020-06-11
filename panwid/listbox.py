@@ -95,12 +95,14 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.scroll_rows = scroll_rows
         self.row_count_fn = row_count_fn
 
+        self._width = None
+        self._height = None
+
         self.mouse_state = 0
         self.drag_from = None
         self.drag_last = None
         self.drag_to = None
         self.load_more = False
-        self.height = 0
         self.page = 0
 
         self.queued_keypress = None
@@ -155,21 +157,21 @@ class ScrollingListBox(urwid.WidgetWrap):
     def mouse_event(self, size, event, button, col, row, focus):
 
         SCROLL_WHEEL_HEIGHT_RATIO = 0.5
-        if row < 0 or row >= self.height:
+        if row < 0 or row >= self._height:
             return
         if event == 'mouse press':
             if button == 1:
                 self.mouse_state = 1
                 self.drag_from = self.drag_last = (col, row)
             elif button == 4:
-                pos = self.listbox.focus_position - int(self.height * SCROLL_WHEEL_HEIGHT_RATIO)
+                pos = self.listbox.focus_position - int(self._height * SCROLL_WHEEL_HEIGHT_RATIO)
                 if pos < 0:
                     pos = 0
                 self.listbox.focus_position = pos
                 self.listbox.make_cursor_visible(size)
                 self._invalidate()
             elif button == 5:
-                pos = self.listbox.focus_position + int(self.height * SCROLL_WHEEL_HEIGHT_RATIO)
+                pos = self.listbox.focus_position + int(self._height * SCROLL_WHEEL_HEIGHT_RATIO)
                 if pos > len(self.listbox.body) - 1:
                     if self.infinite:
                         self.load_more = True
@@ -239,10 +241,10 @@ class ScrollingListBox(urwid.WidgetWrap):
     def render(self, size, focus=False):
 
         maxcol = size[0]
-        self.width = maxcol
+        self._width = maxcol
         if len(size) > 1:
             maxrow = size[1]
-            self.height = maxrow
+            self._height = maxrow
 
         # print
         # print
