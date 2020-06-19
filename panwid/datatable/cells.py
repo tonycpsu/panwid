@@ -35,6 +35,7 @@ class DataTableCell(urwid.WidgetWrap):
 
         self._width = None
         self._height = None
+        self.contents_rows = None
         # self.width = None
 
         if column.padding:
@@ -47,7 +48,7 @@ class DataTableCell(urwid.WidgetWrap):
         # logger.info(f"{self.column.name}, {self.column.width}, {self.column.align}")
         # if self.row.row_height is not None:
 
-        self.filler = urwid.Filler(self.contents)
+        # self.filler = urwid.Filler(self.contents)
 
         self.normal_attr_map = {}
         self.highlight_attr_map = {}
@@ -62,7 +63,8 @@ class DataTableCell(urwid.WidgetWrap):
         self.highlight_focus_map.update(self.table.highlight_focus_map)
 
         self.attrmap = urwid.AttrMap(
-            self.filler,
+            # self.filler,
+            urwid.Filler(self.contents) if "flow" in self.contents.sizing() else self.contents,
             attr_map = self.normal_attr_map,
             focus_map = self.normal_focus_map
         )
@@ -172,15 +174,13 @@ class DataTableCell(urwid.WidgetWrap):
             maxrow = size[1]
             self._height = maxrow
         else:
-            contents_rows = self.contents.rows(size, focus)
+            self.contents_rows = self.contents.rows(size, focus)
             self._height = contents_rows
-        if (getattr(self.column, "truncate", None)
-            and isinstance(self.contents, urwid.Widget)
-            and hasattr(self.contents, "truncate")
-        ):
-            self.contents.truncate(
-                self.width - (self.padding*2), end_char=self.column.truncate
-            )
+
+        if getattr(self.column, "truncate", None):
+            rows = self.inner_contents.pack((self.width,))[1]
+            if rows > 1:
+                self.truncate()
         return super().render(size, focus)
 
     @property
@@ -191,15 +191,13 @@ class DataTableCell(urwid.WidgetWrap):
     def height(self):
         return self._height
 
-    # def rows(self, size, focus=False):
-    #     if getattr(self.column, "truncate", None):
-    #         return 1
-    #     contents_rows = self.contents.rows((maxcol,), focus)
-    #     return contents_rows
-        # try:
-        #     return super().rows(size, focus)
-        # except Exception as e:
-        #     raise Exception(self, size, self.contents, e)
+    @property
+    def inner_contents(self):
+        return self.contents
+
+    def truncate(self):
+        pass
+
 
 class DataTableDividerCell(DataTableCell):
 
@@ -233,24 +231,47 @@ class DataTableBodyCell(DataTableCell):
     def update_contents(self):
 
         try:
-            contents = self.table.decorate(
+            self.inner = self.table.decorate(
                 self.row,
                 self.column,
                 self.formatted_value
             )
         except Exception as e:
             logger.exception(e)
-            contents = urwid.Text("")
+            self.inner = urwid.Text("")
 
-        contents = urwid.Padding(
-            contents,
-            align=self.column.align,
-            width="pack",
-            left=self.padding,
-            right=self.padding
-        )
+        if getattr(self.column, "truncate", None):
+            end_char = u"\N{HORIZONTAL ELLIPSIS}" if self.column.truncate is True else self.column.truncate
+            contents = urwid.Columns([
+                ("weight", 1, self.inner),
+                (0, urwid.Text(end_char))
+            ])
+            contents = urwid.Filler(contents)
+        else:
+            width = "pack"
+
+            contents = urwid.Padding(
+                self.inner,
+                align=self.column.align,
+                width = width,
+                left=self.padding,
+                right=self.padding
+            )
+            # contents = urwid.Filler(contents)
 
         self.contents = contents
+
+    def truncate(self):
+        columns = self.contents.original_widget
+        col = columns.contents[1]
+        col = (col[0], columns.options("given", 1))
+        del self.contents.original_widget.contents[1]
+        columns.contents.append(col)
+
+
+    @property
+    def inner_contents(self):
+        return self.inner
 
 
 class DataTableDividerBodyCell(DataTableDividerCell, DataTableBodyCell):
