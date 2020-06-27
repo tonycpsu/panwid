@@ -78,24 +78,30 @@ def keymapped():
                             command = cmd.replace(" ", "_")
                             if not command in self.KEYMAP_MAPPING:
                                 logger.debug("%s: %s not in mapping %s" %(cls, key, self.KEYMAP_MAPPING))
+                                continue
                             if hasattr(self, command):
                                 fn_name = command
                             else:
                                 fn_name = self.KEYMAP_MAPPING[command]
                             f = getattr(self, fn_name)
                             f(*args, **kwargs)
-                    return key
+                    # return key
                 else:
-                    return key
-
-                return key
+                    if hasattr(self, "keypress_orig"):
+                        logger.debug("%s orig keypress: %s" %(self.__class__.__name__, key))
+                        return self.keypress_orig(size, key)
+                    else:
+                        logger.debug("%s returning key: %s" %(self.__class__.__name__, key))
+                        return key
 
             return keypress
 
-        def default_keypress(self, size, key):
-            logger.debug("default keypress: %s" %(key))
-            key = super(cls, self).keypress(size, key)
-            return key
+        # def keypress_default(self, size, key):
+        #     logger.debug("default keypress: %s" %(key))
+        #     if hasattr(self, "keypress_orig"
+        #             key = super(cls, self).keypress(size, key)
+        #     key = self.
+        #     return key
 
         if not hasattr(cls, "KEYMAP"):
             cls.KEYMAP = {}
@@ -103,11 +109,16 @@ def keymapped():
         cls.KEYMAP_SCOPE = scope
         func = getattr(cls, "keypress", None)
         logger.debug("func class: %s" %(cls.__name__))
-        if not func:
-            logger.debug("setting default keypress for %s" %(cls.__name__))
-            cls.keypress = default_keypress
-        else:
-            cls.keypress = keypress_decorator(func)
+
+        if hasattr(cls, "keypress"):
+            cls.keypress_orig = cls.keypress
+
+        # else:
+        #     logger.debug("setting default keypress for %s" %(cls.__name__))
+        #     cls.keypress = keypress_default
+
+        cls.keypress = keypress_decorator(func)
+
         if not hasattr(cls, "KEYMAP_MAPPING"):
             cls.KEYMAP_MAPPING = {}
         cls.KEYMAP_MAPPING.update({
