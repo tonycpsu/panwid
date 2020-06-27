@@ -215,7 +215,7 @@ class DataTableDetails(urwid.WidgetWrap):
     def __init__(self, row, content, indent=None):
 
         self.row = row
-
+        self.contents = content
         self.columns = urwid.Columns([
             ("weight", 1, content)
         ])
@@ -290,7 +290,7 @@ class DataTableBodyRow(DataTableRow):
 
     @property
     def details_disabled(self):
-        return (self.get("_details") or {}).get("disabled")
+        return (not self.table.detail_selectable) or (self.get("_details") or {}).get("disabled")
 
     @details_disabled.setter
     def details_disabled(self, value):
@@ -315,7 +315,10 @@ class DataTableBodyRow(DataTableRow):
 
         if not self.table.detail_fn or len(self.pile.contents) > 1:
             return
+
         content = self.table.detail_fn(self.data)
+        if not content:
+            return
 
         self.table.header.render( (self.table.width,) )
         indent_width = 0
@@ -344,6 +347,9 @@ class DataTableBodyRow(DataTableRow):
         self.pile.contents.append(
             (self.details, self.pile.options("pack"))
         )
+        self.details_focused = True
+        if not self["_details"]:
+            self["_details"] = AttrDict()
         self["_details"]["open"] = True
 
 
@@ -351,10 +357,9 @@ class DataTableBodyRow(DataTableRow):
         if not self.table.detail_fn or not self.details_open:
             return
         self["_details"]["open"] = False
-        # del self.contents.contents[0]
 
-        # self.box.height -= self.pile.contents[1][0].rows( (self.table.width,) )
-        del self.pile.contents[1]
+        if len(self.pile.contents) > 1:
+            del self.pile.contents[1]
 
     def toggle_details(self):
 
@@ -362,18 +367,6 @@ class DataTableBodyRow(DataTableRow):
             self.close_details()
         else:
             self.open_details()
-
-    # def enable_details(self):
-    #     self["_details"]["disabled"] = False
-
-    # def disable_details(self):
-    #     self["_details"]["disabled"] = True
-
-    # def focus_details(self):
-    #     self.pile.focus_position = 1
-
-    # def unfocus_details(self):
-    #     self.pile.focus_position = 0
 
 
     def set_attr(self, attr):

@@ -61,6 +61,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     detail_fn = None
     detail_selectable = False
+    detail_auto_open = False
     detail_hanging_indent = None
 
     ui_sort = True
@@ -88,7 +89,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  no_load_on_init = None,
                  divider = None, padding = None,
                  row_style = None,
-                 detail_fn = None, detail_selectable = None,
+                 detail_fn = None, detail_selectable = None, detail_auto_open = None,
                  detail_hanging_indent = None,
                  ui_sort = None,
                  ui_resize = None,
@@ -160,6 +161,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if detail_fn is not None: self.detail_fn = detail_fn
         if detail_selectable is not None: self.detail_selectable = detail_selectable
+        if detail_auto_open is not None: self.detail_auto_open = detail_auto_open
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
         # self.offset = 0
         if limit:
@@ -289,7 +291,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.attr = urwid.AttrMap(
             self.pile,
             attr_map = self.attr_map,
-            # focus_map = self.focus_map
         )
         super(DataTable, self).__init__(self.attr)
 
@@ -522,8 +523,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return index
 
     def set_focus(self, position):
+        if self.width and self.selection and self.detail_auto_open:
+            self.selection.close_details()
         self._emit("blur", self._focus)
         self._focus = position
+        if self.width and self.selection and self.detail_auto_open:
+            self.selection.open_details()
         self._emit("focus", position)
         self._modified()
 
@@ -544,7 +549,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         try:
             r = self.get_row_by_position(position)
             return r
-        except IndexError:
+        except IndexError as e:
             logger.error(traceback.format_exc())
             raise
         # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
@@ -591,10 +596,23 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._width = size[0]
         if len(size) > 1:
             self._height = size[1]
-        if not self._initialized and not self.no_load_on_init:
+
+        # if not self._initialized and not self.no_load_on_init:
+        #     self._initialized = True
+        #     self._invalidate()
+        #     self.reset(reset_sort=True)
+
+        # if not self._initialized:
+        #     self._initialized = True
+        # if not self.no_load_on_init:
+        #     self._invalidate()
+        #     self.reset(reset_sort=True)
+
+        if not self._initialized: #and not self.no_load_on_init:
             self._initialized = True
             self._invalidate()
             self.reset(reset_sort=True)
+
         return super().render(size, focus)
 
     @property
@@ -654,8 +672,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def position_to_index(self, position):
         # if not self.query_sort and self.sort_by[1]:
         #     position = -(position + 1)
-        return self.df.index[position]
-
+        try:
+            return self.df.index[position]
+        except IndexError as e:
+            logger.info(f"position_to_index: {position}, {self.df.index}")
+            logger.error(e.format_exc())
     def index_to_position(self, index):
         # raise Exception(index, self.df.index)
         return self.df.index.index(index)
@@ -1375,6 +1396,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             available -= w
 
         self.resize_body_rows()
+
 
     def show_message(self, message):
 
