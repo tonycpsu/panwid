@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 #     logger.addHandler(logging.NullHandler())
 
 import six
+import asyncio
 import urwid
 import re
 
@@ -84,7 +85,10 @@ def keymapped():
                             else:
                                 fn_name = self.KEYMAP_MAPPING[command]
                             f = getattr(self, fn_name)
-                            f(*args, **kwargs)
+                            ret = f(*args, **kwargs)
+                            if asyncio.iscoroutine(ret):
+                                asyncio.get_event_loop().create_task(ret)
+
                     # return key
                 else:
                     if hasattr(self, "keypress_orig"):
