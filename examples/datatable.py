@@ -463,6 +463,7 @@ def main():
             # divider = False,
             detail_fn=detail_fn,
             detail_auto_open=True,
+            detail_replace=True,
             cell_selection=True,
             sort_refocus = True,
             with_scrollbar=True,

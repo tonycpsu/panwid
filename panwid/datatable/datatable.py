@@ -61,6 +61,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     detail_fn = None
     detail_selectable = False
+    detail_replace = None
     detail_auto_open = False
     detail_hanging_indent = None
 
@@ -89,8 +90,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  no_load_on_init = None,
                  divider = None, padding = None,
                  row_style = None,
-                 detail_fn = None, detail_selectable = None, detail_auto_open = None,
-                 detail_hanging_indent = None,
+                 detail_fn = None, detail_selectable = None, detail_replace=None,
+                 detail_auto_open = None, detail_hanging_indent = None,
                  ui_sort = None,
                  ui_resize = None,
                  row_attr_fn = None):
@@ -161,6 +162,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         if detail_fn is not None: self.detail_fn = detail_fn
         if detail_selectable is not None: self.detail_selectable = detail_selectable
+        if detail_replace is not None: self.detail_replace = detail_replace
         if detail_auto_open is not None: self.detail_auto_open = detail_auto_open
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
         # self.offset = 0
@@ -523,8 +525,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return index
 
     def set_focus(self, position):
+        if self._focus == position:
+            return
         if self.width and self.selection and self.detail_auto_open:
-            self.selection.close_details()
+            logger.info(f"datatable close details: {self._focus}, {position}")
+            self[self._focus].close_details()
         self._emit("blur", self._focus)
         self._focus = position
         if self.width and self.selection and self.detail_auto_open:
@@ -758,7 +763,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     def selection(self):
         if len(self.body) and self.focus_position is not None:
             # FIXME: make helpers to map positions to indexes
-            return self[self.focus_position]
+            try:
+                return self[self.focus_position]
+            except IndexError:
+                return None
 
 
     def render_item(self, index):
@@ -1342,8 +1350,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             try:
                 pos = self.index_to_position(idx)
             except:
-                pass
-        self.focus_position = pos
+                return
+        if pos:
+            self.focus_position = pos
 
         # self.focus_position = 0
 

@@ -27,7 +27,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.padding = padding
         self.cell_selection = cell_selection
         self.style = style
-
+        self.details = None
         self.sort = self.table.sort_by
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
@@ -238,6 +238,7 @@ class DataTableBodyRow(DataTableRow):
 
     DIVIDER_CLASS = DataTableDividerBodyCell
 
+
     @property
     def index(self):
         return self.content
@@ -302,12 +303,15 @@ class DataTableBodyRow(DataTableRow):
 
     @property
     def details_focused(self):
-        return self.details_open and (self.pile.focus_position > 0)
+        return self.details_open and (
+            len(self.pile.contents) == 0
+            or self.pile.focus_position > 0
+        )
 
     @details_focused.setter
     def details_focused(self, value):
         if value:
-            self.pile.focus_position = 1
+            self.pile.focus_position = len(self.pile.contents)-1
         else:
             self.pile.focus_position = 0
 
@@ -344,9 +348,13 @@ class DataTableBodyRow(DataTableRow):
             ])
 
         self.details = DataTableDetails(self, content, indent_width)
+
         self.pile.contents.append(
             (self.details, self.pile.options("pack"))
         )
+        if self.table.detail_replace:
+            del self.pile.contents[0]
+
         self.details_focused = True
         if not self["_details"]:
             self["_details"] = AttrDict()
@@ -356,9 +364,15 @@ class DataTableBodyRow(DataTableRow):
     def close_details(self):
         if not self.table.detail_fn or not self.details_open:
             return
+        # raise Exception
         self["_details"]["open"] = False
 
-        if len(self.pile.contents) > 1:
+        if self.table.detail_replace:
+            del self.pile.contents[:]
+            self.pile.contents.append(
+                (self.box, self.pile.options("pack"))
+            )
+        elif len(self.pile.contents) > 1:
             del self.pile.contents[1]
 
     def toggle_details(self):
