@@ -177,6 +177,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.filters = None
         self.filtered_rows = list()
+        self.last_row_count = None
 
         if self.divider:
             self._columns = list(intersperse_divider(self._columns, self.divider))
@@ -1262,7 +1263,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         offset = (self.page)*self.limit
         # logger.debug(f"offset: {offset}, row count: {self.row_count()}")
         if (self.row_count() is not None
+            and self.last_row_count != self.row_count()
             and len(self) >= self.row_count()):
+            self.last_row_count = self.row_count()
             self._emit("end", self.row_count())
             return False
 
