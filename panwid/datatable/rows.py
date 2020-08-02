@@ -317,7 +317,7 @@ class DataTableBodyRow(DataTableRow):
 
     def open_details(self):
 
-        if not self.table.detail_fn or len(self.pile.contents) > 1:
+        if not self.table.detail_fn or self.details_open:
             return
 
         content = self.table.detail_fn(self.data)
@@ -349,11 +349,12 @@ class DataTableBodyRow(DataTableRow):
 
         self.details = DataTableDetails(self, content, indent_width)
 
+        if self.table.detail_replace:
+            self.pile.contents[0] = (urwid.Filler(urwid.Text("")), self.pile.options("given", 0))
+
         self.pile.contents.append(
             (self.details, self.pile.options("pack"))
         )
-        if self.table.detail_replace:
-            del self.pile.contents[0]
 
         self.details_focused = True
         if not self["_details"]:
@@ -368,11 +369,13 @@ class DataTableBodyRow(DataTableRow):
         self["_details"]["open"] = False
 
         if self.table.detail_replace:
-            del self.pile.contents[:]
-            self.pile.contents.append(
-                (self.box, self.pile.options("pack"))
-            )
-        elif len(self.pile.contents) > 1:
+            self.pile.contents[0] = (self.box, self.pile.options("pack"))
+
+            # del self.pile.contents[:]
+            # self.pile.contents.append(
+            #     (self.box, self.pile.options("pack"))
+            # )
+        if len(self.pile.contents) >= 2:
             del self.pile.contents[1]
 
     def toggle_details(self):

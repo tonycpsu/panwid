@@ -96,7 +96,7 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.row_count_fn = row_count_fn
 
         self._width = None
-        self._height = None
+        self._height = 0
 
         self.mouse_state = 0
         self.drag_from = None
@@ -245,6 +245,8 @@ class ScrollingListBox(urwid.WidgetWrap):
         if len(size) > 1:
             maxrow = size[1]
             self._height = maxrow
+        else:
+            self._height = 0
 
         # print
         # print

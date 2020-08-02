@@ -30,7 +30,7 @@ def intersperse_divider(columns, divider):
 class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
-    signals = ["select", "refresh", "focus", "blur", "end",
+    signals = ["select", "refresh", "focus", "blur", "end", "requery",
                "drag_start", "drag_continue", "drag_stop"]
 
     ATTR = "table"
@@ -526,14 +526,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         return index
 
     def set_focus(self, position):
-        if self._focus == position:
-            return
+        # if self._focus == position:
+        #     return
         if self.width and self.selection and self.detail_auto_open:
-            logger.info(f"datatable close details: {self._focus}, {position}")
+            # logger.info(f"datatable close details: {self._focus}, {position}")
             self[self._focus].close_details()
         self._emit("blur", self._focus)
         self._focus = position
         if self.width and self.selection and self.detail_auto_open:
+            # logger.info(f"datatable open details: {self._focus}, {position}")
             self.selection.open_details()
         self._emit("focus", position)
         self._modified()
@@ -681,8 +682,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         try:
             return self.df.index[position]
         except IndexError as e:
-            logger.info(f"position_to_index: {position}, {self.df.index}")
-            logger.error(e.format_exc())
+            # logger.info(f"position_to_index: {position}, {self.df.index}")
+            logger.error(traceback.format_exc())
     def index_to_position(self, index):
         # raise Exception(index, self.df.index)
         return self.df.index.index(index)
@@ -796,8 +797,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             return next(i for i, c in enumerate(self.visible_data_columns)
                      if c.name == column_name)
 
-        except StopIteration:
-            logger.error(column_name)
+        except Exception as e:
+            logger.error(f"column not found in visible_data_column_index: {column_name}")
+            logger.exception(e)
             raise IndexError
 
     def sort_by_column(self, col=None, reverse=None, toggle=False):
@@ -820,11 +822,15 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             # column_number = next(i for i, c in enumerate(self._columns) if c.name == column_name)
         elif isinstance(col, str):
             try:
+                if column_name is None:
+                    return
                 column_number = self.visible_data_column_index(column_name)
                 column_name = col
             except:
 
                 column_name = self.initial_sort[0] or self.visible_data_columns[0].name
+                if column_name is None:
+                    return
                 column_number = self.visible_data_column_index(column_name)
 
         self.sort_column = column_number
@@ -880,7 +886,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                    if not isinstance(c, DataTableDivider)
         ][index]
 
-        logger.info(f"{index}, {idx}")
         if self.with_header:
             self.header.set_focus_column(idx)
 
@@ -1318,6 +1323,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.sort_by_column(*self.sort_by)
 
         self._modified()
+        self._emit("requery", self.row_count())
 
         if not len(self) and self.empty_message:
             self.show_message(self.empty_message)
@@ -1354,8 +1360,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 pos = self.index_to_position(idx)
             except:
                 return
-        if pos:
-            self.focus_position = pos
+        # if pos:
+        self.focus_position = pos
 
         # self.focus_position = 0
 
