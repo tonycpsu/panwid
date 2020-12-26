@@ -177,7 +177,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.filters = None
         self.filtered_rows = list()
-        self.last_row_count = None
 
         if self.divider:
             self._columns = list(intersperse_divider(self._columns, self.divider))
@@ -557,7 +556,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             r = self.get_row_by_position(position)
             return r
         except IndexError as e:
-            logger.error(traceback.format_exc())
+            logger.debug(traceback.format_exc())
             raise
         # logger.debug("row: %s, position: %s, len: %d" %(r, position, len(self)))
 
@@ -683,6 +682,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             return self.df.index[position]
         except IndexError as e:
             # logger.info(f"position_to_index: {position}, {self.df.index}")
+            raise
             logger.error(traceback.format_exc())
     def index_to_position(self, index):
         # raise Exception(index, self.df.index)
@@ -699,7 +699,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         try:
             d = self.df.get_columns(index, as_dict=True)
         except ValueError as e:
-            raise Exception(e, index, self.df)
+            raise Exception(e, index, self.df.head(10))
         cls = d.get("_cls")
         if cls:
             if hasattr(cls, "__dataclass_fields__"):
@@ -1268,9 +1268,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         offset = (self.page)*self.limit
         # logger.debug(f"offset: {offset}, row count: {self.row_count()}")
         if (self.row_count() is not None
-            and self.last_row_count != self.row_count()
             and len(self) >= self.row_count()):
-            self.last_row_count = self.row_count()
             self._emit("end", self.row_count())
             return False
 
@@ -1346,9 +1344,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         else:
             try:
                 idx = getattr(self.selection.data, self.index)
-            except (AttributeError, IndexError):
-                pass
-            pos = self.focus_position
+                pos = self.focus_position
+            except (AttributeError, IndexError, ValueError):
+                pos = None
             limit = len(self)
         # del self[:]
         self.requery(offset=offset, limit=limit)
@@ -1360,8 +1358,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                 pos = self.index_to_position(idx)
             except:
                 return
-        # if pos:
-        self.focus_position = pos
+        if pos is not None:
+            self.focus_position = pos
 
         # self.focus_position = 0
 
