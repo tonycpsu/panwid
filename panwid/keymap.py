@@ -88,6 +88,7 @@ def keymapped():
                             ret = f(*args, **kwargs)
                             if asyncio.iscoroutine(ret):
                                 asyncio.get_event_loop().create_task(ret)
+                            return
 
                     # return key
                 else:
