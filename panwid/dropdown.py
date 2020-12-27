@@ -182,7 +182,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
     label = None
     border = None
     scrollbar = False
-    auto_complete = False
+    auto_complete = None
     margin = 0
     max_height = None
 
@@ -211,14 +211,13 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         if scrollbar is not None: self.scrollbar = scrollbar
         if auto_complete is not None: self.auto_complete = auto_complete
         if max_height is not None: self.max_height = max_height
-
         # self.KEYMAP = keymap
 
         self.completing = False
         self.complete_anywhere = False
+        self.auto_complete_bar = None
         self.last_complete_index = None
         self.last_filter_text = None
-
         self.selected_button = 0
         buttons = []
 
@@ -439,7 +438,8 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
                 self.focus_position = i
                 break
         else:
-            self.filter_text = self.last_filter_text
+            if self.last_filter_text:
+                self.filter_text = self.last_filter_text
             if self.last_complete_index:
                 self[self.last_complete_index].highlight_text(self.filter_text)
             # self.last_complete_index = None
@@ -475,6 +475,7 @@ class Dropdown(urwid.PopUpLauncher):
 
     signals = ["change"]
 
+    auto_complete = None
     label = None
     empty_label = u"\N{EMPTY SET}"
     margin = 0
@@ -488,7 +489,7 @@ class Dropdown(urwid.PopUpLauncher):
             margin = None,
             left_chars = None, right_chars = None,
             left_chars_top = None, right_chars_top = None,
-            auto_complete = False,
+            auto_complete = None,
             max_height = 10,
             # keymap = {}
     ):
@@ -501,7 +502,8 @@ class Dropdown(urwid.PopUpLauncher):
 
         self.border = border
         self.scrollbar = scrollbar
-        self.auto_complete = auto_complete
+        if auto_complete is not None: self.auto_complete = auto_complete
+
         # self.keymap = keymap
 
         if margin:
