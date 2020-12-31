@@ -719,7 +719,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
                 return k
             else:
-                return cls(**d)
+                return cls(**{
+                    k: v
+                    for k, v in d.items()
+                    if k not in self.df.DATA_TABLE_COLUMNS
+                })
         else:
             return AttrDict(**d)
         # if isinstance(d, MutableMapping):
@@ -1306,7 +1310,10 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             rows = list(self.query(**kwargs))
 
         for row in rows:
-            row["_cls"] = type(row)
+            try:
+                row["_cls"] = type(row)
+            except TypeError:
+                row._cls = type(row)
 
         updated = self.df.update_rows(rows, limit=self.limit)
         self.df["_focus_position"] = self.sort_column
