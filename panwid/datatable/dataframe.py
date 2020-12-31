@@ -48,7 +48,10 @@ class DataTableDataFrame(rc.DataFrame):
             df.head(n)))
 
     def transpose_data(self, rows):
-        data_columns = list(set().union(*(list(d.keys()) for d in rows)))
+        try:
+            data_columns = list(set().union(*(list(d.keys()) for d in rows)))
+        except AttributeError:
+            data_columns = list(set().union(*(list(d.__dict__.keys()) for d in rows)))
         data_columns += [
             c for c in self.columns
             if c not in data_columns
