@@ -160,12 +160,13 @@ class DataTableColumn(DataTableBaseColumn):
 
         # First, call the format function for the column, if there is one
         if self.format_fn:
-            try:
-                v = self.format_fn(v)
-            except Exception as e:
-                logger.error("%s format exception: %s" %(self.name, v))
-                logger.exception(e)
-                raise e
+            v = self.format_fn(v)
+            # try:
+            #     v = self.format_fn(v)
+            # except Exception as e:
+            #     logger.error("%s format exception: %s" %(self.name, v))
+            #     logger.exception(e)
+            #     raise e
         return self.format(v)
 
 
