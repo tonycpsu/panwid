@@ -9,6 +9,7 @@ class DataTableDataFrame(rc.DataFrame):
 
     def __init__(self, data=None, columns=None, index=None, index_name="index", sort=None):
 
+        self.sidecar_columns = []
         if columns and not index_name in columns:
             columns.insert(0, index_name)
         columns += self.DATA_TABLE_COLUMNS
@@ -47,35 +48,75 @@ class DataTableDataFrame(rc.DataFrame):
             "..." if len(self.index) > n else "",
             df.head(n)))
 
-    def transpose_data(self, rows):
-        try:
-            data_columns = list(set().union(*(list(d.keys()) for d in rows)))
-        except AttributeError:
-            data_columns = list(set().union(*(list(d.__dict__.keys()) for d in rows)))
+    @staticmethod
+    def extract_keys(obj):
+        return obj.keys() if hasattr(obj, "keys") else obj.__dict__.keys()
+
+    @staticmethod
+    def extract_value(obj, key):
+        if isinstance(obj, collections.abc.MutableMapping):
+            # raise Exception(obj)
+            return obj.get(key, None)
+        else:
+            return getattr(obj, key, None)
+
+    def transpose_data(self, rows, with_sidecar = False):
+
+        # raise Exception([ r[self.index_name] for r, s in rows])
+
+        if with_sidecar:
+            data_columns, self.sidecar_columns = [
+                list(set().union(*x))
+                for x in zip(*[(
+                        self.extract_keys(d),
+                        self.extract_keys(s)
+                )
+                               for d, s in rows ])
+            ]
+
+        else:
+            data_columns = list(
+                set().union(*(list(d.keys()
+                               if hasattr(d, "keys")
+                               else d.__dict__.keys())
+                          for d in rows))
+            )
+
         data_columns += [
             c for c in self.columns
             if c not in data_columns
+            and c not in self.sidecar_columns
             and c != self.index_name
             and c not in self.DATA_TABLE_COLUMNS
         ]
         data_columns += ["_cls", "_details"]
 
         data = dict(
-            list(zip((data_columns),
-                [ list(z) for z in zip(*[[
-                    d.get(k, None if k != "_details" else {"open": False, "disabled": False})
-                    if isinstance(d, collections.abc.MutableMapping)
-                    else getattr(d, k, None if k != "_details" else {"open": False, "disabled": False})
-                    # for k in data_columns + self.DATA_TABLE_COLUMNS] for d in rows])]
-                    for k in data_columns] for d in rows])]
-            ))
-        )
+                    list(zip((data_columns + self.sidecar_columns),
+                        [ list(z) for z in zip(*[[
+                            self.extract_value(d, k) if k in data_columns else self.extract_value(s, k)
+                            for k in data_columns + self.sidecar_columns]
+                            for d, s in (
+                                rows
+                                if with_sidecar
+                                else [ (r, {})  for r in rows]
+                            )
+                        ])]
+                    ))
+                )
+
         return data
 
-    def update_rows(self, rows, limit=None):
 
-        data = self.transpose_data(rows)
-        # data["_details"] = [{"open": False, "disabled": False}] * len(rows)
+    def update_rows(self, rows, limit=None, with_sidecar = False):
+
+        if not len(rows):
+            return []
+
+        data = self.transpose_data(rows, with_sidecar = with_sidecar)
+        data["_details"] = [{"open": False, "disabled": False}] * len(rows)
+        data["_cls"] = [type(rows[0][0] if with_sidecar else rows[0])] * len(rows) # all rows assumed to have same class
+        # raise Exception(data["_cls"])
         # if not "_details" in data:
         #     data["_details"] = [{"open": False, "disabled": False}] * len(rows)
 
@@ -89,9 +130,6 @@ class DataTableDataFrame(rc.DataFrame):
 
             # logger.info(f"update_rowGs: {self.index}, {data[self.index_name]}")
 
-        if not len(rows):
-            return []
-
         if self.index_name not in data:
             index = list(range(len(self), len(self) + len(rows)))
             data[self.index_name] = index
@@ -99,12 +137,12 @@ class DataTableDataFrame(rc.DataFrame):
             index = data[self.index_name]
 
         for c in data.keys():
-            try:
-                self.set(data[self.index_name], c, data[c])
-            except ValueError as e:
-                logger.error(e)
-                logger.info(f"update_rows: {self.index}, {data}")
-                raise Exception(c, len(self.index), len(data[c]))
+            # try:
+                # raise Exception(data[self.index_name], c, data[c])
+            self.set(data[self.index_name], c, data[c])
+            # except ValueError as e:
+            #     logger.error(e)
+            #     logger.info(f"update_rows: {self.index}, {data}")
         return data.get(self.index_name, [])
 
     def append_rows(self, rows):

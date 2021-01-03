@@ -3,7 +3,7 @@ logger = logging.getLogger("panwid.datable")
 import urwid
 import urwid_utils.palette
 from ..listbox import ScrollingListBox
-from orderedattrdict import OrderedDict
+from orderedattrdict import AttrDict
 from collections.abc import MutableMapping
 import itertools
 import copy
@@ -11,6 +11,20 @@ import traceback
 import math
 from dataclasses import *
 import typing
+
+try:
+    import pydantic
+    HAVE_PYDANTIC=True
+except ImportError:
+    HAVE_PYDANTIC=False
+
+try:
+    import pony.orm
+    from pony.orm import db_session
+    HAVE_PONY=True
+except ImportError:
+    HAVE_PONY=False
+
 
 from .dataframe import *
 from .rows import *
@@ -69,6 +83,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     ui_resize = True
     row_attr_fn = None
 
+    with_sidecar = False
+
     attr_map = {}
     focus_map = {}
     column_focus_map = {}
@@ -94,7 +110,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  detail_auto_open = None, detail_hanging_indent = None,
                  ui_sort = None,
                  ui_resize = None,
-                 row_attr_fn = None):
+                 row_attr_fn = None,
+                 with_sidecar = None):
 
         self._focus = 0
         self.page = 0
@@ -165,7 +182,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if detail_replace is not None: self.detail_replace = detail_replace
         if detail_auto_open is not None: self.detail_auto_open = detail_auto_open
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
-        # self.offset = 0
+        if with_sidecar is not None: self.with_sidecar = with_sidecar
+
         if limit:
             self.limit = limit
 
@@ -212,7 +230,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # urwid.connect_signal(
         #     self.listbox, "select",
         #     lambda source, selection: urwid.signals.emit_signal(
-        #         self, "select", self, self.get_dataframe_row(selection.index))
+        #         self, "select", self, self.get_dataframe_row_object(selection.index))
         #     if self.selection
         #     else None
         # )
@@ -688,21 +706,20 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         # raise Exception(index, self.df.index)
         return self.df.index.index(index)
 
-    def get_dataframe_row(self, index):
-        # logger.debug("__getitem__: %s" %(index))
-        # try:
-        #     v = self.df[index:index]
-        # except IndexError:
-        #     raise Exception
-        #     # logger.debug(traceback.format_exc())
 
+    def get_dataframe_row(self, index):
         try:
-            d = self.df.get_columns(index, as_dict=True)
+            return self.df.get_columns(index, as_dict=True)
         except ValueError as e:
             raise Exception(e, index, self.df.head(10))
+
+    def get_dataframe_row_object(self, index):
+
+        d = self.get_dataframe_row(index)
         cls = d.get("_cls")
         if cls:
             if hasattr(cls, "__dataclass_fields__"):
+                # Python dataclasses
                 # klass = type(f"DataTableRow_{cls.__name__}", [cls],
                 klass = make_dataclass(
                     f"DataTableRow_{cls.__name__}",
@@ -716,25 +733,23 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                        for k in set(
                                cls.__dataclass_fields__.keys())
                     })
-
                 return k
+            elif HAVE_PYDANTIC and issubclass(cls, pydantic.main.BaseModel):
+                return cls(**d)
+            elif HAVE_PONY and issubclass(cls, pony.orm.core.Entity):
+                keys = {
+                    k.name: d.get(k.name, None)
+                    for k in (cls._pk_ if isinstance(cls._pk_, tuple) else (cls._pk_,))
+                }
+                # raise Exception(keys)
+                with db_session:
+                    return cls.get(**keys)
             else:
-                return cls(**{
-                    k: v
-                    for k, v in d.items()
-                    if k not in self.df.DATA_TABLE_COLUMNS
-                })
+                # raise Exception(cls)
+                return AttrDict(**d)
         else:
             return AttrDict(**d)
-        # if isinstance(d, MutableMapping):
-        #     cls = d.get("_cls")
-        # else:
-        #     cls = getattr(d, "_cls")
 
-        # if cls:
-        #     return cls(**d)
-        # else:
-        #     return AttrDict(**d)
 
     def get_row(self, index):
         row = self.df.get(index, "_rendered_row")
@@ -742,7 +757,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if self.df.get(index, "_dirty") or row is None:
             self.refresh_calculated_fields([index])
             # vals = self[index]
-            vals = self.get_dataframe_row(index)
+            vals = self.get_dataframe_row_object(index)
             row = self.render_item(index)
             if self.row_attr_fn:
                 attr = self.row_attr_fn(vals)
@@ -774,6 +789,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             except IndexError:
                 return None
 
+    @property
+    def selection_data(self):
+        return AttrDict(self.df.get_columns(self.position_to_index(self.focus_position), as_dict=True))
 
     def render_item(self, index):
         row = DataTableBodyRow(self, index,
@@ -794,7 +812,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             if not col.value_fn: continue
             for index in indexes:
                 if self.df[index, "_dirty"]:
-                    self.df.set(index, col.name, col.value_fn(self, self.get_dataframe_row(index)))
+                    self.df.set(index, col.name, col.value_fn(self, self.get_dataframe_row_object(index)))
 
     def visible_data_column_index(self, column_name):
         try:
@@ -1304,18 +1322,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["offset"] = offset
             kwargs["limit"] = limit
 
-        if self.data is not None:
-            rows = self.data
-        else:
-            rows = list(self.query(**kwargs))
+        # if self.data is not None:
+        #     rows = self.data
+        # else:
+        #     rows = list(self.query(**kwargs))
 
-        for row in rows:
-            try:
-                row["_cls"] = type(row)
-            except TypeError:
-                row._cls = type(row)
+        rows = list(self.query(**kwargs)) if self.data is None else self.data
+        # try:
+        #     (rows, meta) = list(self.query(**kwargs)) if self.data is None else self.data
+        #     self.metadata.update(**meta)
+        # except ValueError:
 
-        updated = self.df.update_rows(rows, limit=self.limit)
+        updated = self.df.update_rows(rows, limit=self.limit, with_sidecar = self.with_sidecar)
+
         self.df["_focus_position"] = self.sort_column
 
         self.refresh_calculated_fields()

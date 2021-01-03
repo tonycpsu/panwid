@@ -245,26 +245,21 @@ class DataTableBodyRow(DataTableRow):
 
     @property
     def data(self):
-        return self.table.get_dataframe_row(self.index)
+        return AttrDict(self.table.get_dataframe_row(self.index))
+
+    @property
+    def data_source(self):
+        return self.table.get_dataframe_row_object(self.index)
 
     def __getitem__(self, column):
         cls = self.table.df[self.index, "_cls"]
         # row = self.data
-        if (
-                column not in self.table.df.columns
-                and
-                hasattr(cls, "__dataclass_fields__")
-                and
-                type(getattr(cls, column, None)) == property):
-            # logger.info(f"__getitem__ property: {column}={getattr(self.data, column)}")
-            return getattr(self.data, column)
+        if column in self.table.df.columns:
+            # logger.info(f"__getitem__: {column}={self.table.df.get(self.index, column)}")
+            return self.table.df[self.index, column]
         else:
-            if column in self.table.df.columns:
-                # logger.info(f"__getitem__: {column}={self.table.df.get(self.index, column)}")
-                return self.table.df[self.index, column]
-            else:
-                raise KeyError
-                # raise Exception(column, self.table.df.columns)
+            raise KeyError
+            # raise Exception(column, self.table.df.columns)
 
 
     def __setitem__(self, column, value):
@@ -272,7 +267,6 @@ class DataTableBodyRow(DataTableRow):
         # logger.info(f"__setitem__: {column}, {value}, {self.table.df[self.index, column]}")
 
     def get(self, key, default=None):
-
         try:
             return self[key]
         except KeyError:
@@ -281,7 +275,9 @@ class DataTableBodyRow(DataTableRow):
     @property
     def details_open(self):
         # logger.info(f"{self['_details']}")
-        return (self.get("_details") or {}).get("open")
+        # raise Exception(self.get([self.index, "_details"], {}))
+
+        return self.get("_details", {}).get("open", False)
 
     @details_open.setter
     def details_open(self, value):
@@ -291,7 +287,7 @@ class DataTableBodyRow(DataTableRow):
 
     @property
     def details_disabled(self):
-        return (not self.table.detail_selectable) or (self.get("_details") or {}).get("disabled")
+        return (not self.table.detail_selectable) or self.get([self.index, "_details"], {}).get("disabled", False)
 
     @details_disabled.setter
     def details_disabled(self, value):
@@ -320,7 +316,8 @@ class DataTableBodyRow(DataTableRow):
         if not self.table.detail_fn or self.details_open:
             return
 
-        content = self.table.detail_fn(self.data)
+        content = self.table.detail_fn((self.data))
+        logger.info(f"open_details: {type(content)}")
         if not content:
             return
 

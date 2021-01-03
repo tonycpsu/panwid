@@ -230,15 +230,21 @@ class DataTableBodyCell(DataTableCell):
 
     def update_contents(self):
 
-        try:
-            self.inner = self.table.decorate(
-                self.row,
-                self.column,
-                self.formatted_value
-            )
-        except Exception as e:
-            logger.exception(e)
-            self.inner = urwid.Text("")
+        self.inner = self.table.decorate(
+            self.row,
+            self.column,
+            self.formatted_value
+        )
+
+        # try:
+        #     self.inner = self.table.decorate(
+        #         self.row,
+        #         self.column,
+        #         self.formatted_value
+        #     )
+        # except Exception as e:
+        #     logger.exception(e)
+        #     self.inner = urwid.Text("")
 
         if getattr(self.column, "truncate", None):
             end_char = u"\N{HORIZONTAL ELLIPSIS}" if self.column.truncate is True else self.column.truncate

@@ -156,6 +156,8 @@ def main():
 
         index="index"
 
+        with_sidecar = True
+
         def __init__(self, num_rows = 10, random=False, *args, **kwargs):
             self.num_rows = num_rows
             # indexes = random.sample(range(self.num_rows*2), num_rows)
@@ -264,7 +266,7 @@ def main():
                 r = self.query_data
 
             for d in r:
-                yield d
+                yield (d, dict(zzzz=1))
 
 
         def query_result_count(self):
