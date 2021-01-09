@@ -56,10 +56,11 @@ def keymapped():
                 key = super(cls, self).keypress(size, key)
                 if not key:
                     return
+
                 logger.debug("%s wrapped keypress: %s" %(self.__class__.__name__, key))
                 # logger.debug("%s scope: %s, keymap: %s" %(self.__class__.__name__, self.KEYMAP_SCOPE, getattr(self, "KEYMAP", None)))
                 for scope in [cls.KEYMAP_SCOPE, "any"]:
-                    # print("key: %s, scope: %s, %s, %s" %(key, scope, self.KEYMAP_SCOPE, self.KEYMAP))
+                    logger.debug("key: %s, scope: %s, %s, %s" %(key, scope, self.KEYMAP_SCOPE, self.KEYMAP))
                     if not scope in self.KEYMAP.keys():
                         continue
                     if key in self.KEYMAP[scope]:
@@ -68,15 +69,27 @@ def keymapped():
                             val = [val]
                         for cmd in val:
                             self.call_keymap_command(cmd)
+                        logger.debug("returning")
+
+                        return
+
+                if hasattr(self, "keypress_orig"):
+                    logger.debug("%s orig keypress: %s" %(self.__class__.__name__, key))
+                    key = self.keypress_orig(size, key)
+                    return True
+
+                logger.debug("calling super")
+                # if not key:
+                    # return
 
                     # return key
-                else:
-                    if hasattr(self, "keypress_orig"):
-                        logger.debug("%s orig keypress: %s" %(self.__class__.__name__, key))
-                        return self.keypress_orig(size, key)
-                    else:
-                        logger.debug("%s returning key: %s" %(self.__class__.__name__, key))
-                        return key
+                # else:
+                #     if hasattr(self, "keypress_orig"):
+                #         logger.debug("%s orig keypress: %s" %(self.__class__.__name__, key))
+                #         return self.keypress_orig(size, key)
+                #     else:
+                #         logger.debug("%s returning key: %s" %(self.__class__.__name__, key))
+                #         return key
 
             return keypress
 
@@ -104,6 +117,7 @@ def keymapped():
         cls.keypress = keypress_decorator(func)
 
         def call_keymap_command(self, cmd):
+            logger.debug(f"call_keymap_command: {cmd}")
             args = []
             kwargs = {}
             if isinstance(cmd, tuple):
@@ -138,6 +152,62 @@ def keymapped():
         })
         return cls
     return wrapper
+
+
+
+def keymapped2():
+
+    def wrapper(cls):
+
+        def keypress_decorator(func):
+
+            def keypress(self, size, key):
+                logger.debug(f"keypress: {cls}, key: {key}")
+                if key in self.KEYMAP:
+                    self.call_keymap_command(self.KEYMAP[key])
+                else:
+                    logger.debug(f"keypress: {cls}, {self.KEYMAP} calling super")
+                    super(cls, self).keypress(size, key)
+
+            return keypress
+
+        if not hasattr(cls, "KEYMAP"):
+            cls.KEYMAP = {}
+
+        if hasattr(cls.__base__, "KEYMAP"):
+            cls.KEYMAP.update(
+                **cls.__base__.KEYMAP
+            )
+
+        func = getattr(cls, "keypress", None)
+        logger.debug("func class: %s" %(cls.__name__))
+        cls.keypress = keypress_decorator(func)
+
+        def call_keymap_command(self, cmd):
+            logger.debug(f"call_keymap_command: {cmd}")
+            args = []
+            kwargs = {}
+            if isinstance(cmd, tuple):
+                if len(cmd) == 3:
+                    (cmd, args, kwargs) = cmd
+                elif len(cmd) == 2:
+                    (cmd, args) = cmd
+                else:
+                    raise Exception
+
+            f = getattr(self, cmd)
+            ret = f(*args, **kwargs)
+            if asyncio.iscoroutine(ret):
+                asyncio.get_event_loop().create_task(ret)
+            return True
+
+        cls.call_keymap_command = call_keymap_command
+
+        return cls
+
+    return wrapper
+
+
 
 
 @keymapped()
@@ -176,3 +246,58 @@ __all__ = [
     "keymap_command",
     "KeymapMovementMixin"
 ]
+
+class Animal(urwid.Edit):
+
+    def keypress(self, size, key):
+        if key == "3":
+            logger.info(f"3: {type(self)}")
+
+@keymapped2()
+class Mammal(Animal):
+
+    KEYMAP = {
+        "2": "bar"
+    }
+
+    def bar(self):
+        logger.info(f"2: {type(self)}")
+
+@keymapped2()
+class Dog(Mammal):
+
+    KEYMAP = {
+        "1": "foo"
+    }
+
+    def foo(self):
+        logger.info(f"1: {type(self)}")
+
+
+
+def main():
+
+    import os
+
+    if os.environ.get("DEBUG"):
+        logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
+                                      datefmt='%Y-%m-%d %H:%M:%S')
+        fh = logging.FileHandler("keymap.log")
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+    else:
+        logger.addHandler(logging.NullHandler())
+
+    main = urwid.Pile([
+        ("weight", 1, urwid.Filler(Dog("Test: ")))
+    ])
+
+    loop = urwid.MainLoop(main)
+
+    loop.screen.set_terminal_properties(colors=256)
+    loop.run()
+
+
+if __name__ == "__main__":
+    main()
