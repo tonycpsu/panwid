@@ -14,7 +14,6 @@ from panwid.keymap import *
 class TestDropdown(KeymapMovementMixin, Dropdown):
 
     KEYMAP = {
-        "dropdown": {
             "k": "up",
             "j": "down",
             "page up": "page up",
@@ -25,14 +24,13 @@ class TestDropdown(KeymapMovementMixin, Dropdown):
             "end": "end",
             "/": "complete prefix",
             "?": "complete substring",
-        },
-        "dropdown_dialog": {
-            "esc": "cancel",
-            "/": "complete prefix",
-            "?": "complete substring",
-            "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
-            "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
-        }
+        # "dropdown_dialog": {
+        #     "esc": "cancel",
+        #     "/": "complete prefix",
+        #     "?": "complete substring",
+        #     "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
+        #     "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
+        # }
     }
 
 def main():

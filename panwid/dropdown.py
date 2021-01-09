@@ -269,9 +269,9 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         self.__super.__init__(self.pile)
 
 
-    @property
-    def KEYMAP(self):
-        return self.drop_down.KEYMAP
+    # @property
+    # def KEYMAP(self):
+    #     return self.drop_down.KEYMAP
 
     @property
     def filter_text(self):

@@ -46,7 +46,7 @@ def keymap_command(f, command=None, *args, **kwargs):
     return f
 
 
-def keymapped():
+def keymapped2():
 
     def wrapper(cls):
 
@@ -154,8 +154,7 @@ def keymapped():
     return wrapper
 
 
-
-def keymapped2():
+def keymapped():
 
     def wrapper(cls):
 
@@ -174,10 +173,18 @@ def keymapped2():
         if not hasattr(cls, "KEYMAP"):
             cls.KEYMAP = {}
 
-        if hasattr(cls.__base__, "KEYMAP"):
-            cls.KEYMAP.update(
-                **cls.__base__.KEYMAP
-            )
+        cls.KEYMAP.update(**getattr(cls.__base__, "KEYMAP", {}))
+
+        if not hasattr(cls, "KEYMAP_MAPPING"):
+            cls.KEYMAP_MAPPING = {}
+
+        cls.KEYMAP_MAPPING.update(**getattr(cls.__base__, "KEYMAP_MAPPING", {}))
+    
+        cls.KEYMAP_MAPPING.update({
+            (getattr(getattr(cls, k), "_keymap_command", k) or k).replace(" ", "_"): k
+            for k in cls.__dict__.keys()
+            if hasattr(getattr(cls, k), '_keymap')
+        })
 
         func = getattr(cls, "keypress", None)
         logger.debug("func class: %s" %(cls.__name__))
@@ -195,13 +202,19 @@ def keymapped2():
                 else:
                     raise Exception
 
-            f = getattr(self, cmd)
+            if hasattr(self, cmd):
+                fn_name = cmd
+            else:
+                fn_name = self.KEYMAP_MAPPING[cmd]
+
+            f = getattr(self, fn_name)
             ret = f(*args, **kwargs)
             if asyncio.iscoroutine(ret):
                 asyncio.get_event_loop().create_task(ret)
             return True
 
         cls.call_keymap_command = call_keymap_command
+
 
         return cls
 
@@ -253,7 +266,7 @@ class Animal(urwid.Edit):
         if key == "3":
             logger.info(f"3: {type(self)}")
 
-@keymapped2()
+@keymapped()
 class Mammal(Animal):
 
     KEYMAP = {
@@ -263,7 +276,7 @@ class Mammal(Animal):
     def bar(self):
         logger.info(f"2: {type(self)}")
 
-@keymapped2()
+@keymapped()
 class Dog(Mammal):
 
     KEYMAP = {
