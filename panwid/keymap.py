@@ -59,7 +59,7 @@ def keymapped():
                 logger.debug("%s wrapped keypress: %s" %(self.__class__.__name__, key))
                 # logger.debug("%s scope: %s, keymap: %s" %(self.__class__.__name__, self.KEYMAP_SCOPE, getattr(self, "KEYMAP", None)))
                 for scope in [cls.KEYMAP_SCOPE, "any"]:
-                    # logger.debug("key: %s, scope: %s, %s, %s" %(key, scope, self.KEYMAP_SCOPE, self.KEYMAP))
+                    # print("key: %s, scope: %s, %s, %s" %(key, scope, self.KEYMAP_SCOPE, self.KEYMAP))
                     if not scope in self.KEYMAP.keys():
                         continue
                     if key in self.KEYMAP[scope]:
@@ -67,28 +67,7 @@ def keymapped():
                         if not isinstance(val, list):
                             val = [val]
                         for cmd in val:
-                            args = []
-                            kwargs = {}
-                            if isinstance(cmd, tuple):
-                                if len(cmd) == 3:
-                                    (cmd, args, kwargs) = cmd
-                                elif len(cmd) == 2:
-                                    (cmd, args) = cmd
-                                else:
-                                    raise Exception
-                            command = cmd.replace(" ", "_")
-                            if not command in self.KEYMAP_MAPPING:
-                                logger.debug("%s: %s not in mapping %s" %(cls, key, self.KEYMAP_MAPPING))
-                                continue
-                            if hasattr(self, command):
-                                fn_name = command
-                            else:
-                                fn_name = self.KEYMAP_MAPPING[command]
-                            f = getattr(self, fn_name)
-                            ret = f(*args, **kwargs)
-                            if asyncio.iscoroutine(ret):
-                                asyncio.get_event_loop().create_task(ret)
-                            return
+                            self.call_keymap_command(cmd)
 
                     # return key
                 else:
@@ -123,6 +102,32 @@ def keymapped():
         #     cls.keypress = keypress_default
 
         cls.keypress = keypress_decorator(func)
+
+        def call_keymap_command(self, cmd):
+            args = []
+            kwargs = {}
+            if isinstance(cmd, tuple):
+                if len(cmd) == 3:
+                    (cmd, args, kwargs) = cmd
+                elif len(cmd) == 2:
+                    (cmd, args) = cmd
+                else:
+                    raise Exception
+            command = cmd.replace(" ", "_")
+            if not command in self.KEYMAP_MAPPING:
+                logger.debug("%s: %s not in mapping %s" %(cls, key, self.KEYMAP_MAPPING))
+                return False
+            if hasattr(self, command):
+                fn_name = command
+            else:
+                fn_name = self.KEYMAP_MAPPING[command]
+            f = getattr(self, fn_name)
+            ret = f(*args, **kwargs)
+            if asyncio.iscoroutine(ret):
+                asyncio.get_event_loop().create_task(ret)
+            return True
+
+        cls.call_keymap_command = call_keymap_command
 
         if not hasattr(cls, "KEYMAP_MAPPING"):
             cls.KEYMAP_MAPPING = {}
