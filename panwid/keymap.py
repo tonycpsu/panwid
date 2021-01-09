@@ -115,7 +115,7 @@ def keymapped():
                     raise Exception
             command = cmd.replace(" ", "_")
             if not command in self.KEYMAP_MAPPING:
-                logger.debug("%s: %s not in mapping %s" %(cls, key, self.KEYMAP_MAPPING))
+                logger.debug("%s: %s not in mapping %s" %(cls, command, self.KEYMAP_MAPPING))
                 return False
             if hasattr(self, command):
                 fn_name = command
