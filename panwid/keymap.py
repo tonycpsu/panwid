@@ -115,7 +115,7 @@ def keymapped():
         func = getattr(cls, "keypress", None)
         logger.debug("func class: %s" %(cls.__name__))
 
-        if hasattr(cls, "keypress"):
+        if hasattr(cls, "keypress") and not hasattr(cls, "keypress_orig"):
             cls.keypress_orig = cls.keypress
 
         # else:
