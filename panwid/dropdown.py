@@ -138,9 +138,10 @@ class AutoCompleteEdit(urwid.Edit):
         self.set_edit_text("")
 
     def keypress(self, size, key):
+        logger.info("autocompleteedit keypress")
         if key == "enter":
             self._emit("close")
-        return super(AutoCompleteEdit, self).keypress(size, key)
+        return super().keypress(size, key)
 
 class AutoCompleteBar(urwid.WidgetWrap):
 
@@ -334,8 +335,14 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         self._emit("select", button)
         self._emit("close")
 
-    # def keypress(self, size, key):
-
+    def keypress(self, size, key):
+        return super(DropdownDialog, self).keypress(size, key)
+    #     logger.info(f"dropdowndialog keypress: {key}")
+    #     # raise Exception
+    #     if key == "enter":
+    #         self.complete_off()
+    #     else:
+    #         return super().keypress(size, key)
     #     raise Exception
     #     logger.debug("DropdownDialog.keypress: %s" %(key))
     #     if self.completing:
@@ -429,9 +436,8 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
             else reversed(list(enumerate(self.body)))
         )
         rows = list(itertools.islice(cycle, start, end))
-        logger.info(f"{start}, {end}, len: {len(rows)}")
+        logger.debug(f"{start}, {end}, len: {len(rows)}")
         for i, w in rows:
-            logger.info(i)
             if f(w):
                 self.last_complete_index = i
                 self[i].highlight_text(self.filter_text)

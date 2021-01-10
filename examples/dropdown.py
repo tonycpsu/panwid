@@ -14,6 +14,11 @@ from panwid.keymap import *
 class TestDropdown(KeymapMovementMixin, Dropdown):
 
     KEYMAP = {
+        "movement": {
+            "up": "up",
+            "down": "down",
+        },
+        "dropdown": {
             "k": "up",
             "j": "down",
             "page up": "page up",
@@ -24,13 +29,14 @@ class TestDropdown(KeymapMovementMixin, Dropdown):
             "end": "end",
             "/": "complete prefix",
             "?": "complete substring",
-        # "dropdown_dialog": {
-        #     "esc": "cancel",
-        #     "/": "complete prefix",
-        #     "?": "complete substring",
-        #     "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
-        #     "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
-        # }
+        },
+        "dropdown_dialog": {
+            "esc": "cancel",
+            "/": "complete prefix",
+            "?": "complete substring",
+            "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
+            "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
+        }
     }
 
 def main():
@@ -91,8 +97,10 @@ def main():
 
     if os.environ.get("DEBUG"):
         logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-                                      datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(
+            "%(asctime)s [%(module)16s:%(lineno)-4d] [%(levelname)8s] %(message)s",
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
         fh = logging.FileHandler("dropdown.log")
         fh.setFormatter(formatter)
         logger.addHandler(fh)
