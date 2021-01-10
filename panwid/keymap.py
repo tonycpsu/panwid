@@ -2,16 +2,6 @@
 
 import logging
 logger = logging.getLogger(__name__)
-# import os
-# if os.environ.get("DEBUG"):
-#     logger.setLevel(logging.DEBUG)
-#     formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s",
-#                                   datefmt='%Y-%m-%d %H:%M:%S')
-#     fh = logging.FileHandler("keymap.log")
-#     fh.setFormatter(formatter)
-#     logger.addHandler(fh)
-# else:
-#     logger.addHandler(logging.NullHandler())
 
 import six
 import asyncio
@@ -87,11 +77,6 @@ def keymapped():
                 except KeyError:
                     raise KeyError(cmd, self.KEYMAP_MAPPING)
 
-                # try:
-                #     fn_name = self.KEYMAP_MAPPING[cls.KEYMAP_SCOPE()][cmd]
-                # except KeyError:
-                #     raise KeyError(self.KEYMAP_MAPPING)
-
             f = getattr(self, fn_name)
             ret = f(*args, **kwargs)
             if asyncio.iscoroutine(ret):
@@ -103,29 +88,28 @@ def keymapped():
         def keypress_decorator(func):
 
             def keypress(self, size, key):
-                logger.debug(f"{cls} wrapped keypress, key: {key}, scope: {cls.KEYMAP_SCOPE()}, map: {self.KEYMAP}")
-                key = self._keypress_orig(size, key) if self._keypress_orig else key
+                # logger.debug(f"{cls} wrapped keypress, key: {key}, scope: {cls.KEYMAP_SCOPE()}, map: {self.KEYMAP}")
+                # logger.debug(f"{cls} wrapped keypress, key: {key}, calling super")
+                key = super(cls, self).keypress(size, key) #or key
 
+                if key and self._keypress_orig:
+                    # logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {self._keypress_orig}")
+                    key = self._keypress_orig(size, key)# if self._keypress_orig else key
                 if key and self.KEYMAP.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
+                    # logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
                     key = self.call_keymap_command(self.KEYMAP[cls.KEYMAP_SCOPE()][key])
-                # elif self._keypress_orig:
-                #     key = self._keypress_orig(size, key)
-                if key:
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling super")
-                    key = super(cls, self).keypress(size, key)
                 return key
 
             return keypress
 
-        cls._keypress_orig = getattr(cls, "keypress", None)
+        if not hasattr(cls, "_keypress_orig"):
+            cls._keypress_orig = getattr(cls, "keypress", None)
         cls.keypress = keypress_decorator(cls._keypress_orig)
         if not hasattr(cls, "KEYMAP_SCOPE"):
             cls.KEYMAP_SCOPE = classmethod(lambda cls: camel_to_snake(cls.__name__))
         elif isinstance(cls.KEYMAP_SCOPE, str):
             cls.KEYMAP_SCOPE = classmethod(lambda cls: cls.KEYMAP_SCOPE)
         return cls
-
 
     return wrapper
 
@@ -172,68 +156,3 @@ __all__ = [
     "keymap_command",
     "KeymapMovementMixin"
 ]
-
-class Animal(urwid.Edit):
-
-    def keypress(self, size, key):
-        if key == "3":
-            logger.info(f"3: {type(self)}")
-
-@keymapped()
-class Mammal(Animal):
-
-    # KEYMAP = {
-    #     "2": "bar"
-    # }
-
-    def bar(self):
-        logger.info(f"2: {type(self)}")
-
-@keymapped()
-class Dog(Mammal):
-
-    # KEYMAP = {
-    #     "1": "foo"
-    # }
-    KEYMAP = {
-        "dog": {
-            "1": "foo"
-        },
-        "mammal": {
-            "2": "bar"
-        }
-    }
-
-    def foo(self):
-        logger.info(f"1: {type(self)}")
-
-
-
-def main():
-
-    import os
-
-    if os.environ.get("DEBUG"):
-        logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(asctime)s [%(module)16s:%(lineno)-4d] [%(levelname)8s] %(message)s",
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-        fh = logging.FileHandler("keymap.log")
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
-    else:
-        logger.addHandler(logging.NullHandler())
-
-    main = urwid.Pile([
-        ("weight", 1, urwid.Filler(Dog("Test: ")))
-    ])
-
-    loop = urwid.MainLoop(main)
-
-    loop.screen.set_terminal_properties(colors=256)
-    loop.run()
-
-
-if __name__ == "__main__":
-    main()
