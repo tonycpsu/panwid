@@ -446,12 +446,12 @@ def main():
             row_attr_fn = row_attr_fn,
         ), 20)
 
-    def row_attr_fn(row):
-        if row.baz and "R" in row.baz:
+    def row_attr_fn(position, data, row):
+        if data.baz and "R" in data.baz:
             return "red"
-        elif row.baz and "G" in row.baz:
+        elif data.baz and "G" in data.baz:
             return "green"
-        elif row.baz and "B" in row.baz:
+        elif data.baz and "B" in data.baz:
             return "blue"
         return None
 

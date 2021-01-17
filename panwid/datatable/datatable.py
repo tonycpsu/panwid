@@ -657,9 +657,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         key = super().keypress(size, key)
         if key == "enter" and not self.selection.details_focused:
             self._emit("select", self.selection.data)
-        else:
-            # key = super().keypress(size, key)
-            return key
+        # else:
+        #     # key = super().keypress(size, key)
+        return key
         # if key == "enter":
         #     self._emit("select", self, self.selection)
         # else:
@@ -759,8 +759,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             # vals = self[index]
             vals = self.get_dataframe_row_object(index)
             row = self.render_item(index)
+            position = self.index_to_position(index)
             if self.row_attr_fn:
-                attr = self.row_attr_fn(vals)
+                attr = self.row_attr_fn(position, row.data_source, row)
                 if attr:
                     row.set_attr(attr)
             focus = self.df.get(index, "_focus_position")
@@ -1195,7 +1196,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.header.update()
         if self.with_footer:
             self.footer.update()
-        self._modified()
+        self.invalidate()
+
+        # self._modified()
 
     def invalidate_rows(self, indexes):
         if not isinstance(indexes, list):
@@ -1206,6 +1209,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.df[indexes, "_dirty"] = True
         self._modified()
         # FIXME: update header / footer if dynamic
+
+    def invalidate_selection(self):
+        self.invalidate_rows(self.focus_position)
 
     def swap_rows_by_field(self, p0, p1, field=None):
 
@@ -1333,7 +1339,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         #     self.metadata.update(**meta)
         # except ValueError:
 
-        updated = self.df.update_rows(rows, limit=self.limit, with_sidecar = self.with_sidecar)
+        updated = self.df.update_rows(rows, replace=self.limit is None, with_sidecar = self.with_sidecar)
 
         self.df["_focus_position"] = self.sort_column
 

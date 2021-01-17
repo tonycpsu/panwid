@@ -27,7 +27,7 @@ class DataTableRow(urwid.WidgetWrap):
         self.padding = padding
         self.cell_selection = cell_selection
         self.style = style
-        self.details = None
+        # self.details = None
         self.sort = self.table.sort_by
         self.attr = self.ATTR
         self.attr_focused = "%s focused" %(self.attr)
@@ -311,40 +311,46 @@ class DataTableBodyRow(DataTableRow):
         else:
             self.pile.focus_position = 0
 
+    @property
+    def details(self):
+        if not getattr(self, "_details", None):
+
+            content = self.table.detail_fn((self.data_source))
+            logger.debug(f"open_details: {type(content)}")
+            if not content:
+                return
+
+            # self.table.header.render( (self.table.width,) )
+            indent_width = 0
+            visible_count = itertools.count()
+
+            def should_indent(x):
+                if (isinstance(self.table.detail_hanging_indent, int)
+                    and (x[2] is None or x[2] <= self.table.detail_hanging_indent)):
+                    return True
+                elif (isinstance(self.table.detail_hanging_indent, str)
+                    and x[1].name != self.table.detail_hanging_indent):
+                      return True
+                return False
+
+            if self.table.detail_hanging_indent:
+                indent_width = sum([
+                    x[1].width if not x[1].hide else 0
+                    for x in itertools.takewhile(
+                            should_indent,
+                            [ (i, c, next(visible_count) if not c.hide else None)
+                              for i, c in enumerate(self.table._columns) ]
+                    )
+                ])
+
+            self._details = DataTableDetails(self, content, indent_width)
+        return self._details
+
+
     def open_details(self):
 
-        if not self.table.detail_fn or self.details_open:
+        if not self.table.detail_fn or not self.details or self.details_open:
             return
-
-        content = self.table.detail_fn((self.data))
-        logger.info(f"open_details: {type(content)}")
-        if not content:
-            return
-
-        self.table.header.render( (self.table.width,) )
-        indent_width = 0
-        visible_count = itertools.count()
-
-        def should_indent(x):
-            if (isinstance(self.table.detail_hanging_indent, int)
-                and (x[2] is None or x[2] <= self.table.detail_hanging_indent)):
-                return True
-            elif (isinstance(self.table.detail_hanging_indent, str)
-                and x[1].name != self.table.detail_hanging_indent):
-                  return True
-            return False
-
-        if self.table.detail_hanging_indent:
-            indent_width = sum([
-                x[1].width if not x[1].hide else 0
-                for x in itertools.takewhile(
-                        should_indent,
-                        [ (i, c, next(visible_count) if not c.hide else None)
-                          for i, c in enumerate(self.table._columns) ]
-                )
-            ])
-
-        self.details = DataTableDetails(self, content, indent_width)
 
         if self.table.detail_replace:
             self.pile.contents[0] = (urwid.Filler(urwid.Text("")), self.pile.options("given", 0))

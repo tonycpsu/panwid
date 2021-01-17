@@ -39,6 +39,7 @@ def keymap_command(f, command=None, *args, **kwargs):
 def keymapped():
 
     def wrapper(cls):
+
         if not hasattr(cls, "KEYMAP"):
             cls.KEYMAP = {}
 

@@ -108,7 +108,7 @@ class DataTableDataFrame(rc.DataFrame):
         return data
 
 
-    def update_rows(self, rows, limit=None, with_sidecar = False):
+    def update_rows(self, rows, replace=False, with_sidecar = False):
 
         if not len(rows):
             return []
@@ -120,7 +120,7 @@ class DataTableDataFrame(rc.DataFrame):
         # if not "_details" in data:
         #     data["_details"] = [{"open": False, "disabled": False}] * len(rows)
 
-        if not limit:
+        if replace:
             if len(rows):
                 indexes = [x for x in self.index if x not in data.get(self.index_name, [])]
                 if len(indexes):
