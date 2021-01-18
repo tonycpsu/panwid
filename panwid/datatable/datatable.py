@@ -1240,8 +1240,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
     def row_count(self):
 
-        if not self.limit:
-            return None
+        # if not self.limit:
+        #     return None
 
         if self.limit:
             return self.query_result_count()

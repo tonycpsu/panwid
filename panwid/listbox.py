@@ -25,7 +25,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
             )
             scroll_marker_height = max( height * (height / self.parent.row_count ), 1)
         else:
-            scroll_position = -1
+            scroll_position = 0
 
         pos_marker = urwid.AttrMap(urwid.Text(" "),
                                    {None: "scroll_pos"}
@@ -117,6 +117,12 @@ class ScrollingListBox(urwid.WidgetWrap):
                 (self.scroll_bar, self.columns.options("given", 1))
             )
         super(ScrollingListBox, self).__init__(self.columns)
+        urwid.connect_signal(self.body, "modified", self.on_modified)
+
+    def on_modified(self):
+        if self.with_scrollbar and len(self.body):
+            self.scroll_bar.update(self.size)
+
 
     @classmethod
     def get_palette_entries(cls):
@@ -237,6 +243,9 @@ class ScrollingListBox(urwid.WidgetWrap):
         if len(self.body):
             return self.body[self.focus_position]
 
+    @property
+    def size(self):
+        return (self._width, self._height)
 
     def render(self, size, focus=False):
 
@@ -244,7 +253,10 @@ class ScrollingListBox(urwid.WidgetWrap):
         self._width = maxcol
         if len(size) > 1:
             maxrow = size[1]
+            modified = self._height == 0
             self._height = maxrow
+            if modified:
+                self.on_modified()
         else:
             self._height = 0
 
@@ -275,9 +287,6 @@ class ScrollingListBox(urwid.WidgetWrap):
             self.queued_keypress = None
             # self.listbox._invalidate()
             # self._invalidate()
-
-        if self.with_scrollbar and len(self.body):
-            self.scroll_bar.update(size)
 
         return super(ScrollingListBox, self).render(size, focus)
 
