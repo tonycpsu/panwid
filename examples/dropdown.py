@@ -13,7 +13,7 @@ from panwid.keymap import *
 
 class TestDropdown(KeymapMovementMixin, Dropdown):
 
-    KEYMAP = {
+    KEYMAP_GLOBAL = {
         "movement": {
             "up": "up",
             "down": "down",

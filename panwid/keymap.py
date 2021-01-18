@@ -40,16 +40,26 @@ def keymapped():
 
     def wrapper(cls):
 
-        if not hasattr(cls, "KEYMAP"):
-            cls.KEYMAP = {}
+        if not hasattr(cls, "KEYMAP_SCOPE"):
+            cls.KEYMAP_SCOPE = classmethod(lambda cls: camel_to_snake(cls.__name__))
+        elif isinstance(cls.KEYMAP_SCOPE, str):
+            cls.KEYMAP_SCOPE = classmethod(lambda cls: cls.KEYMAP_SCOPE)
 
-        cls.KEYMAP.update(**getattr(cls.__base__, "KEYMAP", {}))
+        if not hasattr(cls, "KEYMAP_GLOBAL"):
+            cls.KEYMAP_GLOBAL = {}
 
+        cls.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()] = getattr(cls, "KEYMAP", {})
+
+        base = cls.__base__
+        if hasattr(base, "KEYMAP"):
+            cls.KEYMAP_GLOBAL[base.KEYMAP_SCOPE()] = base.KEYMAP
+
+        # from pprint import pprint; print(cls.KEYMAP_GLOBAL)
         if not hasattr(cls, "KEYMAP_MAPPING"):
             cls.KEYMAP_MAPPING = {}
 
         cls.KEYMAP_MAPPING.update(**getattr(cls.__base__, "KEYMAP_MAPPING", {}))
-    
+
         cls.KEYMAP_MAPPING.update({
             (getattr(getattr(cls, k), "_keymap_command", k) or k).replace(" ", "_"): k
             for k in cls.__dict__.keys()
@@ -88,25 +98,21 @@ def keymapped():
         def keypress_decorator(func):
 
             def keypress(self, size, key):
-                logger.debug(f"{cls} wrapped keypress: {key}")
+                logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}")
                 if key and callable(func):
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
                     key = func(self, size, key)
                 if key:
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
                     key = super(cls, self).keypress(size, key) #or key
-                if key and self.KEYMAP.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
+                if key and self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
-                    key = self._keymap_command(self.KEYMAP[cls.KEYMAP_SCOPE()][key])
+                    key = self._keymap_command(self.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()][key])
                 return key
 
             return keypress
 
         cls.keypress = keypress_decorator(getattr(cls, "keypress", None))
-        if not hasattr(cls, "KEYMAP_SCOPE"):
-            cls.KEYMAP_SCOPE = classmethod(lambda cls: camel_to_snake(cls.__name__))
-        elif isinstance(cls.KEYMAP_SCOPE, str):
-            cls.KEYMAP_SCOPE = classmethod(lambda cls: cls.KEYMAP_SCOPE)
         return cls
 
     return wrapper
