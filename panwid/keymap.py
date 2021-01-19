@@ -40,19 +40,25 @@ def keymapped():
 
     def wrapper(cls):
 
+        if not hasattr(cls, "KEYMAP_GLOBAL"):
+            cls.KEYMAP_GLOBAL = {}
+
         if not hasattr(cls, "KEYMAP_SCOPE"):
             cls.KEYMAP_SCOPE = classmethod(lambda cls: camel_to_snake(cls.__name__))
         elif isinstance(cls.KEYMAP_SCOPE, str):
             cls.KEYMAP_SCOPE = classmethod(lambda cls: cls.KEYMAP_SCOPE)
 
-        if not hasattr(cls, "KEYMAP_GLOBAL"):
-            cls.KEYMAP_GLOBAL = {}
+        if not cls.KEYMAP_SCOPE() in cls.KEYMAP_GLOBAL:
+            cls.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()] = {}
+        if getattr(cls, "KEYMAP", False):
+            cls.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()].update(**cls.KEYMAP)
 
-        cls.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()] = getattr(cls, "KEYMAP", {})
 
-        base = cls.__base__
-        if hasattr(base, "KEYMAP"):
-            cls.KEYMAP_GLOBAL[base.KEYMAP_SCOPE()] = base.KEYMAP
+        for base in cls.mro():
+            if hasattr(base, "KEYMAP"):
+                if not base.KEYMAP_SCOPE() in cls.KEYMAP_GLOBAL:
+                    cls.KEYMAP_GLOBAL[base.KEYMAP_SCOPE()] = {}
+                cls.KEYMAP_GLOBAL[base.KEYMAP_SCOPE()].update(**base.KEYMAP)
 
         # from pprint import pprint; print(cls.KEYMAP_GLOBAL)
         if not hasattr(cls, "KEYMAP_MAPPING"):
@@ -77,8 +83,9 @@ def keymapped():
                     (cmd, args) = cmd
                 else:
                     raise Exception
+            elif isinstance(cmd, str):
+                cmd = cmd.replace(" ", "_")
 
-            cmd = cmd.replace(" ", "_")
             if hasattr(self, cmd):
                 fn_name = cmd
             else:
@@ -91,23 +98,31 @@ def keymapped():
             ret = f(*args, **kwargs)
             if asyncio.iscoroutine(ret):
                 asyncio.get_event_loop().create_task(ret)
-            return True
+            return None
 
         cls._keymap_command = keymap_command
 
         def keypress_decorator(func):
 
             def keypress(self, size, key):
-                logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}")
+                logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).keys()}")
+
+                if key and self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
+                    cmd = self.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()][key]
+                    if isinstance(cmd, str) and cmd.startswith("keypress "):
+                        new_key = cmd.replace("keypress ", "").strip()
+                        logger.debug(f"{cls} remap {key} => {new_key}")
+                        key = new_key
+                    else:
+                        logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
+                        key = self._keymap_command(cmd)
+
                 if key and callable(func):
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
                     key = func(self, size, key)
                 if key:
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
                     key = super(cls, self).keypress(size, key) #or key
-                if key and self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
-                    key = self._keymap_command(self.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()][key])
                 return key
 
             return keypress
