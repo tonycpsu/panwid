@@ -85,6 +85,8 @@ def keymapped():
                     raise Exception
             elif isinstance(cmd, str):
                 cmd = cmd.replace(" ", "_")
+            else:
+                return None
 
             if hasattr(self, cmd):
                 fn_name = cmd
@@ -107,6 +109,12 @@ def keymapped():
             def keypress(self, size, key):
                 logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).keys()}")
 
+                if key and callable(func):
+                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
+                    key = func(self, size, key)
+                if key:
+                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
+                    key = super(cls, self).keypress(size, key) #or key
                 if key and self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
                     cmd = self.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()][key]
                     if isinstance(cmd, str) and cmd.startswith("keypress "):
@@ -116,13 +124,6 @@ def keymapped():
                     else:
                         logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
                         key = self._keymap_command(cmd)
-
-                if key and callable(func):
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
-                    key = func(self, size, key)
-                if key:
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
-                    key = super(cls, self).keypress(size, key) #or key
                 return key
 
             return keypress
