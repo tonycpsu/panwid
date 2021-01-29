@@ -57,7 +57,7 @@ class ListBoxScrollBar(urwid.WidgetWrap):
                     marker = begin_marker
                 elif i+1 == height and self.parent.row_count == self.parent.focus_position+1:
                     marker = end_marker
-                elif len(self.parent.body) == self.parent.focus_position+1 and i == scroll_position + scroll_marker_height//2:
+                elif self.parent.focus_position is not None and len(self.parent.body) == self.parent.focus_position+1 and i == scroll_position + scroll_marker_height//2:
                     marker = down_marker
                 else:
                     marker = pos_marker
