@@ -449,6 +449,7 @@ class SparkBarWidget(SparkWidget):
             text = ""
             textcolor = self.label_color or DEFAULT_LABEL_COLOR
             label = None
+            label_align = "<"
             # label_len = 0
             if isinstance(item, tuple):
                 bcolor = item[0]
@@ -458,12 +459,13 @@ class SparkBarWidget(SparkWidget):
                     if isinstance(labeldef, tuple):
                         label = str(labeldef[0])
                         if len(labeldef) > 1:
-                            textcolor = labeldef[1]
+                            textcolor = labeldef[1] or textcolor
+                        if len(labeldef) > 2:
+                            label_align = labeldef[2]
                     elif isinstance(labeldef, str):
                         label = labeldef
                     else:
                         label = str(labeldef)
-
             else:
                 fcolor = bcolor = self.current_color
                 # bcolor = self.current_color
@@ -492,11 +494,13 @@ class SparkBarWidget(SparkWidget):
             # print rangewidth, rangechars
             if text and rangechars:
                 fcolor = textcolor
-                chars = "{:<{m}.{m}}{lastchar}".format(
+                chars = "{:{a}{m}.{m}}{lastchar}".format(
                     "{text:.{n}}".format(
                         text = text,
                         n = min(len(text), rangechars-1),
-                    ), m=rangechars-1,
+                    ),
+                    m=rangechars-1,
+                    a=label_align,
                     lastchar = "\N{HORIZONTAL ELLIPSIS}"
                     if len(text) > rangechars
                     else text[rangechars-1]
