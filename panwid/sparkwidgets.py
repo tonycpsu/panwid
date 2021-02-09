@@ -456,11 +456,13 @@ class SparkBarWidget(SparkWidget):
                 if len(item) > 2:
                     labeldef = item[2]
                     if isinstance(labeldef, tuple):
-                        label = labeldef[0]
+                        label = str(labeldef[0])
                         if len(labeldef) > 1:
                             textcolor = labeldef[1]
                     elif isinstance(labeldef, str):
                         label = labeldef
+                    else:
+                        label = str(labeldef)
 
             else:
                 fcolor = bcolor = self.current_color
