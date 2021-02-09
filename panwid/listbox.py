@@ -163,7 +163,7 @@ class ScrollingListBox(urwid.WidgetWrap):
     def mouse_event(self, size, event, button, col, row, focus):
 
         SCROLL_WHEEL_HEIGHT_RATIO = 0.5
-        if row < 0 or row >= self._height:
+        if row < 0 or row >= self._height or not len(self.listbox.body):
             return
         if event == 'mouse press':
             if button == 1:
