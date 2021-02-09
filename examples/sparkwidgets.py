@@ -151,7 +151,7 @@ def randomize_spark():
 def randomize_bark():
     bark = get_random_bark()
     filler = urwid.Filler(bark)
-    values = list(intersperse(",", [(i[0], "%s" %(i[1])) for i in bark.items]))
+    values = list(intersperse(",", [(i[0], "%s" %(i[0])) for i in bark.items]))
     bark_random_text.original_widget.set_text(values)
     bark_random_ph.original_widget = filler
 

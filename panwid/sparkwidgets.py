@@ -388,7 +388,7 @@ class SparkBarWidget(SparkWidget):
         total = None
 
         if normalize:
-            values = [ item[1] if isinstance(item, tuple) else item
+            values = [ item[0] if isinstance(item, tuple) else item
                        for item in self.items ]
             v_min = min(values)
             v_max = max(values)
@@ -401,7 +401,7 @@ class SparkBarWidget(SparkWidget):
             ]
             # print self.items
             self.items = [
-                tuple([item[0]] + [values[i]] + (list(item[2:]) if len(item) > 2 else []))
+                tuple([values[i]] + (list(item[1:]) if len(item) > 2 else []))
                 if isinstance(item, tuple)
                 else values[i]
                 for i, item in enumerate(self.items) ]
@@ -413,7 +413,7 @@ class SparkBarWidget(SparkWidget):
         filtered_items = [ i for i in self.items ]
         # ugly brute force method to eliminate values too small to display
         while True:
-            values = [ i[1] if isinstance(i, tuple) else i
+            values = [ i[0] if isinstance(i, tuple) else i
                        for i in filtered_items ]
 
             if not len(values):
@@ -424,7 +424,7 @@ class SparkBarWidget(SparkWidget):
             charwidth = total / self.width
             try:
                 i = next(iter(filter(
-                    lambda i: (i[1] if isinstance(i, tuple) else i) < charwidth,
+                    lambda i: (i[0] if isinstance(i, tuple) else i) < charwidth,
                     filtered_items)))
                 filtered_items.remove(i)
             except StopIteration:
@@ -452,8 +452,8 @@ class SparkBarWidget(SparkWidget):
             label_align = "<"
             # label_len = 0
             if isinstance(item, tuple):
-                bcolor = item[0]
-                v = item[1]
+                v = item[0]
+                bcolor = item[1]
                 if len(item) > 2:
                     labeldef = item[2]
                     if isinstance(labeldef, tuple):
@@ -478,7 +478,6 @@ class SparkBarWidget(SparkWidget):
                     value=v,
                     pct=int(round(v/total*100, 0))
                 )
-
 
             b = position + v + carryover
             if(carryover > 0):
