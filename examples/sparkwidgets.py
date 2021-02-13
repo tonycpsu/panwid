@@ -74,7 +74,7 @@ def intersperse(delimiter, seq):
 # raise Exception(entries)
 palette = Palette("default", **entries)
 
-spark1 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(0, 8))))
+spark1 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(0, random.randint(1, 20)))))
 spark2 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(0, 100)), color_scheme="rotate_16", scale_min=20, scale_max=90))
 spark3 = urwid.Filler(sparkwidgets.SparkColumnWidget([5*random.random() for i in range(0, 100)], color_scheme="rotate_true"))
 spark4 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(-5, 100)), color_scheme="signed", underline="negative"))
@@ -84,18 +84,18 @@ spark5 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(1, 20)), color_s
 spark_random_text = urwid.Filler(urwid.Text(""))
 spark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
-bark1 = urwid.Filler(sparkwidgets.SparkBarWidget([30, 30, 30], 41, color_scheme="rotate_16"))
-bark2 = urwid.Filler(sparkwidgets.SparkBarWidget([40, 30, 20, 10], 20, color_scheme="rotate_true"))
-bark3 = urwid.Filler(sparkwidgets.SparkBarWidget([3, 2, 1], 28, color_scheme="rotate_true"))
-bark4 = urwid.Filler(sparkwidgets.SparkBarWidget([19, 42, 17], 9, color_scheme="rotate_true"))
+bark1 = urwid.Filler(sparkwidgets.SparkBarWidget([30, 30, 30], random.randint(1, 40), color_scheme="rotate_16"))
+bark2 = urwid.Filler(sparkwidgets.SparkBarWidget([40, 30, 20, 10], random.randint(1, 60), color_scheme="rotate_true"))
+bark3 = urwid.Filler(sparkwidgets.SparkBarWidget([3, 2, 1], random.randint(1, 10), color_scheme="rotate_true"))
+bark4 = urwid.Filler(sparkwidgets.SparkBarWidget([19, 42, 17], random.randint(1, 5), color_scheme="rotate_true"))
 bark5 = urwid.Filler(sparkwidgets.SparkBarWidget([
     (19, "light red", "foo"),
     (42, "light green", ("bar", None, "^")),
     (17, "light blue", ("baz", None, ">"))
-], 40))
+], random.randint(1, 60)))
 bark6 = urwid.Filler(sparkwidgets.SparkBarWidget(
     [(0, "light green", (0, "dark red")), (6, "light blue", (6, "dark red", ">"))],
-    20, color_scheme="rotate_256", min_width=1))
+    random.randint(1, 10), color_scheme="rotate_256", min_width=1))
 bark_random_text = urwid.Filler(urwid.Text(""))
 bark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
@@ -120,11 +120,11 @@ def get_random_spark():
         (random_colors[i%len(random_colors)],
          random.randint(1, 100),
         )
-        for i in range(32)
+        for i in range(random.randint(2, 32))
     ], underline="min", overline="max")
 
 def get_random_bark():
-    num = random.randint(4, 10)
+    num = random.randint(1, 10)
     bcolors = [random_colors[i%len(random_colors)] for i in range(num)]
     lcolors = [
         get_label_color(bcolor)
@@ -140,7 +140,8 @@ def get_random_bark():
          ("%s {value} ({pct}%%)" %(chr(65+i if i < 26 else 71 + i)), lcolors[i])
         )
         for i in range(0, num)
-    ], width=80, label_color="black", normalize=(1, 100))
+    ], width=random.randint(1, 10), label_color="black", normalize=(1, 100),
+                                       min_width=random.randint(0, 5))
 
 
 

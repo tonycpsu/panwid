@@ -199,6 +199,8 @@ class SparkWidget(urwid.Text):
         # if not scale_max:
         #     scale_max = v_max
 
+        if scale_max == scale_min:
+            return v
         return max(
             a,
             min(
