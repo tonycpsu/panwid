@@ -93,6 +93,9 @@ bark5 = urwid.Filler(sparkwidgets.SparkBarWidget([
     (42, "light green", ("bar", None, "^")),
     (17, "light blue", ("baz", None, ">"))
 ], 40))
+bark6 = urwid.Filler(sparkwidgets.SparkBarWidget(
+    [(0, "light green", (0, "dark red")), (6, "light blue", (6, "dark red", ">"))],
+    20, color_scheme="rotate_256", min_width=1))
 bark_random_text = urwid.Filler(urwid.Text(""))
 bark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
@@ -171,6 +174,7 @@ def main():
         (2, bark3),
         (2, bark4),
         (2, bark5),
+        (2, bark6),
         (2, bark_random_text),
         (2, bark_random_ph),
     ])

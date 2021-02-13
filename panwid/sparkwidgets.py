@@ -375,14 +375,16 @@ class SparkBarWidget(SparkWidget):
     chars = BLOCK_HORIZONTAL
 
     def __init__(self, items, width,
-                 color_scheme = "mono",
-                 label_color = None,
-                 normalize = None,
+                 color_scheme="mono",
+                 label_color=None,
+                 min_width=None,
+                 normalize=None,
                  *args, **kwargs):
 
         self.items = items
         self.width = width
         self.label_color = label_color
+        self.min_width = min_width
 
         values = None
         total = None
@@ -424,12 +426,11 @@ class SparkBarWidget(SparkWidget):
             charwidth = total / self.width
             try:
                 i = next(iter(filter(
-                    lambda i: (i[0] if isinstance(i, tuple) else i) < charwidth,
+                    lambda i: not self.min_width and (i[0] if isinstance(i, tuple) else i) < charwidth,
                     filtered_items)))
                 filtered_items.remove(i)
             except StopIteration:
                 break
-
 
 
         self.colors = self.parse_scheme(color_scheme)
@@ -473,10 +474,14 @@ class SparkBarWidget(SparkWidget):
                 v = item
 
 
-            if label:
+            if label is not None:
+                try:
+                    pct = int(round(v/total*100, 0))
+                except:
+                    pct = ""
                 text += label.format(
                     value=v,
-                    pct=int(round(v/total*100, 0))
+                    pct=pct
                 )
 
             b = position + v + carryover
@@ -487,10 +492,14 @@ class SparkBarWidget(SparkWidget):
                 position += charwidth
                 self.sparktext.append(c)
 
-            rangewidth = b - position# + carryover
-            rangechars = int(round(rangewidth/charwidth))
+            rangewidth = b - position
+            try:
+                rangechars = int(round(rangewidth/charwidth))
+            except ZeroDivisionError:
+                rangechars = int(self.width / len(filtered_items))
 
-            # print rangewidth, rangechars
+            if self.min_width:
+                rangechars = max(rangechars, self.min_width)
             if text and rangechars:
                 fcolor = textcolor
                 chars = "{:{a}{m}.{m}}{lastchar}".format(
