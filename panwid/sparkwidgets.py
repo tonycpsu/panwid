@@ -380,6 +380,7 @@ class SparkBarWidget(SparkWidget):
                  color_scheme="mono",
                  label_color=None,
                  min_width=None,
+                 fit_label=False,
                  normalize=None,
                  *args, **kwargs):
 
@@ -387,6 +388,7 @@ class SparkBarWidget(SparkWidget):
         self.width = width
         self.label_color = label_color
         self.min_width = min_width
+        self.fit_label = fit_label
 
         values = None
         total = None
@@ -428,7 +430,7 @@ class SparkBarWidget(SparkWidget):
             charwidth = total / self.width
             try:
                 i = next(iter(filter(
-                    lambda i: not self.min_width and (i[0] if isinstance(i, tuple) else i) < charwidth,
+                    lambda i: not (self.min_width or self.fit_label) and (i[0] if isinstance(i, tuple) else i) < charwidth,
                     filtered_items)))
                 filtered_items.remove(i)
             except StopIteration:
@@ -500,27 +502,34 @@ class SparkBarWidget(SparkWidget):
             except ZeroDivisionError:
                 rangechars = int(self.width / len(filtered_items))
 
+            displaychars = rangechars
+
             if self.min_width:
-                rangechars = max(rangechars, self.min_width)
-            if text and rangechars:
+                displaychars = max(displaychars, self.min_width)
+
+            if self.fit_label:
+                displaychars = max(displaychars, len(text))
+
+            if text and displaychars:
                 fcolor = textcolor
                 chars = "{:{a}{m}.{m}}{lastchar}".format(
                     "{text:.{n}}".format(
                         text = text,
-                        n = min(len(text), rangechars-1),
+                        # n=displaychars-1
+                        n = min(len(text), displaychars-1),
                     ),
-                    m=rangechars-1,
+                    m=displaychars-1,
                     a=label_align,
-                    lastchar = "\N{HORIZONTAL ELLIPSIS}"
-                    if len(text) > rangechars
-                    else text[rangechars-1]
-                    if len(text) == rangechars
+                    lastchar="\N{HORIZONTAL ELLIPSIS}"
+                    if len(text) > displaychars
+                    else text[displaychars-1]
+                    if len(text) == displaychars
                     else " "
                 )
             else:
                 fcolor = bcolor
                 chars = " "*rangechars
-            position += rangechars*charwidth
+            position += displaychars*charwidth
 
             self.sparktext.append(("%s:%s" %(fcolor, bcolor), chars))
             carryover = b - position
