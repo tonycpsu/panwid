@@ -707,6 +707,8 @@ class Dropdown(urwid.PopUpLauncher):
 
     @focus_position.setter
     def focus_position(self, pos):
+        if pos == self.focus_position:
+            return
         # self.select_index(pos)
         old_pos = self.focus_position
         self.pop_up.selected_button = self.pop_up.focus_position = pos
