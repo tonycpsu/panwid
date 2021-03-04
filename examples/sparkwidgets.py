@@ -84,18 +84,21 @@ spark5 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(1, 20)), color_s
 spark_random_text = urwid.Filler(urwid.Text(""))
 spark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
-bark1 = urwid.Filler(sparkwidgets.SparkBarWidget([30, 30, 30], random.randint(1, 40), color_scheme="rotate_16"))
-bark2 = urwid.Filler(sparkwidgets.SparkBarWidget([40, 30, 20, 10], random.randint(1, 60), color_scheme="rotate_true"))
-bark3 = urwid.Filler(sparkwidgets.SparkBarWidget([3, 2, 1], random.randint(1, 10), color_scheme="rotate_true"))
+bark1 = urwid.Filler(sparkwidgets.SparkBarWidget([30, 30, 30], random.randint(10, 40), color_scheme="rotate_16"))
+bark2 = urwid.Filler(sparkwidgets.SparkBarWidget([40, 30, 20, 10], random.randint(10, 60), color_scheme="rotate_true"))
+bark3 = urwid.Filler(sparkwidgets.SparkBarWidget([0, 0, 0], random.randint(1, 10), color_scheme="rotate_true"))
 bark4 = urwid.Filler(sparkwidgets.SparkBarWidget([19, 42, 17], random.randint(1, 5), color_scheme="rotate_true"))
 bark5 = urwid.Filler(sparkwidgets.SparkBarWidget([
-    (19, "light red", "foo"),
-    (42, "light green", ("bar", None, "^")),
-    (17, "light blue", ("baz", None, ">"))
+    sparkwidgets.SparkBarItem(19, bcolor="light red", label="foo"),
+    sparkwidgets.SparkBarItem(42, bcolor="light green", label="bar", align="^"),
+    sparkwidgets.SparkBarItem(17, bcolor="light blue", label="baz", align=">")
 ], random.randint(1, 60)))
 bark6 = urwid.Filler(sparkwidgets.SparkBarWidget(
-    [(0, "light green", (0, "dark red")), (6, "light blue", (6, "dark red", ">"))],
-    random.randint(1, 10), color_scheme="rotate_256", min_width=1))
+    [
+        sparkwidgets.SparkBarItem(0, bcolor="light green", label=0, fcolor="dark red"),
+        sparkwidgets.SparkBarItem(6, bcolor="light blue",label=6, fcolor="dark red", align=">")
+    ],
+    random.randint(10, 30), color_scheme="rotate_256", min_width=5))
 bark_random_text = urwid.Filler(urwid.Text(""))
 bark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
@@ -135,12 +138,14 @@ def get_random_bark():
     # lcolor = get_label_color(r, g, b)
     randos = [random.randint(50,150) for i in range(0, num)]
     return sparkwidgets.SparkBarWidget([
-        (randos[i],
-         bcolors[i],
-         ("%s {value} ({pct}%%)" %(chr(65+i if i < 26 else 71 + i)), lcolors[i])
+        sparkwidgets.SparkBarItem(
+            randos[i],
+            bcolor=bcolors[i],
+            label=("%s {value} ({pct}%%)" %(chr(65+i if i < 26 else 71 + i))),
+            fcolor=lcolors[i]
         )
         for i in range(0, num)
-    ], width=random.randint(1, 10), label_color="black", normalize=(1, 100),
+    ], width=random.randint(20, 60), label_color="black", normalize=(1, 100),
                                        min_width=random.randint(0, 5))
 
 
@@ -155,7 +160,7 @@ def randomize_spark():
 def randomize_bark():
     bark = get_random_bark()
     filler = urwid.Filler(bark)
-    values = list(intersperse(",", [(i[0], "%s" %(i[0])) for i in bark.items]))
+    values = list(intersperse(",", [(i.value, "%s" %(i.value)) for i in bark.items]))
     bark_random_text.original_widget.set_text(values)
     bark_random_ph.original_widget = filler
 

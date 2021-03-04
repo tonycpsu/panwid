@@ -14,6 +14,7 @@ from collections import deque
 import math
 import operator
 import collections
+from dataclasses import dataclass
 
 BLOCK_VERTICAL = [ chr(x) for x in range(0x2581, 0x2589) ]
 BLOCK_HORIZONTAL = [ chr(x) for x in range(0x258F, 0x2587, -1) ]
@@ -21,6 +22,8 @@ BLOCK_HORIZONTAL = [ chr(x) for x in range(0x258F, 0x2587, -1) ]
 DEFAULT_LABEL_COLOR = "light gray"
 DEFAULT_LABEL_COLOR_DARK = "black"
 DEFAULT_LABEL_COLOR_LIGHT = "white"
+
+DEFAULT_BACKGROUND_COLOR = "black"
 
 DISTINCT_COLORS_16 = urwid.display_common._BASIC_COLORS[1:]
 
@@ -239,6 +242,8 @@ class SparkWidget(urwid.Text):
         return self.colors[0]
 
     def next_color(self):
+        if not self.colors:
+            return
         self.colors.rotate(-1)
         return self.current_color
 
@@ -356,6 +361,40 @@ class SparkColumnWidget(SparkWidget):
         super(SparkColumnWidget, self).__init__(self.sparktext, *args, **kwargs)
 
 
+# https://stackoverflow.com/a/20054616
+def proportional(nseats, votes):
+    """assign n seats proportionaly to votes using Hagenbach-Bischoff quota
+    :param nseats: int number of seats to assign
+    :param votes: iterable of int or float weighting each party
+    :result: list of ints seats allocated to each party
+    """
+    if sum(votes) == 0:
+        votes = [1 for vote in votes]
+    quota=sum(votes)/(1.+nseats) #force float
+    frac=[vote/quota for vote in votes]
+    res=[int(f) for f in frac]
+    n=nseats-sum(res) #number of seats remaining to allocate
+    if n==0: return res #done
+    if n<0: return [min(x,nseats) for x in res] # see siamii's comment
+    #give the remaining seats to the n parties with the largest remainder
+    remainders=[ai-bi for ai,bi in zip(frac,res)]
+    limit=sorted(remainders,reverse=True)[n-1]
+    #n parties with remainter larger than limit get an extra seat
+    for i,r in enumerate(remainders):
+        if r>=limit:
+            res[i]+=1
+            n-=1 # attempt to handle perfect equality
+            if n==0: return res #done
+    raise #should never happen
+
+
+@dataclass
+class SparkBarItem:
+    value: int
+    label: str = None
+    fcolor: str = None
+    bcolor: str = None
+    align: str = "<"
 
 class SparkBarWidget(SparkWidget):
     """
@@ -384,7 +423,11 @@ class SparkBarWidget(SparkWidget):
                  normalize=None,
                  *args, **kwargs):
 
-        self.items = items
+        self.items = [
+            i if isinstance(i, SparkBarItem) else SparkBarItem(i)
+            for i in items
+        ]
+
         self.width = width
         self.label_color = label_color
         self.min_width = min_width
@@ -394,33 +437,24 @@ class SparkBarWidget(SparkWidget):
         total = None
 
         if normalize:
-            values = [ item[0] if isinstance(item, tuple) else item
-                       for item in self.items ]
+            values = [ item.value for item in self.items ]
             v_min = min(values)
             v_max = max(values)
-            # print v
             values = [
                 int(self.normalize(v,
                                    normalize[0], normalize[1],
                                    v_min, v_max))
                 for v in values
             ]
-            # print self.items
-            self.items = [
-                tuple([values[i]] + (list(item[1:]) if len(item) > 2 else []))
-                if isinstance(item, tuple)
-                else values[i]
-                for i, item in enumerate(self.items) ]
-            # print self.items
-            # raise Exception
-            # print v
+            for i, v in enumerate(values):
+                self.items[i].value = v
 
 
-        filtered_items = [ i for i in self.items ]
+        filtered_items = [i for i in self.items]
+
         # ugly brute force method to eliminate values too small to display
         while True:
-            values = [ i[0] if isinstance(i, tuple) else i
-                       for i in filtered_items ]
+            values = [i.value for i in filtered_items]
 
             if not len(values):
                 raise Exception(self.items)
@@ -430,7 +464,7 @@ class SparkBarWidget(SparkWidget):
             charwidth = total / self.width
             try:
                 i = next(iter(filter(
-                    lambda i: not (self.min_width or self.fit_label) and (i[0] if isinstance(i, tuple) else i) < charwidth,
+                    lambda i: not (self.min_width or self.fit_label) and i.value < charwidth,
                     filtered_items)))
                 filtered_items.remove(i)
             except StopIteration:
@@ -449,77 +483,51 @@ class SparkBarWidget(SparkWidget):
         nchars = len(self.chars)
         lastcolor = None
 
+        bars = proportional(self.width, [i.value for i in filtered_items])
+
+        if self.min_width:
+            last = None
+            while any(i < self.min_width for i in bars):
+                if bars == last:
+                    break
+                last = [b for b in bars]
+                smallest = min(bars)
+                largest = max(bars)
+                bars[bars.index(smallest)] += 1
+                bars[bars.index(largest)] -= 1
+
         for i, item in enumerate(filtered_items):
 
+            rangechars = displaychars = bars[i]
             text = ""
-            textcolor = self.label_color or DEFAULT_LABEL_COLOR
             label = None
             label_align = "<"
-            # label_len = 0
-            if isinstance(item, tuple):
-                v = item[0]
-                bcolor = item[1]
-                if len(item) > 2:
-                    labeldef = item[2]
-                    if isinstance(labeldef, tuple):
-                        label = str(labeldef[0])
-                        if len(labeldef) > 1:
-                            textcolor = labeldef[1] or textcolor
-                        if len(labeldef) > 2:
-                            label_align = labeldef[2]
-                    elif isinstance(labeldef, str):
-                        label = labeldef
-                    else:
-                        label = str(labeldef)
-            else:
-                fcolor = bcolor = self.current_color
-                # bcolor = self.current_color
-                self.next_color()
-                v = item
 
-
-            if label is not None:
+            if item.label is not None:
                 try:
                     pct = int(round(v/total*100, 0))
                 except:
                     pct = ""
-                text += label.format(
-                    value=v,
+                text += str(item.label).format(
+                    value=item.value,
                     pct=pct
                 )
 
-            b = position + v + carryover
-            if(carryover > 0):
-                idx = int(carryover/charwidth * nchars)
-                char = self.chars[idx]
-                c = ("%s:%s" %(lastcolor, bcolor), char)
-                position += charwidth
-                self.sparktext.append(c)
+            # if self.min_width:
+            #     displaychars = max(displaychars, self.min_width)
 
-            rangewidth = b - position
-            try:
-                rangechars = int(round(rangewidth/charwidth))
-            except ZeroDivisionError:
-                rangechars = int(self.width / len(filtered_items))
-
-            displaychars = rangechars
-
-            if self.min_width:
-                displaychars = max(displaychars, self.min_width)
-
-            if self.fit_label:
-                displaychars = max(displaychars, len(text))
+            # if self.fit_label:
+            #     displaychars = max(displaychars, len(text))
 
             if text and displaychars:
-                fcolor = textcolor
                 chars = "{:{a}{m}.{m}}{lastchar}".format(
                     "{text:.{n}}".format(
-                        text = text,
+                        text=text,
                         # n=displaychars-1
-                        n = min(len(text), displaychars-1),
+                        n=max(min(len(text), displaychars-1), 0),
                     ),
-                    m=displaychars-1,
-                    a=label_align,
+                    m=max((displaychars-1), 0),
+                    a=item.align or "<",
                     lastchar="\N{HORIZONTAL ELLIPSIS}"
                     if len(text) > displaychars
                     else text[displaychars-1]
@@ -527,13 +535,19 @@ class SparkBarWidget(SparkWidget):
                     else " "
                 )
             else:
-                fcolor = bcolor
                 chars = " "*rangechars
+
             position += displaychars*charwidth
 
-            self.sparktext.append(("%s:%s" %(fcolor, bcolor), chars))
-            carryover = b - position
-            lastcolor = bcolor
+            self.sparktext.append(
+                ("%s:%s" %(
+                    item.fcolor or self.label_color or DEFAULT_LABEL_COLOR,
+                    item.bcolor or self.current_color), chars
+                 )
+            )
+            self.next_color()
+
+
 
         if not self.sparktext:
             self.sparktext = ""
