@@ -19,11 +19,11 @@ from dataclasses import dataclass
 BLOCK_VERTICAL = [ chr(x) for x in range(0x2581, 0x2589) ]
 BLOCK_HORIZONTAL = [ chr(x) for x in range(0x258F, 0x2587, -1) ]
 
-DEFAULT_LABEL_COLOR = "light gray"
+DEFAULT_LABEL_COLOR = "black"
 DEFAULT_LABEL_COLOR_DARK = "black"
 DEFAULT_LABEL_COLOR_LIGHT = "white"
 
-DEFAULT_BACKGROUND_COLOR = "black"
+DEFAULT_BAR_COLOR = "white"
 
 DISTINCT_COLORS_16 = urwid.display_common._BASIC_COLORS[1:]
 
@@ -396,6 +396,49 @@ class SparkBarItem:
     bcolor: str = None
     align: str = "<"
 
+    def formatted_label(self, width):
+
+        if self.label is None:
+            return None
+        try:
+            pct = int(round(self.value/total*100, 0))
+        except:
+            pct = ""
+
+        label=str(self.label).format(
+            value=self.value,
+            pct=pct
+        )
+        return "{label:.{n}}".format(
+            label=label,
+            n=max(min(len(label), width-1), 0),
+        )
+
+
+    def output(self, width, total):
+
+        label = self.formatted_label(width)
+        if label:
+            chars = "{:{a}{m}.{m}}{lastchar}".format(
+                label,
+                m=max((width-1), 0),
+                a=self.align or "<",
+                lastchar="\N{HORIZONTAL ELLIPSIS}"
+                if len(label) > width
+                else label[width-1]
+                if len(label) == width
+                else " "
+            )
+        else:
+            chars = " " * width
+
+        return (
+            "%s:%s" %(
+                self.fcolor or DEFAULT_LABEL_COLOR,
+                self.bcolor or DEFAULT_BAR_COLOR), chars
+        )
+
+
 class SparkBarWidget(SparkWidget):
     """
     A sparkline-ish horizontal stacked bar widget for Urwid.
@@ -427,6 +470,12 @@ class SparkBarWidget(SparkWidget):
             i if isinstance(i, SparkBarItem) else SparkBarItem(i)
             for i in items
         ]
+
+        self.colors = self.parse_scheme(color_scheme)
+
+        for i in self.items:
+            if not i.bcolor:
+                i.bcolor = self.get_color(i)
 
         self.width = width
         self.label_color = label_color
@@ -471,7 +520,6 @@ class SparkBarWidget(SparkWidget):
                 break
 
 
-        self.colors = self.parse_scheme(color_scheme)
 
         charwidth = total / self.width
         stepwidth = charwidth / len(self.chars)
@@ -498,59 +546,17 @@ class SparkBarWidget(SparkWidget):
 
         for i, item in enumerate(filtered_items):
 
-            rangechars = displaychars = bars[i]
-            text = ""
-            label = None
-            label_align = "<"
-
-            if item.label is not None:
-                try:
-                    pct = int(round(v/total*100, 0))
-                except:
-                    pct = ""
-                text += str(item.label).format(
-                    value=item.value,
-                    pct=pct
-                )
-
-            # if self.min_width:
-            #     displaychars = max(displaychars, self.min_width)
-
-            # if self.fit_label:
-            #     displaychars = max(displaychars, len(text))
-
-            if text and displaychars:
-                chars = "{:{a}{m}.{m}}{lastchar}".format(
-                    "{text:.{n}}".format(
-                        text=text,
-                        # n=displaychars-1
-                        n=max(min(len(text), displaychars-1), 0),
-                    ),
-                    m=max((displaychars-1), 0),
-                    a=item.align or "<",
-                    lastchar="\N{HORIZONTAL ELLIPSIS}"
-                    if len(text) > displaychars
-                    else text[displaychars-1]
-                    if len(text) == displaychars
-                    else " "
-                )
-            else:
-                chars = " "*rangechars
-
-            position += displaychars*charwidth
+            width = bars[i]
+            position += width*charwidth
 
             self.sparktext.append(
-                ("%s:%s" %(
-                    item.fcolor or self.label_color or DEFAULT_LABEL_COLOR,
-                    item.bcolor or self.current_color), chars
-                 )
+                item.output(width, total=total)
             )
             self.next_color()
 
-
-
         if not self.sparktext:
             self.sparktext = ""
+        self.set_text(self.sparktext)
         super(SparkBarWidget, self).__init__(self.sparktext, *args, **kwargs)
 
 __all__ = ["SparkColumnWidget", "SparkBarWidget"]
