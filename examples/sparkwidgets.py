@@ -4,7 +4,7 @@ import urwid
 from urwid_utils.palette import *
 import random
 from itertools import chain, repeat, islice
-from panwid import sparkwidgets
+from panwid.sparkwidgets import *
 
 
 screen = urwid.raw_display.Screen()
@@ -23,13 +23,13 @@ random_colors = [ random.choice(all_colors) for i in range(16) ]
 label_colors = [ LABEL_COLOR_DARK, LABEL_COLOR_LIGHT ]
 
 entries.update(
-    sparkwidgets.get_palette_entries(
+    get_palette_entries(
         label_colors = label_colors
     )
 )
 
 entries.update(
-    sparkwidgets.get_palette_entries(
+    get_palette_entries(
         chart_colors = random_colors,
         label_colors = label_colors
     )
@@ -74,38 +74,48 @@ def intersperse(delimiter, seq):
 # raise Exception(entries)
 palette = Palette("default", **entries)
 
-spark1 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(0, random.randint(1, 20)))))
-spark2 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(0, 100)), color_scheme="rotate_16", scale_min=20, scale_max=90))
-spark3 = urwid.Filler(sparkwidgets.SparkColumnWidget([5*random.random() for i in range(0, 100)], color_scheme="rotate_true"))
-spark4 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(-5, 100)), color_scheme="signed", underline="negative"))
+spark1 = urwid.Filler(SparkColumnWidget(list(range(0, random.randint(1, 20)))))
+spark2 = urwid.Filler(SparkColumnWidget(list(range(0, 100)), color_scheme="rotate_16", scale_min=20, scale_max=90))
+spark3 = urwid.Filler(SparkColumnWidget([5*random.random() for i in range(0, 100)], color_scheme="rotate_true"))
+spark4 = urwid.Filler(SparkColumnWidget(list(range(-5, 100)), color_scheme="signed", underline="negative"))
 custom_scheme ={ "mode": "rotate",  "colors": ["dark cyan", "brown", "dark magenta"]}
-spark5 = urwid.Filler(sparkwidgets.SparkColumnWidget(list(range(1, 20)), color_scheme=custom_scheme))
+spark5 = urwid.Filler(SparkColumnWidget(list(range(1, 20)), color_scheme=custom_scheme))
 
 spark_random_text = urwid.Filler(urwid.Text(""))
 spark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
-bark1 = urwid.Filler(sparkwidgets.SparkBarWidget([30, 30, 30], random.randint(10, 40), color_scheme="rotate_16"))
-bark2 = urwid.Filler(sparkwidgets.SparkBarWidget([40, 30, 20, 10], random.randint(10, 60), color_scheme="rotate_true"))
-bark3 = urwid.Filler(sparkwidgets.SparkBarWidget([0, 0, 0], random.randint(1, 10), color_scheme="rotate_true"))
-bark4 = urwid.Filler(sparkwidgets.SparkBarWidget([19, 42, 17], random.randint(1, 5), color_scheme="rotate_true"))
-bark5 = urwid.Filler(sparkwidgets.SparkBarWidget([
-    sparkwidgets.SparkBarItem(19, bcolor="light red", label="foo"),
-    sparkwidgets.SparkBarItem(42, bcolor="light green", label="bar", align="^"),
-    sparkwidgets.SparkBarItem(17, bcolor="light blue", label="baz", align=">")
-], random.randint(1, 60)))
-bark6 = urwid.Filler(sparkwidgets.SparkBarWidget(
+
+
+bark1 = urwid.Filler(SparkBarWidget([30, 30, 30], random.randint(10, 40), color_scheme="rotate_16"))
+bark2 = urwid.Filler(SparkBarWidget([40, 30, 20, 10], random.randint(10, 60), color_scheme="rotate_true"))
+bark3 = urwid.Filler(SparkBarWidget([0, 0, 0], random.randint(1, 10), color_scheme="rotate_true"))
+bark4 = urwid.Filler(SparkBarWidget([19, 42, 17], random.randint(1, 5), color_scheme="rotate_true"))
+bark5 = urwid.Filler(SparkBarWidget([
+    SparkBarItem(19, bcolor="light red", label="foo"),
+    SparkBarItem(42, bcolor="light green", label="bar", align="^"),
+    SparkBarItem(17, bcolor="light blue", label="baz", align=">")
+], random.randint(1, 60), fit_label=True))
+bark6 = urwid.Filler(SparkBarWidget(
     [
-        sparkwidgets.SparkBarItem(0, bcolor="light green", label=0, fcolor="dark red"),
-        sparkwidgets.SparkBarItem(6, bcolor="light blue",label=6, fcolor="dark red", align=">")
+        SparkBarItem(0, bcolor="light green", label=0, fcolor="dark red"),
+        SparkBarItem(6, bcolor="light blue",label=6, fcolor="dark red", align=">")
     ],
     random.randint(10, 30), color_scheme="rotate_256", min_width=5))
+bark6=urwid.Filler(SparkBarWidget(
+    [SparkBarItem(value=1, label='  1', fcolor='black', bcolor='dark green', align='<'),
+     SparkBarItem(value=13, label='☼ 14', fcolor='black', bcolor='dark blue', align='>'),
+     SparkBarItem(value=0, label='✓  0', fcolor='black', bcolor='light blue', align='>'),
+     SparkBarItem(value=50, label='↓ 50', fcolor='black', bcolor='dark red', align='>'),
+     SparkBarItem(value=2802, label='🌐2852', fcolor='black', bcolor='dark gray', align='>')
+     ], width=130, fit_label=True))
+# raise Exception
 bark_random_text = urwid.Filler(urwid.Text(""))
 bark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
 
 def get_label_color(color,
-                    dark=sparkwidgets.DEFAULT_LABEL_COLOR_DARK,
-                    light=sparkwidgets.DEFAULT_LABEL_COLOR_LIGHT):
+                    dark=DEFAULT_LABEL_COLOR_DARK,
+                    light=DEFAULT_LABEL_COLOR_LIGHT):
     # http://jsfiddle.net/cu4z27m7/66/
     (r, g, b) = urwid.AttrSpec(color, color).get_rgb_values()[:3]
     colors = [r / 255, g / 255, b / 255]
@@ -119,7 +129,7 @@ def get_label_color(color,
 
 
 def get_random_spark():
-    return sparkwidgets.SparkColumnWidget([
+    return SparkColumnWidget([
         (random_colors[i%len(random_colors)],
          random.randint(1, 100),
         )
@@ -137,15 +147,15 @@ def get_random_bark():
     # r, g, b = a.get_rgb_values()[:3]
     # lcolor = get_label_color(r, g, b)
     randos = [random.randint(50,150) for i in range(0, num)]
-    return sparkwidgets.SparkBarWidget([
-        sparkwidgets.SparkBarItem(
+    return SparkBarWidget([
+        SparkBarItem(
             randos[i],
             bcolor=bcolors[i],
             label=("%s {value} ({pct}%%)" %(chr(65+i if i < 26 else 71 + i))),
             fcolor=lcolors[i]
         )
         for i in range(0, num)
-    ], width=random.randint(20, 60), label_color="black", normalize=(1, 100),
+    ], fit_label=True, width=random.randint(40, 80), label_color="black", normalize=(1, 100),
                                        min_width=random.randint(0, 5))
 
 

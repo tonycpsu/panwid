@@ -396,8 +396,7 @@ class SparkBarItem:
     bcolor: str = None
     align: str = "<"
 
-    def formatted_label(self, width):
-
+    def formatted_label(self, total):
         if self.label is None:
             return None
         try:
@@ -405,19 +404,23 @@ class SparkBarItem:
         except:
             pct = ""
 
-        label=str(self.label).format(
+        return str(self.label).format(
             value=self.value,
             pct=pct
         )
-        return "{label:.{n}}".format(
-            label=label,
-            n=max(min(len(label), width-1), 0),
-        )
+    def truncated_label(self, width, total):
 
+        label = self.formatted_label(total)
+        if not label:
+            return None
+        return "{label:.{n}}".format(
+            label=self.formatted_label(total),
+            n=max(min(len(label), width), 0),
+        )
 
     def output(self, width, total):
 
-        label = self.formatted_label(width)
+        label = self.truncated_label(width, total)
         if label:
             chars = "{:{a}{m}.{m}}{lastchar}".format(
                 label,
@@ -519,8 +522,6 @@ class SparkBarWidget(SparkWidget):
             except StopIteration:
                 break
 
-
-
         charwidth = total / self.width
         stepwidth = charwidth / len(self.chars)
 
@@ -532,17 +533,34 @@ class SparkBarWidget(SparkWidget):
         lastcolor = None
 
         bars = proportional(self.width, [i.value for i in filtered_items])
-
         if self.min_width:
             last = None
-            while any(i < self.min_width for i in bars):
+            while any(b < self.min_width for b in bars):
                 if bars == last:
                     break
                 last = [b for b in bars]
                 smallest = min(bars)
                 largest = max(bars)
-                bars[bars.index(smallest)] += 1
                 bars[bars.index(largest)] -= 1
+                bars[bars.index(smallest)] += 1
+
+        if self.fit_label:
+            last = None
+            total=sum(item.value for item in filtered_items)
+            while True:
+                if bars == last:
+                    break
+                last = [b for b in bars]
+                for i, item in enumerate(self.items):
+                    if len(item.formatted_label(total)) > bars[i]:
+                        others = bars[i+1:] + bars[:i]
+                        # print(others)
+                        try:
+                            largest_idx = bars.index(max(others))
+                        except ValueError:
+                            raise Exception(self.width, self.items)
+                        bars[largest_idx] -= 1
+                        bars[i] += 1
 
         for i, item in enumerate(filtered_items):
 
@@ -559,4 +577,7 @@ class SparkBarWidget(SparkWidget):
         self.set_text(self.sparktext)
         super(SparkBarWidget, self).__init__(self.sparktext, *args, **kwargs)
 
-__all__ = ["SparkColumnWidget", "SparkBarWidget"]
+__all__ = [
+    "SparkColumnWidget", "SparkBarWidget", "SparkBarItem", "get_palette_entries",
+    "DEFAULT_LABEL_COLOR_DARK", "DEFAULT_LABEL_COLOR_LIGHT"
+]
