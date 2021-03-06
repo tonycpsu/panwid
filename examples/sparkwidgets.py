@@ -91,7 +91,7 @@ bark2 = urwid.Filler(SparkBarWidget([40, 30, 20, 10], random.randint(10, 60), co
 bark3 = urwid.Filler(SparkBarWidget([0, 0, 0], random.randint(1, 10), color_scheme="rotate_true"))
 bark4 = urwid.Filler(SparkBarWidget([19, 42, 17], random.randint(1, 5), color_scheme="rotate_true"))
 bark5 = urwid.Filler(SparkBarWidget([
-    SparkBarItem(19, bcolor="light red", label="foo"),
+    SparkBarItem(19, bcolor="light red", label="\u2588"*2, fcolor="yellow"),
     SparkBarItem(42, bcolor="light green", label="bar", align="^"),
     SparkBarItem(17, bcolor="light blue", label="baz", align=">")
 ], random.randint(1, 60), fit_label=True))
@@ -111,6 +111,10 @@ bark6=urwid.Filler(SparkBarWidget(
 # raise Exception
 bark_random_text = urwid.Filler(urwid.Text(""))
 bark_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
+
+
+progress_random_text = urwid.Filler(urwid.Text(""))
+progress_random_ph = urwid.WidgetPlaceholder(urwid.Text(""))
 
 
 def get_label_color(color,
@@ -159,6 +163,17 @@ def get_random_bark():
                                        min_width=random.randint(0, 5))
 
 
+def get_random_progress():
+
+    total = random.randint(1, 100)
+    vals = [random.randint(0, 100), random.randint(200, 300)]
+    return ProgressBar(
+        vals,
+        width=20,
+        label_color="light red",
+        color_scheme="light green"
+    )
+
 
 def randomize_spark():
     spark = get_random_spark()
@@ -173,6 +188,13 @@ def randomize_bark():
     values = list(intersperse(",", [(i.value, "%s" %(i.value)) for i in bark.items]))
     bark_random_text.original_widget.set_text(values)
     bark_random_ph.original_widget = filler
+
+def randomize_progress():
+    progress = get_random_progress()
+    filler = urwid.Filler(progress)
+    values = list(intersperse(",", [(i.value, "%s" %(i.value)) for i in progress.items]))
+    progress_random_text.original_widget.set_text(values)
+    progress_random_ph.original_widget = filler
 
 
 def main():
@@ -193,10 +215,13 @@ def main():
         (2, bark6),
         (2, bark_random_text),
         (2, bark_random_ph),
+        (2, progress_random_text),
+        (2, progress_random_ph),
     ])
 
     randomize_bark()
     randomize_spark()
+    randomize_progress()
 
     def keypress(key):
 

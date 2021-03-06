@@ -13,6 +13,7 @@ from urwid_utils.palette import *
 from collections import deque
 import math
 import operator
+import itertools
 import collections
 from dataclasses import dataclass
 
@@ -72,6 +73,13 @@ COLOR_SCHEMES = {
         ]
     }
 }
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
 
 def get_palette_entries(
         chart_colors = None,
@@ -221,7 +229,8 @@ class SparkWidget(urwid.Text):
             try:
                 color_scheme = COLOR_SCHEMES[scheme]
             except:
-                raise Exception("Unknown color scheme: %s" %(scheme))
+                return lambda x: scheme
+                # raise Exception("Unknown color scheme: %s" %(scheme))
 
         mode = color_scheme["mode"]
         if mode == "mono":
@@ -391,6 +400,7 @@ class SparkBarItem:
     fcolor: str = None
     bcolor: str = None
     align: str = "<"
+    fill: str = " "
 
     def formatted_label(self, total):
         if self.label is None:
@@ -426,10 +436,10 @@ class SparkBarItem:
                 if len(label) > width
                 else label[width-1]
                 if len(label) == width
-                else " "
+                else self.fill
             )
         else:
-            chars = " " * width
+            chars = self.fill * width
 
         return (
             "%s:%s" %(
@@ -457,12 +467,15 @@ class SparkBarWidget(SparkWidget):
 
     chars = BLOCK_HORIZONTAL
 
+    fill_char = " "
+
     def __init__(self, items, width,
                  color_scheme="mono",
                  label_color=None,
                  min_width=None,
                  fit_label=False,
                  normalize=None,
+                 fill_char=None,
                  *args, **kwargs):
 
         self.items = [
@@ -475,6 +488,8 @@ class SparkBarWidget(SparkWidget):
         for i in self.items:
             if not i.bcolor:
                 i.bcolor = self.get_color(i)
+            if fill_char:
+                i.fill_char = fill_char
 
         self.width = width
         self.label_color = label_color
@@ -507,8 +522,6 @@ class SparkBarWidget(SparkWidget):
             if not len(values):
                 raise Exception(self.items)
             total = sum(values)
-            v_min = min(values)
-            v_max = max(values)
             charwidth = total / self.width
             try:
                 i = next(iter(filter(
@@ -519,16 +532,15 @@ class SparkBarWidget(SparkWidget):
                 break
 
         charwidth = total / self.width
-        stepwidth = charwidth / len(self.chars)
+        # stepwidth = charwidth / len(self.chars)
 
         self.sparktext = []
 
         position = 0
-        carryover = 0
-        nchars = len(self.chars)
         lastcolor = None
 
-        bars = bar_widths([i.value for i in filtered_items], self.width)
+        values = [i.value for i in filtered_items]
+        bars = bar_widths(values, self.width)
         if self.min_width:
             last = None
             while any(b < self.min_width for b in bars):
@@ -558,22 +570,61 @@ class SparkBarWidget(SparkWidget):
                         bars[largest_idx] -= 1
                         bars[i] += 1
 
-        for i, item in enumerate(filtered_items):
+        for i, (item, item_next) in enumerate(pairwise(filtered_items)):
 
             width = bars[i]
             position += width*charwidth
 
-            self.sparktext.append(
-                item.output(width, total=total)
-            )
-            self.next_color()
+            output = item.output(width, total=total)
+            if len(output[1]) and output[1][-1] == self.fill_char:
+                attr = f"{item.bcolor}:{item_next.bcolor}"
+                idx = int(item.value/sum(values)*width%1*len(self.chars))
+                partial = (attr, self.chars[idx])
+                output = (output[0], output[1][:-1])
+                self.sparktext += [output, partial]
+            else:
+                self.sparktext += [output]
+            self.get_color(i)
 
+        output = filtered_items[-1].output(bars[-1], total=total)
+        self.sparktext += [output]
         if not self.sparktext:
             self.sparktext = ""
         self.set_text(self.sparktext)
         super(SparkBarWidget, self).__init__(self.sparktext, *args, **kwargs)
 
+class ProgressBar(urwid.WidgetWrap):
+
+    def __init__(self,  width, maximum, value=0,
+                 progress_color=None, remaining_color=None):
+        self.width = width
+        self.maximum = maximum
+        self.value = value
+        self.progress_color = progress_color or DEFAULT_BAR_COLOR
+        self.remaining_color = remaining_color or DEFAULT_LABEL_COLOR
+        self.placeholder = urwid.WidgetPlaceholder(urwid.Text(""))
+        self.update()
+        super().__init__(self.placeholder)
+
+    def update(self):
+        self.bar = SparkBarWidget(
+            [
+                SparkBarItem(self.value, bcolor=self.progress_color),
+                SparkBarItem(self.maximum-self.value, bcolor=self.remaining_color),
+            ], width=self.width
+        )
+        self.placeholder.original_widget = self.bar
+
+    def set_value(self, value):
+        self.value = value
+        self.update()
+
+    @property
+    def items(self):
+        return self.bar.items
+
 __all__ = [
-    "SparkColumnWidget", "SparkBarWidget", "SparkBarItem", "get_palette_entries",
+    "SparkColumnWidget", "SparkBarWidget", "SparkBarItem", "ProgressBar",
+    "get_palette_entries",
     "DEFAULT_LABEL_COLOR_DARK", "DEFAULT_LABEL_COLOR_LIGHT"
 ]
