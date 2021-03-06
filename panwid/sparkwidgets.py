@@ -361,31 +361,27 @@ class SparkColumnWidget(SparkWidget):
         super(SparkColumnWidget, self).__init__(self.sparktext, *args, **kwargs)
 
 
-# https://stackoverflow.com/a/20054616
-def proportional(nseats, votes):
-    """assign n seats proportionaly to votes using Hagenbach-Bischoff quota
-    :param nseats: int number of seats to assign
-    :param votes: iterable of int or float weighting each party
-    :result: list of ints seats allocated to each party
-    """
-    if sum(votes) == 0:
-        votes = [1 for vote in votes]
-    quota=sum(votes)/(1.+nseats) #force float
-    frac=[vote/quota for vote in votes]
-    res=[int(f) for f in frac]
-    n=nseats-sum(res) #number of seats remaining to allocate
-    if n==0: return res #done
-    if n<0: return [min(x,nseats) for x in res] # see siamii's comment
-    #give the remaining seats to the n parties with the largest remainder
-    remainders=[ai-bi for ai,bi in zip(frac,res)]
-    limit=sorted(remainders,reverse=True)[n-1]
-    #n parties with remainter larger than limit get an extra seat
-    for i,r in enumerate(remainders):
-        if r>=limit:
-            res[i]+=1
-            n-=1 # attempt to handle perfect equality
-            if n==0: return res #done
-    raise #should never happen
+# via https://github.com/rg3/dhondt
+def dhondt_formula(votes, seats):
+    return votes / (seats + 1)
+
+def bar_widths(party_votes, total_seats):
+    # Calculate the quotients matrix (list in this case).
+    quot = []
+    ret = dict()
+    for p in dict(enumerate(party_votes)):
+        ret[p] = 0
+        for s in range(0, total_seats):
+            q = dhondt_formula(party_votes[p], s)
+            quot.append((q, p))
+
+    # Sort the quotients by value.
+    quot.sort(reverse=True)
+
+    # Take the highest quotients with the assigned parties.
+    for s in range(0, total_seats):
+        ret[quot[s][1]] += 1
+    return list(ret.values())
 
 
 @dataclass
@@ -532,7 +528,7 @@ class SparkBarWidget(SparkWidget):
         nchars = len(self.chars)
         lastcolor = None
 
-        bars = proportional(self.width, [i.value for i in filtered_items])
+        bars = bar_widths([i.value for i in filtered_items], self.width)
         if self.min_width:
             last = None
             while any(b < self.min_width for b in bars):
