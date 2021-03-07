@@ -549,32 +549,32 @@ class SparkBarWidget(SparkWidget):
 
         # use a prorportional representation algorithm to distribute the number
         # of available steps among each bar segment
-        bars = bar_widths(values, self.width*steps)
+        self.bars = bar_widths(values, self.width*steps)
 
         if self.min_width or self.fit_label:
             # make any requested adjustments to bar widths
-            for i in range(len(bars)):
-                if self.min_width and bars[i] < self.min_width*steps:
-                    bars[i] = self.min_width*steps
+            for i in range(len(self.bars)):
+                if self.min_width and self.bars[i] < self.min_width*steps:
+                    self.bars[i] = self.min_width*steps
                 if self.fit_label:
-                    # need some slack here to compensate for bars that don't
+                    # need some slack here to compensate for self.bars that don't
                     # begin on a character boundary
                     label_len = len(self.items[i].formatted_label(total))+2
-                    if bars[i] < label_len*steps:
-                        bars[i] = label_len*steps
+                    if self.bars[i] < label_len*steps:
+                        self.bars[i] = label_len*steps
             # use modified proportions to calculate new proportions that try
             # to account for min_width and fit_label
-            bars = bar_widths(bars, self.width*steps)
+            self.bars = bar_widths(self.bars, self.width*steps)
 
-        filtered_items = [item for i, item in enumerate(self.items) if bars[i]]
-        bars = [b for b in bars if b]
+        # filtered_items = [item for i, item in enumerate(self.items) if self.bars[i]]
+        # self.bars = [b for b in self.bars if b]
 
         for i, (item, item_next) in enumerate(pairwise(filtered_items)):
-            width = bars[i]
+            width = self.bars[i]
             output = item.output(width, total=total, next_color=item_next.bcolor)
             self.sparktext += output
 
-        output = filtered_items[-1].output(bars[-1], total=total)
+        output = filtered_items[-1].output(self.bars[-1], total=total)
         self.sparktext += output
 
         if not self.sparktext:
@@ -582,10 +582,12 @@ class SparkBarWidget(SparkWidget):
         self.set_text(self.sparktext)
         super(SparkBarWidget, self).__init__(self.sparktext, *args, **kwargs)
 
+    def bar_width(self, index):
+        return self.bars[index]//len(BLOCK_HORIZONTAL)
 
 class ProgressBar(urwid.WidgetWrap):
 
-    def __init__(self,  width, maximum, value=0,
+    def __init__(self, width, maximum, value=0,
                  progress_color=None, remaining_color=None):
         self.width = width
         self.maximum = maximum
@@ -596,14 +598,59 @@ class ProgressBar(urwid.WidgetWrap):
         self.update()
         super().__init__(self.placeholder)
 
+    @property
+    def value_label(self):
+        label_text = str(self.value)
+        bar_len = self.spark_bar.bar_width(0)
+        attr1 = f"{DEFAULT_LABEL_COLOR}:{self.progress_color}"
+        content = [(attr1, label_text[:bar_len])]
+        if len(label_text) > bar_len-1:
+            attr2 = f"{DEFAULT_LABEL_COLOR}:{self.remaining_color}"
+            content.append((attr2, label_text[bar_len:]))
+        return urwid.Text(content)
+
+    @property
+    def maximum_label(self):
+        label_text = str(self.maximum)
+        bar_len = self.spark_bar.bar_width(1)
+        attr1 = f"{DEFAULT_LABEL_COLOR}:{self.remaining_color}"
+        content = []
+        if bar_len:
+            content.append((attr1, label_text[-bar_len:]))
+        if len(label_text) > bar_len:
+            attr2 = f"{DEFAULT_LABEL_COLOR}:{self.progress_color}"
+            content.insert(0, (attr2, label_text[:-bar_len or None]))
+        return urwid.Text(content)
+
     def update(self):
-        self.bar = SparkBarWidget(
+        value_label = None
+        maximum_label = None
+
+        self.spark_bar = SparkBarWidget(
             [
                 SparkBarItem(self.value, bcolor=self.progress_color),
                 SparkBarItem(self.maximum-self.value, bcolor=self.remaining_color),
             ], width=self.width
         )
-        self.placeholder.original_widget = self.bar
+        overlay1 = urwid.Overlay(
+            urwid.Filler(self.value_label),
+            urwid.Filler(self.spark_bar),
+            "left",
+            len(self.value_label.get_text()[0]),
+            "top",
+            1
+        )
+        label_len = len(self.maximum_label.get_text()[0])
+        overlay2 =  urwid.Overlay(
+            urwid.Filler(self.maximum_label),
+            overlay1,
+            "left",
+            label_len,
+            "top",
+            1,
+            left=self.width - label_len
+        )
+        self.placeholder.original_widget = urwid.BoxAdapter(overlay2, 1)
 
     def set_value(self, value):
         self.value = value
@@ -611,7 +658,7 @@ class ProgressBar(urwid.WidgetWrap):
 
     @property
     def items(self):
-        return self.bar.items
+        return self.spark_bar.items
 
 __all__ = [
     "SparkColumnWidget", "SparkBarWidget", "SparkBarItem", "ProgressBar",

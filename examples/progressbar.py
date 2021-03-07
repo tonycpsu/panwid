@@ -98,7 +98,8 @@ def randomize_progress():
 def cycle_progress(step):
     global progress
     # values = list(intersperse(",", [(i.value, "%s" %(i.value)) for i in progress.items]))
-    progress.set_value(progress.value + step)
+    value = max(min(progress.value + step, progress.maximum), 0)
+    progress.set_value(value)
     progress_text.original_widget.set_text(f"{progress.value}, {progress.maximum}")
 
 
@@ -121,6 +122,10 @@ def main():
             cycle_progress(-1)
         elif key == "right":
             cycle_progress(1)
+        elif key == "down":
+            cycle_progress(-10)
+        elif key == "up":
+            cycle_progress(10)
         else:
             return key
 
