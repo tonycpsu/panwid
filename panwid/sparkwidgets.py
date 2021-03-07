@@ -18,7 +18,7 @@ import collections
 from dataclasses import dataclass
 
 BLOCK_VERTICAL = [ chr(x) for x in range(0x2581, 0x2589) ]
-BLOCK_HORIZONTAL = [ chr(x) for x in range(0x258F, 0x2587, -1) ]
+BLOCK_HORIZONTAL = [" "] + [ chr(x) for x in range(0x258F, 0x2587, -1) ]
 
 DEFAULT_LABEL_COLOR = "black"
 DEFAULT_LABEL_COLOR_DARK = "black"
@@ -203,12 +203,6 @@ class SparkWidget(urwid.Text):
 
     @staticmethod
     def normalize(v, a, b, scale_min, scale_max):
-
-        # if not scale_min:
-        #     scale_min = v_min
-
-        # if not scale_max:
-        #     scale_max = v_max
 
         if scale_max == scale_min:
             return v
@@ -395,12 +389,17 @@ def bar_widths(party_votes, total_seats):
 
 @dataclass
 class SparkBarItem:
+
     value: int
     label: str = None
     fcolor: str = None
     bcolor: str = None
     align: str = "<"
     fill: str = " "
+
+    @property
+    def steps(self):
+        return len(BLOCK_HORIZONTAL)
 
     def formatted_label(self, total):
         if self.label is None:
@@ -419,33 +418,53 @@ class SparkBarItem:
         label = self.formatted_label(total)
         if not label:
             return None
-        return "{label:.{n}}".format(
-            label=self.formatted_label(total),
-            n=max(min(len(label), width), 0),
-        )
-
-    def output(self, width, total):
-
-        label = self.truncated_label(width, total)
-        if label:
-            chars = "{:{a}{m}.{m}}{lastchar}".format(
-                label,
-                m=max((width-1), 0),
-                a=self.align or "<",
-                lastchar="\N{HORIZONTAL ELLIPSIS}"
-                if len(label) > width
-                else label[width-1]
-                if len(label) == width
-                else self.fill
-            )
-        else:
-            chars = self.fill * width
-
         return (
-            "%s:%s" %(
-                self.fcolor or DEFAULT_LABEL_COLOR,
-                self.bcolor or DEFAULT_BAR_COLOR), chars
+            label[:width-1] + "\N{HORIZONTAL ELLIPSIS}"
+            if len(label) > width
+            else label
         )
+
+        # s = "{label:.{n}}".format(
+        #     label=self.formatted_label(total),
+        #     n=min(len(label), width),
+        # )
+        # if len(s) > width:
+        #     chars[-1] = "\N{HORIZONTAL ELLIPSIS}"
+
+
+    def output(self, width, total, next_color=None):
+
+        steps_width = width % self.steps if next_color else None
+        chars_width = width // self.steps# - (1 if steps_width else 0)
+        # print(width, chars_width, steps_width)
+        label = self.truncated_label(chars_width, total)
+        if label:
+            chars = "{:{a}{m}.{m}}".format(
+                label,
+                m=max(chars_width, 0),
+                a=self.align or "<",
+            )
+            # if len(label) > chars_width:
+            #     chars[-1] = "\N{HORIZONTAL ELLIPSIS}"
+        else:
+            chars = self.fill * chars_width
+
+
+
+        output = [
+            (
+                "%s:%s" %(
+                    self.fcolor or DEFAULT_LABEL_COLOR,
+                    self.bcolor or DEFAULT_BAR_COLOR), chars
+            )
+        ]
+
+        if steps_width:
+            attr = f"{self.bcolor}:{next_color}"
+            output.append(
+                (attr, BLOCK_HORIZONTAL[steps_width])
+            )
+        return output
 
 
 class SparkBarWidget(SparkWidget):
@@ -464,8 +483,6 @@ class SparkBarWidget(SparkWidget):
     :param color_scheme: A string or dictionary containing the name of or
     definition of a color scheme for the widget.
     """
-
-    chars = BLOCK_HORIZONTAL
 
     fill_char = " "
 
@@ -513,26 +530,11 @@ class SparkBarWidget(SparkWidget):
                 self.items[i].value = v
 
 
-        filtered_items = [i for i in self.items]
-
-        # ugly brute force method to eliminate values too small to display
-        while True:
-            values = [i.value for i in filtered_items]
-
-            if not len(values):
-                raise Exception(self.items)
-            total = sum(values)
-            charwidth = total / self.width
-            try:
-                i = next(iter(filter(
-                    lambda i: not (self.min_width or self.fit_label) and i.value < charwidth,
-                    filtered_items)))
-                filtered_items.remove(i)
-            except StopIteration:
-                break
+        filtered_items = self.items
+        values = [i.value for i in filtered_items]
+        total = sum(values)
 
         charwidth = total / self.width
-        # stepwidth = charwidth / len(self.chars)
 
         self.sparktext = []
 
@@ -540,58 +542,46 @@ class SparkBarWidget(SparkWidget):
         lastcolor = None
 
         values = [i.value for i in filtered_items]
-        bars = bar_widths(values, self.width)
-        if self.min_width:
-            last = None
-            while any(b < self.min_width for b in bars):
-                if bars == last:
-                    break
-                last = [b for b in bars]
-                smallest = min(bars)
-                largest = max(bars)
-                bars[bars.index(largest)] -= 1
-                bars[bars.index(smallest)] += 1
 
-        if self.fit_label:
-            last = None
-            total=sum(item.value for item in filtered_items)
-            while True:
-                if bars == last:
-                    break
-                last = [b for b in bars]
-                for i, item in enumerate(self.items):
-                    if len(item.formatted_label(total)) > bars[i]:
-                        others = bars[i+1:] + bars[:i]
-                        # print(others)
-                        try:
-                            largest_idx = bars.index(max(others))
-                        except ValueError:
-                            raise Exception(self.width, self.items)
-                        bars[largest_idx] -= 1
-                        bars[i] += 1
+        # number of steps that can be represented within each screen character
+        # represented by Unicode block characters
+        steps = len(BLOCK_HORIZONTAL)
+
+        # use a prorportional representation algorithm to distribute the number
+        # of available steps among each bar segment
+        bars = bar_widths(values, self.width*steps)
+
+        if self.min_width or self.fit_label:
+            # make any requested adjustments to bar widths
+            for i in range(len(bars)):
+                if self.min_width and bars[i] < self.min_width*steps:
+                    bars[i] = self.min_width*steps
+                if self.fit_label:
+                    # need some slack here to compensate for bars that don't
+                    # begin on a character boundary
+                    label_len = len(self.items[i].formatted_label(total))+2
+                    if bars[i] < label_len*steps:
+                        bars[i] = label_len*steps
+            # use modified proportions to calculate new proportions that try
+            # to account for min_width and fit_label
+            bars = bar_widths(bars, self.width*steps)
+
+        filtered_items = [item for i, item in enumerate(self.items) if bars[i]]
+        bars = [b for b in bars if b]
 
         for i, (item, item_next) in enumerate(pairwise(filtered_items)):
-
             width = bars[i]
-            position += width*charwidth
-
-            output = item.output(width, total=total)
-            if len(output[1]) and output[1][-1] == self.fill_char:
-                attr = f"{item.bcolor}:{item_next.bcolor}"
-                idx = int(item.value/sum(values)*width%1*len(self.chars))
-                partial = (attr, self.chars[idx])
-                output = (output[0], output[1][:-1])
-                self.sparktext += [output, partial]
-            else:
-                self.sparktext += [output]
-            self.get_color(i)
+            output = item.output(width, total=total, next_color=item_next.bcolor)
+            self.sparktext += output
 
         output = filtered_items[-1].output(bars[-1], total=total)
-        self.sparktext += [output]
+        self.sparktext += output
+
         if not self.sparktext:
             self.sparktext = ""
         self.set_text(self.sparktext)
         super(SparkBarWidget, self).__init__(self.sparktext, *args, **kwargs)
+
 
 class ProgressBar(urwid.WidgetWrap):
 

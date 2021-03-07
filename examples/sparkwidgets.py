@@ -15,10 +15,9 @@ LABEL_COLOR_LIGHT = "white"
 
 entries = {}
 
-
 all_colors = [ urwid.display_common._color_desc_256(x)
                    for x in range(32,224) ]
-random_colors = [ random.choice(all_colors) for i in range(16) ]
+random_colors = [ random.choice(all_colors) for i in range(1,15) ]
 
 label_colors = [ LABEL_COLOR_DARK, LABEL_COLOR_LIGHT ]
 
@@ -159,21 +158,18 @@ def get_random_bark():
             fcolor=lcolors[i]
         )
         for i in range(0, num)
-    ], fit_label=True, width=random.randint(40, 80), label_color="black", normalize=(1, 100),
+    ], fit_label=True, width=random.randint(10, 80), label_color="black", normalize=(1, 100),
                                        min_width=random.randint(0, 5))
-
 
 def get_random_progress():
 
-    total = random.randint(1, 100)
-    vals = [random.randint(0, 100), random.randint(200, 300)]
     return ProgressBar(
-        vals,
-        width=20,
-        label_color="light red",
-        color_scheme="light green"
+        width=40,
+        maximum=random.randint(200, 300),
+        value=random.randint(0, 100),
+        progress_color="light red",
+        remaining_color="light green"
     )
-
 
 def randomize_spark():
     spark = get_random_spark()
