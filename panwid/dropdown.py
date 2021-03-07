@@ -565,7 +565,10 @@ class Dropdown(urwid.PopUpLauncher):
         if self.default is not None:
             try:
                 if isinstance(self.default, str):
-                    self.select_label(self.default)
+                    try:
+                        self.select_label(self.default)
+                    except ValueError:
+                        pass
                 else:
                     raise StopIteration
             except StopIteration:
@@ -754,13 +757,16 @@ class Dropdown(urwid.PopUpLauncher):
 
         f = lambda x: x
         if not case_sensitive:
-            f = lambda x: x.lower()
+            f = lambda x: x.lower() if isinstance(x, str) else x
 
-        index = next(itertools.dropwhile(
-                lambda x: f(x[1]) != f(label),
-                enumerate((self._items.keys())
-            )
-        ))[0]
+        try:
+            index = next(itertools.dropwhile(
+                    lambda x: f(x[1]) != f(label),
+                    enumerate((self._items.keys())
+                )
+            ))[0]
+        except StopIteration:
+            raise ValueError
         self.focus_position = index
 
 
