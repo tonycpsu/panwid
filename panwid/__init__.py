@@ -15,7 +15,7 @@ from .sparkwidgets import *
 from . import tabview
 from .tabview import *
 
-__version__ = "0.3.2.dev0"
+__version__ = "0.3.2.dev1"
 
 __all__ = (
     listbox.__all__
