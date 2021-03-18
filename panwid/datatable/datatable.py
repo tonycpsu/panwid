@@ -866,6 +866,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     return
                 column_number = self.visible_data_column_index(column_name)
 
+
         self.sort_column = column_number
 
         if not column_name:
@@ -876,18 +877,19 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         except:
             return # FIXME
 
-        if reverse is None and column.sort_reverse is not None:
-            reverse = column.sort_reverse
-
         if toggle and column_name == self.sort_by[0]:
             reverse = not self.sort_by[1]
+
+        elif reverse is None and column.sort_reverse is not None:
+            reverse = column.sort_reverse
+
         sort_by = (column_name, reverse)
         # if not self.query_sort:
 
         self.sort_by = sort_by
         logger.debug("sort_by: %s (%s), %s" %(column_name, self.sort_column, reverse))
-        # if self.query_sort:
-        #     self.reset()
+        if self.query_sort:
+            self.reset()
 
         row_index = None
         if self.sort_refocus:
@@ -1340,16 +1342,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["offset"] = offset
             kwargs["limit"] = limit
 
-        # if self.data is not None:
-        #     rows = self.data
-        # else:
-        #     rows = list(self.query(**kwargs))
+        kwargs["cursor"] = self.pagination_cursor
 
         rows = list(self.query(**kwargs)) if self.data is None else self.data
-        # try:
-        #     (rows, meta) = list(self.query(**kwargs)) if self.data is None else self.data
-        #     self.metadata.update(**meta)
-        # except ValueError:
+
+        if len(rows) and self.sort_by[0]:
+            self.pagination_cursor = getattr(rows[-1], self.sort_by[0])
 
         updated = self.df.update_rows(rows, replace=self.limit is None, with_sidecar = self.with_sidecar)
 
@@ -1421,6 +1419,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
 
     def reset(self, reset_sort=False):
+
+        self.pagination_cursor = None
         self.refresh(reset=True)
 
         if reset_sort and self.initial_sort is not None:
