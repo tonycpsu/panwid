@@ -1,3 +1,5 @@
+from . import keymap
+from .keymap import *
 from . import listbox
 from .listbox import *
 from . import datatable
@@ -6,8 +8,6 @@ from . import dialog
 from .dialog import *
 from . import dropdown
 from .dropdown import *
-from . import keymap
-from .keymap import *
 from . import scroll
 from .scroll import *
 from . import sparkwidgets

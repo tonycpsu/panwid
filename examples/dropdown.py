@@ -7,37 +7,44 @@ import urwid.raw_display
 from urwid_utils.palette import *
 from orderedattrdict import AttrDict
 
+import panwid.keymap
+
+panwid.keymap.KEYMAP_GLOBAL = {
+    "movement": {
+        "up": "up",
+        "down": "down",
+    },
+    "dropdown": {
+        "k": "up",
+        "j": "down",
+        "page up": "page up",
+        "page down": "page down",
+        "ctrl up": ("cycle", [1]),
+        "ctrl down": ("cycle", [-1]),
+        "home": "home",
+        "end": "end",
+        "/": "complete prefix",
+        "?": "complete substring",
+    },
+    "auto_complete_edit": {
+        "enter": "confirm",
+        "esc": "cancel",
+        "/": "complete prefix",
+        "?": "complete substring",
+        "ctrl p": "prev",
+        "ctrl n": "next",
+        # "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
+        # "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
+    }
+}
+
+
 from panwid.dropdown import *
 from panwid.listbox import *
 from panwid.keymap import *
 
 class TestDropdown(KeymapMovementMixin, Dropdown):
-
-    KEYMAP_GLOBAL = {
-        "movement": {
-            "up": "up",
-            "down": "down",
-        },
-        "dropdown": {
-            "k": "up",
-            "j": "down",
-            "page up": "page up",
-            "page down": "page down",
-            "ctrl up": ("cycle", [1]),
-            "ctrl down": ("cycle", [-1]),
-            "home": "home",
-            "end": "end",
-            "/": "complete prefix",
-            "?": "complete substring",
-        },
-        "dropdown_dialog": {
-            "esc": "cancel",
-            "/": "complete prefix",
-            "?": "complete substring",
-            "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
-            "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
-        }
-    }
+    pass
 
 def main():
 

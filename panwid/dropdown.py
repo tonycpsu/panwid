@@ -51,7 +51,69 @@ class DropdownButton(urwid.Button):
         return self.decoration_width + len(self.label_text)
 
 
-class DropdownItem(urwid.WidgetWrap):
+class HighlightableTextMixin(object):
+
+    @property
+    def highlight_state(self):
+        if not getattr(self, "_highlight_state", False):
+            self._highlight_state = False
+            self._highlight_case_sensitive = False
+            self._highlight_string = None
+        return self._highlight_state
+
+    @property
+    def highlight_content(self):
+        if self.highlight_state:
+            return self.get_highlight_text(self._highlight_string)
+        else:
+            return self.highlight_source
+
+
+    def highlight(self, s, case_sensitive=False):
+        self._highlight_state = True
+        self._highlight_case_sensitive = case_sensitive
+        self._highlight_string = s
+        self.on_highlight()
+
+    def unhighlight(self):
+        self._highlight_state = False
+        self._highlight_case_sensitive = False
+        self._highlight_string = None
+        self.on_unhighlight()
+
+    def get_highlight_text(self, s, case_sensitive=False):
+        (a, b, c) = re.search(
+            r"(.*?)(%s)(.*)" %(self._highlight_string),
+            str(self.highlight_source),
+            re.IGNORECASE if not case_sensitive else 0
+        ).groups()
+
+        return [
+            (self.highlightable_attr_normal, a),
+            (self.highlightable_attr_highlight, b),
+            (self.highlightable_attr_normal, c),
+        ]
+
+    @property
+    def highlight_source(self):
+        raise NotImplementedError
+
+    @property
+    def highlightable_attr_normal(self):
+        raise NotImplementedError
+
+    @property
+    def highlightable_attr_highlight(self):
+        raise NotImplementedError
+
+    def on_highlight(self):
+        pass
+
+    def on_unhighlight(self):
+        pass
+
+
+class DropdownItem(HighlightableTextMixin, urwid.WidgetWrap):
 
     signals = ["click"]
 
@@ -61,14 +123,12 @@ class DropdownItem(urwid.WidgetWrap):
         self.label_text = label
         self.value = value
         self.margin = margin
-        # self.button = urwid.Button(("dropdown_text", self.label_text))
         self.button = DropdownButton(
             self.label_text,
             left_chars=left_chars, right_chars=right_chars
         )
         self.padding = urwid.Padding(self.button, width=("relative", 100),
                                      left=self.margin, right=self.margin)
-        # self.padding = self.button
 
 
         self.attr = urwid.AttrMap(self.padding, {None: "dropdown_text"})
@@ -82,6 +142,24 @@ class DropdownItem(urwid.WidgetWrap):
             "click",
             lambda source: self._emit("click")
         )
+
+    @property
+    def highlight_source(self):
+        return self.label_text
+
+    @property
+    def highlightable_attr_normal(self):
+        return "dropdown_text"
+
+    @property
+    def highlightable_attr_highlight(self):
+        return "dropdown_highlight"
+
+    def on_highlight(self):
+        self.set_text(self.highlight_content)
+
+    def on_unhighlight(self):
+        self.set_text(self.highlight_source)
 
     @property
     def width(self):
@@ -104,48 +182,45 @@ class DropdownItem(urwid.WidgetWrap):
     def label(self):
         return self.button.label
 
-    def set_label(self, label):
-        logger.debug("set_label: " + repr(label) )
-        self.button.set_label(label)
-
-    def highlight_text(self, s, case_sensitive=False):
-
-        (a, b, c) = re.search(
-            r"(.*?)(%s)(.*)" %(s),
-            self.label_text,
-            re.IGNORECASE if not case_sensitive else 0
-        ).groups()
-
-        self.set_label([
-            ("dropdown_text", a),
-            ("dropdown_highlight", b),
-            ("dropdown_text", c),
-        ])
-
-    def unhighlight(self):
-        self.set_label(("dropdown_text", self.label_text))
+    def set_text(self, text):
+        self.button.set_label(text)
 
 
 # class AutoCompleteEdit(urwid_readline.ReadlineEdit):
 @keymapped()
 class AutoCompleteEdit(urwid.Edit):
 
-    signals = ["close"]
+    signals = ["select", "close", "completion_next", "completion_prev"]
 
-    @keymap_command()
+    KEYMAP = {
+        "enter": "confirm",
+        "esc": "cancel"
+    }
+
     def clear(self):
-        raise Exception
         self.set_edit_text("")
 
+    def confirm(self):
+        self._emit("select")
+        self._emit("close")
+
+    def cancel(self):
+        self._emit("close")
+
+    def next(self):
+        self._emit("next")
+
+    def prev(self):
+        self._emit("prev")
+
     def keypress(self, size, key):
-        logger.info("autocompleteedit keypress")
-        if key == "enter":
-            self._emit("close")
         return super().keypress(size, key)
 
+@keymapped()
 class AutoCompleteBar(urwid.WidgetWrap):
 
-    signals = ["change", "close"]
+    signals = ["change", "completion_prev", "completion_next", "select", "close"]
+
     def __init__(self):
 
         self.prompt = urwid.Text(("dropdown_prompt", "> "))
@@ -158,6 +233,9 @@ class AutoCompleteBar(urwid.WidgetWrap):
         self.cols.focus_position = 1
         self.filler = urwid.Filler(self.cols, valign="bottom")
         urwid.connect_signal(self.text, "postchange", self.text_changed)
+        urwid.connect_signal(self.text, "completion_prev", lambda source: self._emit("completion_prev"))
+        urwid.connect_signal(self.text, "completion_next", lambda source: self._emit("completion_next"))
+        urwid.connect_signal(self.text, "select", lambda source: self._emit("select"))
         urwid.connect_signal(self.text, "close", lambda source: self._emit("close"))
         super(AutoCompleteBar, self).__init__(self.filler)
 
@@ -172,9 +250,219 @@ class AutoCompleteBar(urwid.WidgetWrap):
     def text_changed(self, source, text):
         self._emit("change", text)
 
+    def confirm(self):
+        self._emit("select")
+        self._emit("close")
+
+    def cancel(self):
+        self._emit("close")
+
+    def __len__(self):
+        return len(self.body)
+
+    def keypress(self, size, key):
+        return super().keypress(size, key)
 
 @keymapped()
-class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
+class AutoCompleteMixin(object):
+
+    auto_complete = None
+
+    def __init__(self, auto_complete, *args, **kwargs):
+        super().__init__(self.auto_complete_container, *args, **kwargs)
+        if auto_complete is not None: self.auto_complete = auto_complete
+        self.auto_complete_bar = None
+        self.completing = False
+        self.complete_anywhere = False
+        self.last_complete_pos = None
+        self.last_filter_text = None
+
+        if self.auto_complete:
+            self.auto_complete_bar = AutoCompleteBar()
+
+
+            urwid.connect_signal(
+                self.auto_complete_bar, "change",
+                lambda source, text: self.complete()
+            )
+            urwid.connect_signal(
+                self.auto_complete_bar, "completion_prev",
+                lambda source: self.completion_prev()
+            )
+            urwid.connect_signal(
+                self.auto_complete_bar, "completion_next",
+                lambda source: self.completion_next()
+            )
+
+            urwid.connect_signal(
+                self.auto_complete_bar, "select", self.on_complete_select
+            )
+            urwid.connect_signal(
+                self.auto_complete_bar, "close", self.on_complete_close
+            )
+
+    def keypress(self, size, key):
+        return super().keypress(size, key)
+        # key = super().keypress(size, key)
+        # if self.completing and key == "enter":
+        #     self.on_complete_select(self)
+        # else:
+        #     return key
+
+    @property
+    def auto_complete_container(self):
+        raise NotImplementedError
+
+    @property
+    def auto_complete_body(self):
+        raise NotImplementedError
+
+    @property
+    def auto_complete_items(self):
+        raise NotImplementedError
+
+    def auto_complete_widget_at_pos(self, pos):
+        return self.auto_complete_body[pos]
+
+    def auto_complete_set_focus(self, pos):
+        self.focus_position = pos
+
+    @keymap_command()
+    def complete_prefix(self):
+        self.complete_on()
+
+    @keymap_command()
+    def complete_substring(self):
+        self.complete_on(anywhere=True)
+
+    def completion_prev(self):
+        self.complete(step=-1)
+
+    def completion_next(self):
+        self.complete(step=1)
+
+    def complete_on(self, anywhere=False, case_sensitive=False):
+
+        if self.completing:
+            return
+        self.completing = True
+        self.show_bar()
+        if anywhere:
+            self.complete_anywhere = True
+        else:
+            self.complete_anywhere = False
+
+
+    @keymap_command()
+    def complete_off(self):
+
+        if not self.completing:
+            return
+        self.filter_text = ""
+
+        self.hide_bar()
+        self.completing = False
+
+    @keymap_command
+    def complete(self, step=None, no_wrap=False, case_sensitive=False):
+
+        if not self.filter_text:
+            return
+
+        # if not step and self.filter_text == self.last_filter_text:
+        #     return
+
+        logger.info(f"complete: {self.filter_text}")
+
+        if self.last_complete_pos:
+            widget = self.auto_complete_widget_at_pos(self.last_complete_pos)
+            widget.unhighlight()
+
+        if case_sensitive:
+            g = lambda x: x
+        else:
+            g = lambda x: x.lower()
+
+        if self.complete_anywhere:
+            f = lambda x: g(self.filter_text) in g(x)
+        else:
+            f = lambda x: g(x).startswith(g(self.filter_text))
+
+        self.initial_pos = self.auto_complete_body.get_focus()[1]
+        positions = itertools.cycle(self.auto_complete_body.positions(reverse=(step and step < 0)))
+        pos = next(positions)
+        while pos != self.initial_pos:
+            logger.info(pos)
+            pos = next(positions)
+        for i in range(abs(step or 0)):
+            pos = next(positions)
+
+        # cycle = itertools.cycle(
+        #     enumerate(self.auto_complete_items)
+        #     if step is None or step > 0
+        #     else reversed(list(enumerate(self.auto_complete_items)))
+        # )
+        # rows = list(itertools.islice(cycle, start, end))
+        # logger.debug(f"{start}, {end}, len: {len(rows)}")
+        while True:
+            widget = self.auto_complete_widget_at_pos(pos)
+            # logger.info(f"{pos}, {str(widget)}, {self.filter_text}")
+            if f(str(widget)):
+                self.last_complete_pos = pos
+                # widget = self.auto_complete_widget_at_pos(self.auto_complete_items[i])
+                widget.highlight(self.filter_text)
+                # logger.info(f"found: {pos}")
+                self.auto_complete_set_focus(pos)
+                break
+            pos = next(positions)
+            if pos == self.initial_pos:
+                break
+
+        logger.info("done")
+        self.last_filter_text = self.filter_text
+
+    @keymap_command()
+    def cancel(self):
+        logger.debug("cancel")
+        self.auto_complete_container.focus_position = self.selected_button
+        self.close()
+
+    def close(self):
+        self._emit("close")
+
+    def show_bar(self):
+        self.auto_complete_container.contents.append(
+            (self.auto_complete_bar, self.auto_complete_container.options("given", 1))
+        )
+        # self.box.height -= 1
+        self.auto_complete_container.focus_position = 1
+
+    def hide_bar(self):
+        widget = self.auto_complete_widget_at_pos(self.auto_complete_body.get_focus()[1])
+        widget.unhighlight()
+        self.auto_complete_container.focus_position = 0
+        del self.auto_complete_container.contents[1]
+        # self.box.height += 1
+
+    @property
+    def filter_text(self):
+        return self.auto_complete_bar.text.get_text()[0]
+
+    @filter_text.setter
+    def filter_text(self, value):
+        return self.auto_complete_bar.set_text(value)
+
+    def on_complete_select(self, source):
+        widget = self.auto_complete_widget_at_pos(self.auto_complete_body.get_focus()[1])
+        self.complete_off()
+        self._emit("select", self.last_complete_pos, widget)
+        self._emit("close")
+
+    def on_complete_close(self, source):
+        self.complete_off()
+
+@keymapped()
+class DropdownDialog(AutoCompleteMixin, urwid.WidgetWrap, KeymapMovementMixin):
 
     signals = ["select", "close"]
 
@@ -183,7 +471,6 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
     label = None
     border = None
     scrollbar = False
-    auto_complete = None
     margin = 0
     max_height = None
 
@@ -196,13 +483,13 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
             border=False,
             margin = None,
             scrollbar=None,
-            auto_complete=None,
             left_chars=None,
             right_chars=None,
             left_chars_top=None,
             rigth_chars_top=None,
             max_height=None,
-            keymap = {}
+            keymap = {},
+            **kwargs
     ):
         self.drop_down = drop_down
         self.items = items
@@ -210,15 +497,9 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         if border is not None: self.border = border
         if margin is not None: self.margin = margin
         if scrollbar is not None: self.scrollbar = scrollbar
-        if auto_complete is not None: self.auto_complete = auto_complete
         if max_height is not None: self.max_height = max_height
         # self.KEYMAP = keymap
 
-        self.completing = False
-        self.complete_anywhere = False
-        self.auto_complete_bar = None
-        self.last_complete_index = None
-        self.last_filter_text = None
         self.selected_button = 0
         buttons = []
 
@@ -237,7 +518,7 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         urwid.connect_signal(
             self.dropdown_buttons,
             'select',
-            lambda source, selection: self.select_button(selection)
+            lambda source, selection: self.on_complete_select(source)
         )
 
         box_height = self.height -2 if self.border else self.height
@@ -253,34 +534,22 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         if self.border:
            w = urwid.LineBox(w, **kwargs)
 
-        if self.auto_complete:
-            self.auto_complete_bar = AutoCompleteBar()
-
-            urwid.connect_signal(self.auto_complete_bar,
-                                 "change",
-                                 lambda source, text: self.complete())
-
-            urwid.connect_signal(self.auto_complete_bar,
-                                 "close",
-                                 lambda source: self.complete_off())
-
         self.pile = urwid.Pile([
             ("weight", 1, w),
         ])
-        self.__super.__init__(self.pile)
-
-
-    # @property
-    # def KEYMAP(self):
-    #     return self.drop_down.KEYMAP
+        super().__init__(self.pile)
 
     @property
-    def filter_text(self):
-        return self.auto_complete_bar.text.get_text()[0]
+    def auto_complete_container(self):
+        return self.pile
 
-    @filter_text.setter
-    def filter_text(self, value):
-        return self.auto_complete_bar.set_text(value)
+    @property
+    def auto_complete_body(self):
+        return self.body
+
+    @property
+    def auto_complete_items(self):
+        return self.body
 
     @property
     def max_item_width(self):
@@ -325,33 +594,18 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
     def selection(self):
         return self.dropdown_buttons.selection
 
-    def select_button(self, button):
+    # def on_complete_select(self, pos, widget):
 
-        # logger.debug("select_button: %s" %(button))
-        label = button.label
-        value = button.value
-        self.selected_button = self.focus_position
-        self.complete_off()
-        self._emit("select", button)
-        self._emit("close")
+    #     # logger.debug("select_button: %s" %(button))
+    #     label = widget.label
+    #     value = widget.value
+    #     self.selected_button = self.focus_position
+    #     self.complete_off()
+    #     self._emit("select", widget)
+    #     self._emit("close")
 
-    def keypress(self, size, key):
-        return super(DropdownDialog, self).keypress(size, key)
-    #     logger.info(f"dropdowndialog keypress: {key}")
-    #     # raise Exception
-    #     if key == "enter":
-    #         self.complete_off()
-    #     else:
-    #         return super().keypress(size, key)
-    #     raise Exception
-    #     logger.debug("DropdownDialog.keypress: %s" %(key))
-    #     if self.completing:
-    #         if key in ["enter", "up", "down"]:
-    #             self.complete_off()
-    #         else:
-    #             return key
-    #     else:
-    #         return super(DropdownDialog, self).keypress(size, key)
+    # def keypress(self, size, key):
+    #     return super(DropdownDialog, self).keypress(size, key)
 
 
     @property
@@ -359,120 +613,6 @@ class DropdownDialog(urwid.WidgetWrap, KeymapMovementMixin):
         if not self.focus_position:
             return None
         return self.body[self.focus_position].value
-
-    @keymap_command()
-    def complete_prefix(self):
-        self.complete_on()
-
-    @keymap_command()
-    def complete_substring(self):
-        self.complete_on(anywhere=True)
-
-    def complete_on(self, anywhere=False, case_sensitive=False):
-
-        if self.completing:
-            return
-        self.completing = True
-        # self.auto_complete_bar.set_prompt("> ")
-        # self.pile.focus_position = 1
-        self.show_bar()
-        if anywhere:
-            self.complete_anywhere = True
-        else:
-            self.complete_anywhere = False
-
-
-    @keymap_command()
-    def complete_off(self):
-
-        if not self.completing:
-            return
-        self.filter_text = ""
-
-        self.hide_bar()
-        self.completing = False
-
-    @keymap_command
-    def complete(self, step=None, no_wrap=False, case_sensitive=False):
-
-        if not self.filter_text:
-            return
-
-        if not step and self.filter_text == self.last_filter_text:
-            return
-
-        logger.info("complete")
-
-        if self.last_complete_index:
-            self[self.last_complete_index].unhighlight()
-
-        start=0
-
-        if step:
-            if step > 0:
-                start = (self.last_complete_index) % len(self) + 1
-            else:
-                start = len(self) - self.last_complete_index
-
-        if no_wrap:
-            end = len(self)
-        else:
-            end = start+len(self)
-
-
-        if case_sensitive:
-            g = lambda x: x
-        else:
-            g = lambda x: str(x).lower()
-
-        if self.complete_anywhere:
-            f = lambda x: g(self.filter_text) in g(x)
-        else:
-            f = lambda x: g(x).startswith(g(self.filter_text))
-
-        cycle = itertools.cycle(
-            enumerate(self.body)
-            if step is None or step > 0
-            else reversed(list(enumerate(self.body)))
-        )
-        rows = list(itertools.islice(cycle, start, end))
-        logger.debug(f"{start}, {end}, len: {len(rows)}")
-        for i, w in rows:
-            if f(w):
-                self.last_complete_index = i
-                self[i].highlight_text(self.filter_text)
-                self.focus_position = i
-                break
-        else:
-            if self.last_filter_text:
-                self.filter_text = self.last_filter_text
-            if self.last_complete_index:
-                self[self.last_complete_index].highlight_text(self.filter_text)
-            # self.last_complete_index = None
-
-        self.last_filter_text = self.filter_text
-
-    @keymap_command()
-    def cancel(self):
-        logger.debug("cancel")
-        self.focus_position = self.selected_button
-        self.close()
-
-    def close(self):
-        self._emit("close")
-
-    def show_bar(self):
-        self.pile.contents.append(
-            (self.auto_complete_bar, self.pile.options("given", 1))
-        )
-        self.box.height -= 1
-        self.pile.focus_position = 1
-
-    def hide_bar(self):
-        self[self.focus_position].unhighlight()
-        self.pile.focus_position = 0
-        del self.pile.contents[1]
-        self.box.height += 1
 
 @keymapped()
 class Dropdown(urwid.PopUpLauncher):
@@ -553,13 +693,13 @@ class Dropdown(urwid.PopUpLauncher):
         urwid.connect_signal(
             self.pop_up,
             "select",
-            lambda souce, selection: self.select(selection)
+            lambda souce, pos, selection: self.select(selection)
         )
 
         urwid.connect_signal(
             self.pop_up,
             "close",
-            lambda button: self.close_pop_up()
+            lambda source: self.close_pop_up()
         )
 
         if self.default is not None:
@@ -580,7 +720,7 @@ class Dropdown(urwid.PopUpLauncher):
         if len(self):
             self.select(self.selection)
         else:
-            self.button.set_label(("dropdown_text", self.empty_label))
+            self.button.set_text(("dropdown_text", self.empty_label))
 
         cols = [ (self.button_width, self.button) ]
 
@@ -695,7 +835,7 @@ class Dropdown(urwid.PopUpLauncher):
         super(Dropdown, self).open_pop_up()
 
     def close_pop_up(self):
-        super(Dropdown, self).close_pop_up()
+        super().close_pop_up()
 
     def get_pop_up_parameters(self):
         return {'left': (len(self.label) + 2 if self.label else 0),
@@ -836,7 +976,7 @@ class Dropdown(urwid.PopUpLauncher):
 
     def select(self, button):
         logger.debug("select: %s" %(button))
-        self.button.set_label(("dropdown_text", button.label))
+        self.button.set_text(("dropdown_text", button.label))
         self.pop_up.dropdown_buttons.listbox.set_focus_valign("top")
         # if old_pos != pos:
         self._emit("change", self.selected_label, self.selected_value)

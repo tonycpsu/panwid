@@ -8,6 +8,8 @@ import asyncio
 import urwid
 import re
 
+KEYMAP_GLOBAL = {}
+
 _camel_snake_re_1 = re.compile(r'(.)([A-Z][a-z]+)')
 _camel_snake_re_2 = re.compile('([a-z0-9])([A-Z])')
 
@@ -40,27 +42,26 @@ def keymapped():
 
     def wrapper(cls):
 
-        if not hasattr(cls, "KEYMAP_GLOBAL"):
-            cls.KEYMAP_GLOBAL = {}
+        cls.KEYMAP_MERGED = {}
 
         if not hasattr(cls, "KEYMAP_SCOPE"):
             cls.KEYMAP_SCOPE = classmethod(lambda cls: camel_to_snake(cls.__name__))
         elif isinstance(cls.KEYMAP_SCOPE, str):
             cls.KEYMAP_SCOPE = classmethod(lambda cls: cls.KEYMAP_SCOPE)
 
-        if not cls.KEYMAP_SCOPE() in cls.KEYMAP_GLOBAL:
-            cls.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()] = {}
+        if not cls.KEYMAP_SCOPE() in cls.KEYMAP_MERGED:
+            cls.KEYMAP_MERGED[cls.KEYMAP_SCOPE()] = {}
         if getattr(cls, "KEYMAP", False):
-            cls.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()].update(**cls.KEYMAP)
+            cls.KEYMAP_MERGED[cls.KEYMAP_SCOPE()].update(**cls.KEYMAP)
 
 
         for base in cls.mro():
             if hasattr(base, "KEYMAP"):
-                if not base.KEYMAP_SCOPE() in cls.KEYMAP_GLOBAL:
-                    cls.KEYMAP_GLOBAL[base.KEYMAP_SCOPE()] = {}
-                cls.KEYMAP_GLOBAL[base.KEYMAP_SCOPE()].update(**base.KEYMAP)
+                if not base.KEYMAP_SCOPE() in cls.KEYMAP_MERGED:
+                    cls.KEYMAP_MERGED[base.KEYMAP_SCOPE()] = {}
+                cls.KEYMAP_MERGED[base.KEYMAP_SCOPE()].update(**base.KEYMAP)
 
-        # from pprint import pprint; print(cls.KEYMAP_GLOBAL)
+        # from pprint import pprint; print(cls.KEYMAP_MERGED)
         if not hasattr(cls, "KEYMAP_MAPPING"):
             cls.KEYMAP_MAPPING = {}
 
@@ -94,7 +95,7 @@ def keymapped():
                 try:
                     fn_name = self.KEYMAP_MAPPING[cmd]
                 except KeyError:
-                    raise KeyError(cmd, self.KEYMAP_MAPPING)
+                    raise KeyError(cmd, self.KEYMAP_MAPPING, type(self))
 
             f = getattr(self, fn_name)
             ret = f(*args, **kwargs)
@@ -107,16 +108,17 @@ def keymapped():
         def keypress_decorator(func):
 
             def keypress(self, size, key):
-                logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).keys()}")
+                logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_MERGED.get(cls.KEYMAP_SCOPE(), {}).keys()}")
 
                 if key and callable(func):
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
                     key = func(self, size, key)
                 if key:
                     logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
-                    key = super(cls, self).keypress(size, key) #or key
-                if key and self.KEYMAP_GLOBAL.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
-                    cmd = self.KEYMAP_GLOBAL[cls.KEYMAP_SCOPE()][key]
+                    key = super(cls, self).keypress(size, key)
+                keymap_combined = dict(self.KEYMAP_MERGED, **KEYMAP_GLOBAL)
+                if key and keymap_combined.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
+                    cmd = keymap_combined[cls.KEYMAP_SCOPE()][key]
                     if isinstance(cmd, str) and cmd.startswith("keypress "):
                         new_key = cmd.replace("keypress ", "").strip()
                         logger.debug(f"{cls} remap {key} => {new_key}")
