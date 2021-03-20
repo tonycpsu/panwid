@@ -236,7 +236,7 @@ def main():
             )
 
 
-        def query(self, sort=(None, None), offset=None, limit=None, load_all=False):
+        def query(self, sort=(None, None), offset=None, limit=None, load_all=False, **kwargs):
 
             logger.info("query: offset=%s, limit=%s, sort=%s" %(offset, limit, sort))
             try:

@@ -219,14 +219,12 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             sort=False,
             index_name = self.index or None
         )
-
         self.pile = urwid.Pile([])
         self.listbox = ScrollingListBox(
             self, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
             row_count_fn = self.row_count
         )
-
         # urwid.connect_signal(
         #     self.listbox, "select",
         #     lambda source, selection: urwid.signals.emit_signal(

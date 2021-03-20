@@ -4,6 +4,7 @@ logger = logging.getLogger(__name__.split(".")[0])
 
 import urwid
 from urwid_utils.palette import *
+from .scroll import ScrollBar
 
 class ListBoxScrollBar(urwid.WidgetWrap):
 
@@ -107,21 +108,24 @@ class ScrollingListBox(urwid.WidgetWrap):
 
         self.queued_keypress = None
 
-        self.listbox = urwid.ListBox(body)
-        self.columns = urwid.Columns([
-            ('weight', 1, self.listbox)
-        ])
-        if self.with_scrollbar:
-            self.scroll_bar = ListBoxScrollBar(self)
-            self.columns.contents.append(
-                (self.scroll_bar, self.columns.options("given", 1))
-            )
-        super(ScrollingListBox, self).__init__(self.columns)
-        urwid.connect_signal(self.body, "modified", self.on_modified)
 
-    def on_modified(self):
-        if self.with_scrollbar and len(self.body):
-            self.scroll_bar.update(self.size)
+        w = self.listbox = urwid.ListBox(body)
+
+        # self.columns = urwid.Columns([
+        #     ('weight', 1, ScrollBar(self.listbox))
+        # ])
+        if self.with_scrollbar:
+            # self.scroll_bar = ListBoxScrollBar(self)
+            # self.columns.contents.append(
+            #     (self.scroll_bar, self.columns.options("given", 1))
+            # )
+            w = ScrollBar(self.listbox)
+        super().__init__(w)
+        # urwid.connect_signal(self.body, "modified", self.on_modified)
+
+    # def on_modified(self):
+    #     if self.with_scrollbar and len(self.body):
+    #         self.scroll_bar.update(self.size)
 
 
     @classmethod
@@ -255,8 +259,8 @@ class ScrollingListBox(urwid.WidgetWrap):
             maxrow = size[1]
             modified = self._height == 0
             self._height = maxrow
-            if modified:
-                self.on_modified()
+            # if modified:
+            #     self.on_modified()
         else:
             self._height = 0
 

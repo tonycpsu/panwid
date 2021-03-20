@@ -12,13 +12,14 @@ def main():
 
     data_table = DataTable(
         columns = [
-            DataTableColumn("foo"),
-            DataTableColumn("bar")
+            DataTableColumn("num"),
+            DataTableColumn("char")
         ],
         data=[
-            dict(foo=1, bar="a"),
-            dict(foo=2, bar="b")
-        ]
+            dict(num=i, char=chr(i+33))
+            for i in range(100)
+        ],
+        with_scrollbar=True
     )
 
     loop = urwid.MainLoop(
