@@ -4,7 +4,9 @@ import urwid
 from urwid_utils.palette import *
 import random
 from itertools import chain, repeat, islice
+
 from panwid.sparkwidgets import *
+from panwid.progressbar import *
 
 screen = urwid.raw_display.Screen()
 screen.set_terminal_properties(1<<24)

@@ -3,15 +3,14 @@ panwid
 
 A collection of widgets for [Urwid](https://urwid.org/).
 
-Currently consists of the following:
+Currently consists of the following sub-modules:
 
-## Dropdown ##
+## autocomplete ##
 
-Dropdown menu widget with autocomplete support.
+Adds autocomplete functionality to a container widget.  See `Dropdown`
+implementation for how it works until there's proper documentation.
 
-[![asciicast](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN.png)](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN?autoplay=1)
-
-## DataTable ##
+## datatable ##
 
 Widget for displaying tabular data.
 
@@ -22,13 +21,44 @@ Features include:
 
 [![asciicast](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw.png)](https://asciinema.org/a/iRbvnuv7DERhZrdKKBfpGtXqw?autoplay=1)
 
-## ScrollingListbox ##
+## dialog ##
 
-Listbox with an optional scrollbar.  Can signal to other widgets
-(e.g. DataTable) when to fetch more data.  Used by both Dropdown and
-DataTable, but can be used separately.
+A set of simple classes for implementing pop-up dialogs.
 
-## TabView ##
+## dropdown ##
+
+Dropdown menu widget with autocomplete support.
+
+[![asciicast](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN.png)](https://asciinema.org/a/m23L8xPJsTQRxzOCwvc1SuduN?autoplay=1)
+
+## highlightable ##
+
+Adds the ability for text widgets (or any widget with text in them) to have
+strings highlighted in them.  See `Dropdown` implementation until there's proper
+documentation.
+
+## keymap ##
+
+Adds ability to define keyboard mappings across multiple widgets in your
+application without having to write Urwid `keypress`` methods. See `Dropdown`
+implementation until there's proper documentation.
+
+## progressbar ##
+
+A configurable horizontal progress bar that uses unicode box drawing characters
+for sub-character-width resolution.
+
+## scroll ##
+
+Makes any fixed or flow widget vertically scrollable.  Copied with permission
+from `rndusr/stig`.
+
+## sparkwidgets ##
+
+A set of sparkline-ish widgets for displaying data visually using a small number
+of screen characters.
+
+## tabview ##
 
 A container widget that allows selection of content via tab handles.
 

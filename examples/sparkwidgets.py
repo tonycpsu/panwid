@@ -161,16 +161,6 @@ def get_random_bark():
     ], fit_label=True, width=random.randint(10, 80), label_color="black", normalize=(1, 100),
                                        min_width=random.randint(0, 5))
 
-def get_random_progress():
-
-    return ProgressBar(
-        width=40,
-        maximum=random.randint(200, 300),
-        value=random.randint(0, 100),
-        progress_color="light red",
-        remaining_color="light green"
-    )
-
 def randomize_spark():
     spark = get_random_spark()
     filler = urwid.Filler(spark)
@@ -184,14 +174,6 @@ def randomize_bark():
     values = list(intersperse(",", [(i.value, "%s" %(i.value)) for i in bark.items]))
     bark_random_text.original_widget.set_text(values)
     bark_random_ph.original_widget = filler
-
-def randomize_progress():
-    progress = get_random_progress()
-    filler = urwid.Filler(progress)
-    values = list(intersperse(",", [(i.value, "%s" %(i.value)) for i in progress.items]))
-    progress_random_text.original_widget.set_text(values)
-    progress_random_ph.original_widget = filler
-
 
 def main():
 
@@ -210,14 +192,11 @@ def main():
         (2, bark5),
         (2, bark6),
         (2, bark_random_text),
-        (2, bark_random_ph),
-        (2, progress_random_text),
-        (2, progress_random_ph),
+        (2, bark_random_ph)
     ])
 
     randomize_bark()
     randomize_spark()
-    randomize_progress()
 
     def keypress(key):
 

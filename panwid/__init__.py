@@ -10,9 +10,9 @@ from . import highlightable
 from .highlightable import *
 from . import keymap
 from .keymap import *
-from . import scroll
 from . import listbox
 from .listbox import *
+from . import scroll
 from .scroll import *
 from . import sparkwidgets
 from .sparkwidgets import *
