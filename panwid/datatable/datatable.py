@@ -846,6 +846,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         elif col is None:
             col = self.sort_column
 
+
         if isinstance(col, int):
             try:
                 column_name = self.visible_data_columns[col].name
@@ -854,9 +855,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             column_number = col
             # column_number = next(i for i, c in enumerate(self._columns) if c.name == column_name)
         elif isinstance(col, str):
+            column_name = col
             try:
-                if column_name is None:
-                    return
                 column_number = self.visible_data_column_index(column_name)
                 column_name = col
             except:
@@ -1362,7 +1362,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                     continue
                 pos = self.index_to_position(i)
                 self[pos].update()
-            self.sort_by_column(*self.sort_by)
+            # self.sort_by_column(*self.sort_by)
 
         self._modified()
         self._emit("requery", self.row_count())

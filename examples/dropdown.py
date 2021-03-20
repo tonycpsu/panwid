@@ -25,16 +25,16 @@ panwid.keymap.KEYMAP_GLOBAL = {
         "end": "end",
         "/": "complete prefix",
         "?": "complete substring",
+        "ctrl p": "complete_prev",
+        "ctrl n": "complete_next",
     },
     "auto_complete_edit": {
         "enter": "confirm",
         "esc": "cancel",
         "/": "complete prefix",
         "?": "complete substring",
-        "ctrl p": "prev",
-        "ctrl n": "next",
-        # "ctrl p": ("complete", [], {"step": -1, "no_wrap": True}),
-        # "ctrl n": ("complete", [], {"step": 1, "no_wrap": True}),
+        "ctrl p": "complete_prev",
+        "ctrl n": "complete_next",
     }
 }
 

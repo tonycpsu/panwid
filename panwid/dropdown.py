@@ -64,35 +64,42 @@ class HighlightableTextMixin(object):
     @property
     def highlight_content(self):
         if self.highlight_state:
-            return self.get_highlight_text(self._highlight_string)
+            return self.get_highlight_text()
         else:
             return self.highlight_source
 
 
-    def highlight(self, s, case_sensitive=False):
+    def highlight(self, start, end):
         self._highlight_state = True
-        self._highlight_case_sensitive = case_sensitive
-        self._highlight_string = s
+        self._highlight_location = (start, end)
         self.on_highlight()
 
     def unhighlight(self):
         self._highlight_state = False
-        self._highlight_case_sensitive = False
-        self._highlight_string = None
+        self._highlight_location = None
         self.on_unhighlight()
 
-    def get_highlight_text(self, s, case_sensitive=False):
-        (a, b, c) = re.search(
-            r"(.*?)(%s)(.*)" %(self._highlight_string),
-            str(self.highlight_source),
-            re.IGNORECASE if not case_sensitive else 0
-        ).groups()
+    def get_highlight_text(self):
+        # (a, b, c) = re.search(
+        #     r"(.*?)(%s)(.*)" %(self._highlight_string),
+        #     ,
+        #     re.IGNORECASE if not case_sensitive else 0
+        # ).groups()
+
+        if not self._highlight_location:
+            return None
 
         return [
-            (self.highlightable_attr_normal, a),
-            (self.highlightable_attr_highlight, b),
-            (self.highlightable_attr_normal, c),
+            (self.highlightable_attr_normal, self.highlight_source[:self._highlight_location[0]]),
+            (self.highlightable_attr_highlight, self.highlight_source[self._highlight_location[0]:self._highlight_location[1]]),
+            (self.highlightable_attr_normal, self.highlight_source[self._highlight_location[1]:]),
         ]
+
+        # return [
+        #     (self.highlightable_attr_normal, a),
+        #     (self.highlightable_attr_highlight, b),
+        #     (self.highlightable_attr_normal, c),
+        # ]
 
     @property
     def highlight_source(self):
@@ -190,7 +197,7 @@ class DropdownItem(HighlightableTextMixin, urwid.WidgetWrap):
 @keymapped()
 class AutoCompleteEdit(urwid.Edit):
 
-    signals = ["select", "close", "completion_next", "completion_prev"]
+    signals = ["select", "close", "complete_next", "complete_prev"]
 
     KEYMAP = {
         "enter": "confirm",
@@ -207,11 +214,11 @@ class AutoCompleteEdit(urwid.Edit):
     def cancel(self):
         self._emit("close")
 
-    def next(self):
-        self._emit("next")
+    def complete_next(self):
+        self._emit("complete_next")
 
-    def prev(self):
-        self._emit("prev")
+    def complete_prev(self):
+        self._emit("complete_prev")
 
     def keypress(self, size, key):
         return super().keypress(size, key)
@@ -219,7 +226,7 @@ class AutoCompleteEdit(urwid.Edit):
 @keymapped()
 class AutoCompleteBar(urwid.WidgetWrap):
 
-    signals = ["change", "completion_prev", "completion_next", "select", "close"]
+    signals = ["change", "complete_prev", "complete_next", "select", "close"]
 
     def __init__(self):
 
@@ -233,8 +240,8 @@ class AutoCompleteBar(urwid.WidgetWrap):
         self.cols.focus_position = 1
         self.filler = urwid.Filler(self.cols, valign="bottom")
         urwid.connect_signal(self.text, "postchange", self.text_changed)
-        urwid.connect_signal(self.text, "completion_prev", lambda source: self._emit("completion_prev"))
-        urwid.connect_signal(self.text, "completion_next", lambda source: self._emit("completion_next"))
+        urwid.connect_signal(self.text, "complete_prev", lambda source: self._emit("complete_prev"))
+        urwid.connect_signal(self.text, "complete_next", lambda source: self._emit("complete_next"))
         urwid.connect_signal(self.text, "select", lambda source: self._emit("select"))
         urwid.connect_signal(self.text, "close", lambda source: self._emit("close"))
         super(AutoCompleteBar, self).__init__(self.filler)
@@ -269,12 +276,14 @@ class AutoCompleteMixin(object):
     auto_complete = None
 
     def __init__(self, auto_complete, *args, **kwargs):
-        super().__init__(self.auto_complete_container, *args, **kwargs)
+        super().__init__(self.complete_container, *args, **kwargs)
         if auto_complete is not None: self.auto_complete = auto_complete
         self.auto_complete_bar = None
         self.completing = False
         self.complete_anywhere = False
+        self.case_sensitive = False
         self.last_complete_pos = None
+        self.complete_string_location = None
         self.last_filter_text = None
 
         if self.auto_complete:
@@ -286,12 +295,12 @@ class AutoCompleteMixin(object):
                 lambda source, text: self.complete()
             )
             urwid.connect_signal(
-                self.auto_complete_bar, "completion_prev",
-                lambda source: self.completion_prev()
+                self.auto_complete_bar, "complete_prev",
+                lambda source: self.complete_prev()
             )
             urwid.connect_signal(
-                self.auto_complete_bar, "completion_next",
-                lambda source: self.completion_next()
+                self.auto_complete_bar, "complete_next",
+                lambda source: self.complete_next()
             )
 
             urwid.connect_signal(
@@ -310,21 +319,21 @@ class AutoCompleteMixin(object):
         #     return key
 
     @property
-    def auto_complete_container(self):
+    def complete_container(self):
         raise NotImplementedError
 
     @property
-    def auto_complete_body(self):
+    def complete_body(self):
         raise NotImplementedError
 
     @property
-    def auto_complete_items(self):
+    def complete_items(self):
         raise NotImplementedError
 
-    def auto_complete_widget_at_pos(self, pos):
-        return self.auto_complete_body[pos]
+    def complete_widget_at_pos(self, pos):
+        return self.complete_body[pos]
 
-    def auto_complete_set_focus(self, pos):
+    def complete_set_focus(self, pos):
         self.focus_position = pos
 
     @keymap_command()
@@ -335,10 +344,10 @@ class AutoCompleteMixin(object):
     def complete_substring(self):
         self.complete_on(anywhere=True)
 
-    def completion_prev(self):
+    def complete_prev(self):
         self.complete(step=-1)
 
-    def completion_next(self):
+    def complete_next(self):
         self.complete(step=1)
 
     def complete_on(self, anywhere=False, case_sensitive=False):
@@ -352,6 +361,30 @@ class AutoCompleteMixin(object):
         else:
             self.complete_anywhere = False
 
+        if case_sensitive:
+            self.case_sensitive = True
+        else:
+            self.case_sensitive = False
+
+    def complete_compare_substring(self, search, candidate):
+        try:
+            return candidate.index(search)
+        except ValueError:
+            return None
+
+    def complete_compare_fn(self, search, candidate):
+
+        if self.case_sensitive:
+            f = lambda x: str(x)
+        else:
+            f = lambda x: str(x.lower())
+
+        if self.complete_anywhere:
+            return self.complete_compare_substring(f(search), f(candidate))
+        else:
+            return 0 if self.complete_compare_substring(f(search), f(candidate))==0 else None
+        # return f(candidate)
+        
 
     @keymap_command()
     def complete_off(self):
@@ -364,7 +397,7 @@ class AutoCompleteMixin(object):
         self.completing = False
 
     @keymap_command
-    def complete(self, step=None, no_wrap=False, case_sensitive=False):
+    def complete(self, step=None, no_wrap=False):
 
         if not self.filter_text:
             return
@@ -375,21 +408,13 @@ class AutoCompleteMixin(object):
         logger.info(f"complete: {self.filter_text}")
 
         if self.last_complete_pos:
-            widget = self.auto_complete_widget_at_pos(self.last_complete_pos)
+            widget = self.complete_widget_at_pos(self.last_complete_pos)
             widget.unhighlight()
 
-        if case_sensitive:
-            g = lambda x: x
-        else:
-            g = lambda x: x.lower()
-
-        if self.complete_anywhere:
-            f = lambda x: g(self.filter_text) in g(x)
-        else:
-            f = lambda x: g(x).startswith(g(self.filter_text))
-
-        self.initial_pos = self.auto_complete_body.get_focus()[1]
-        positions = itertools.cycle(self.auto_complete_body.positions(reverse=(step and step < 0)))
+        self.initial_pos = self.complete_body.get_focus()[1]
+        positions = itertools.cycle(
+            self.complete_body.positions(reverse=(step and step < 0))
+        )
         pos = next(positions)
         while pos != self.initial_pos:
             logger.info(pos)
@@ -405,14 +430,16 @@ class AutoCompleteMixin(object):
         # rows = list(itertools.islice(cycle, start, end))
         # logger.debug(f"{start}, {end}, len: {len(rows)}")
         while True:
-            widget = self.auto_complete_widget_at_pos(pos)
+            widget = self.complete_widget_at_pos(pos)
             # logger.info(f"{pos}, {str(widget)}, {self.filter_text}")
-            if f(str(widget)):
+            complete_index = self.complete_compare_fn(self.filter_text, str(widget))
+            if complete_index is not None:
+                # self.complete_string_location = (complete_index, complete_index+len(self.filter_text))
                 self.last_complete_pos = pos
-                # widget = self.auto_complete_widget_at_pos(self.auto_complete_items[i])
-                widget.highlight(self.filter_text)
+                # widget = self.complete_widget_at_pos(self.auto_complete_items[i])
+                widget.highlight(complete_index, complete_index+len(self.filter_text))
                 # logger.info(f"found: {pos}")
-                self.auto_complete_set_focus(pos)
+                self.complete_set_focus(pos)
                 break
             pos = next(positions)
             if pos == self.initial_pos:
@@ -424,24 +451,24 @@ class AutoCompleteMixin(object):
     @keymap_command()
     def cancel(self):
         logger.debug("cancel")
-        self.auto_complete_container.focus_position = self.selected_button
+        self.complete_container.focus_position = self.selected_button
         self.close()
 
     def close(self):
         self._emit("close")
 
     def show_bar(self):
-        self.auto_complete_container.contents.append(
-            (self.auto_complete_bar, self.auto_complete_container.options("given", 1))
+        self.complete_container.contents.append(
+            (self.auto_complete_bar, self.complete_container.options("given", 1))
         )
         # self.box.height -= 1
-        self.auto_complete_container.focus_position = 1
+        self.complete_container.focus_position = 1
 
     def hide_bar(self):
-        widget = self.auto_complete_widget_at_pos(self.auto_complete_body.get_focus()[1])
+        widget = self.complete_widget_at_pos(self.complete_body.get_focus()[1])
         widget.unhighlight()
-        self.auto_complete_container.focus_position = 0
-        del self.auto_complete_container.contents[1]
+        self.complete_container.focus_position = 0
+        del self.complete_container.contents[1]
         # self.box.height += 1
 
     @property
@@ -453,7 +480,7 @@ class AutoCompleteMixin(object):
         return self.auto_complete_bar.set_text(value)
 
     def on_complete_select(self, source):
-        widget = self.auto_complete_widget_at_pos(self.auto_complete_body.get_focus()[1])
+        widget = self.complete_widget_at_pos(self.complete_body.get_focus()[1])
         self.complete_off()
         self._emit("select", self.last_complete_pos, widget)
         self._emit("close")
@@ -540,15 +567,15 @@ class DropdownDialog(AutoCompleteMixin, urwid.WidgetWrap, KeymapMovementMixin):
         super().__init__(self.pile)
 
     @property
-    def auto_complete_container(self):
+    def complete_container(self):
         return self.pile
 
     @property
-    def auto_complete_body(self):
+    def complete_body(self):
         return self.body
 
     @property
-    def auto_complete_items(self):
+    def complete_items(self):
         return self.body
 
     @property
