@@ -2,7 +2,7 @@
 
 import urwid
 from panwid.datatable import *
-
+from urwid_utils.palette import *
 
 def unhandled_input(key):
     if key in ("q", "Q"):
@@ -22,8 +22,12 @@ def main():
         with_scrollbar=True
     )
 
+    entries = DataTable.get_palette_entries()
+    palette = Palette("default", **entries)
+
     loop = urwid.MainLoop(
         urwid.Frame(data_table),
+        palette = palette,
         unhandled_input=unhandled_input
     )
     loop.run()
