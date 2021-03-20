@@ -192,7 +192,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self._height = None
         self._initialized = False
         self._message_showing = False
-
+        self.pagination_cursor = None
         self.filters = None
         self.filtered_rows = list()
 
