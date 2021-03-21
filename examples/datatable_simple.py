@@ -2,11 +2,19 @@
 
 import urwid
 from panwid.datatable import *
+from panwid.scroll import ScrollBar
 from urwid_utils.palette import *
 
 def unhandled_input(key):
     if key in ("q", "Q"):
         raise urwid.ExitMainLoop()
+
+class ExampleScrollBar(ScrollBar):
+
+    _thumb_char = ("light blue", "\u2588")
+    _trough_char = ("dark blue", "\u2591")
+    _thumb_indicator_top = ("white inverse", "\u234d")
+    _thumb_indicator_bottom = ("white inverse", "\u2354")
 
 def main():
 
@@ -19,11 +27,7 @@ def main():
             dict(num=i, char=chr((i%58)+65))
             for i in range(500)
         ],
-        thumb_char=("light blue", "\u2588"),
-        trough_char=("dark blue", "\u2591"),
-        thumb_indicator_top=("white inverse", "\N{APL FUNCTIONAL SYMBOL QUAD UP CARET}"),
-        thumb_indicator_bottom=("white inverse", "\N{APL FUNCTIONAL SYMBOL QUAD DOWN CARET}"),
-        with_scrollbar=True
+        with_scrollbar=ExampleScrollBar
     )
 
     entries = DataTable.get_palette_entries()

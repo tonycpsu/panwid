@@ -84,6 +84,8 @@ class ScrollingListBox(urwid.WidgetWrap):
                "drag_start", "drag_continue", "drag_stop",
                "load_more"]
 
+    scrollbar_class = ScrollBar
+
     def __init__(self, body,
                  infinite = False,
                  with_scrollbar=False,
@@ -112,15 +114,10 @@ class ScrollingListBox(urwid.WidgetWrap):
         w = self.listbox = urwid.ListBox(body)
 
         if self.with_scrollbar:
+            if isinstance(self.with_scrollbar, type):
+                self.scrollbar_class = self.with_scrollbar
             self.listbox.rows_max = self.rows_max
-            w = ScrollBar(
-                self.listbox,
-                thumb_char=thumb_char,
-                trough_char=trough_char,
-                thumb_indicator_top=thumb_indicator_top,
-                thumb_indicator_bottom=thumb_indicator_bottom,
-                width=1
-            )
+            w = self.scrollbar_class(self.listbox)
         super().__init__(w)
 
     # def on_modified(self):

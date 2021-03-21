@@ -79,11 +79,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     detail_auto_open = False
     detail_hanging_indent = None
 
-    thumb_char=None
-    trough_char=None
-    thumb_indicator_top=None
-    thumb_indicator_bottom=None
-
     ui_sort = True
     ui_resize = True
     row_attr_fn = lambda self, position, data, row: ""
@@ -113,8 +108,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
                  row_style=None,
                  detail_fn=None, detail_selectable=None, detail_replace=None,
                  detail_auto_open=None, detail_hanging_indent=None,
-                 thumb_char=None, trough_char=None,
-                 thumb_indicator_top=None, thumb_indicator_bottom=None,
                  ui_sort=None,
                  ui_resize=None,
                  row_attr_fn=None,
@@ -189,10 +182,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if detail_replace is not None: self.detail_replace = detail_replace
         if detail_auto_open is not None: self.detail_auto_open = detail_auto_open
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
-        if thumb_char is not None: self.thumb_char = thumb_char
-        if trough_char is not None: self.trough_char = trough_char
-        if thumb_indicator_top is not None: self.thumb_indicator_top = thumb_indicator_top
-        if thumb_indicator_bottom is not None: self.thumb_indicator_bottom = thumb_indicator_bottom
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
@@ -225,10 +214,7 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             index_name = self.index or None
             # sorted=True,
         )
-        # if self.index:
-        #     kwargs["index_name"] = self.index
 
-        # self.df = DataTableDataFrame(**kwargs)
         self.df = DataTableDataFrame(
             columns = self.column_names,
             sort=False,
@@ -238,18 +224,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.listbox = ScrollingListBox(
             self, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
-            thumb_char=self.thumb_char, trough_char=self.trough_char,
-            thumb_indicator_top=self.thumb_indicator_top,
-            thumb_indicator_bottom=self.thumb_indicator_bottom,
             row_count_fn = self.row_count
         )
-        # urwid.connect_signal(
-        #     self.listbox, "select",
-        #     lambda source, selection: urwid.signals.emit_signal(
-        #         self, "select", self, self.get_dataframe_row_object(selection.index))
-        #     if self.selection
-        #     else None
-        # )
         urwid.connect_signal(
             self.listbox, "drag_start",
             lambda source, drag_from: urwid.signals.emit_signal(
