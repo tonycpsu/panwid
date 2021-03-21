@@ -79,6 +79,11 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     detail_auto_open = False
     detail_hanging_indent = None
 
+    thumb_char=None
+    trough_char=None
+    thumb_indicator_top=None
+    thumb_indicator_bottom=None
+
     ui_sort = True
     ui_resize = True
     row_attr_fn = lambda self, position, data, row: ""
@@ -93,25 +98,27 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
     highlight_focus_map2 = {}
 
     def __init__(self,
-                 columns = None,
-                 data = None,
-                 limit = None,
-                 index = None,
-                 with_header = None, with_footer = None, with_scrollbar = None,
-                 empty_message = None,
-                 row_height = None,
-                 cell_selection = None,
-                 sort_by = None, query_sort = None, sort_icons = None,
-                 sort_refocus = None,
-                 no_load_on_init = None,
-                 divider = None, padding = None,
-                 row_style = None,
-                 detail_fn = None, detail_selectable = None, detail_replace=None,
-                 detail_auto_open = None, detail_hanging_indent = None,
-                 ui_sort = None,
-                 ui_resize = None,
-                 row_attr_fn = None,
-                 with_sidecar = None):
+                 columns=None,
+                 data=None,
+                 limit=None,
+                 index=None,
+                 with_header=None, with_footer=None, with_scrollbar=None,
+                 empty_message=None,
+                 row_height=None,
+                 cell_selection=None,
+                 sort_by=None, query_sort=None, sort_icons=None,
+                 sort_refocus=None,
+                 no_load_on_init=None,
+                 divider=None, padding=None,
+                 row_style=None,
+                 detail_fn=None, detail_selectable=None, detail_replace=None,
+                 detail_auto_open=None, detail_hanging_indent=None,
+                 thumb_char=None, trough_char=None,
+                 thumb_indicator_top=None, thumb_indicator_bottom=None,
+                 ui_sort=None,
+                 ui_resize=None,
+                 row_attr_fn=None,
+                 with_sidecar=None):
 
         self._focus = 0
         self.page = 0
@@ -182,6 +189,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         if detail_replace is not None: self.detail_replace = detail_replace
         if detail_auto_open is not None: self.detail_auto_open = detail_auto_open
         if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
+        if thumb_char is not None: self.thumb_char = thumb_char
+        if trough_char is not None: self.trough_char = trough_char
+        if thumb_indicator_top is not None: self.thumb_indicator_top = thumb_indicator_top
+        if thumb_indicator_bottom is not None: self.thumb_indicator_bottom = thumb_indicator_bottom
+        if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
+        if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
+        if detail_hanging_indent is not None: self.detail_hanging_indent = detail_hanging_indent
+
         if with_sidecar is not None: self.with_sidecar = with_sidecar
 
         if limit:
@@ -223,6 +238,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         self.listbox = ScrollingListBox(
             self, infinite=self.limit,
             with_scrollbar = self.with_scrollbar,
+            thumb_char=self.thumb_char, trough_char=self.trough_char,
+            thumb_indicator_top=self.thumb_indicator_top,
+            thumb_indicator_bottom=self.thumb_indicator_bottom,
             row_count_fn = self.row_count
         )
         # urwid.connect_signal(

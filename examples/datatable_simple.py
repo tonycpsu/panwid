@@ -16,13 +16,32 @@ def main():
             DataTableColumn("char")
         ],
         data=[
-            dict(num=i, char=chr(i+33))
-            for i in range(100)
+            dict(num=i, char=chr((i%58)+65))
+            for i in range(500)
         ],
+        thumb_char=("light blue", "\u2588"),
+        trough_char=("dark blue", "\u2591"),
+        thumb_indicator_top=("white inverse", "\N{APL FUNCTIONAL SYMBOL QUAD UP CARET}"),
+        thumb_indicator_bottom=("white inverse", "\N{APL FUNCTIONAL SYMBOL QUAD DOWN CARET}"),
         with_scrollbar=True
     )
 
     entries = DataTable.get_palette_entries()
+    entries["white inverse"] = PaletteEntry(
+        mono = "black",
+        foreground = "black",
+        background = "white"
+    )
+    entries["light blue"] = PaletteEntry(
+        mono = "white",
+        foreground = "light blue",
+        background = "black"
+    )
+    entries["dark blue"] = PaletteEntry(
+        mono = "white",
+        foreground = "dark blue",
+        background = "black"
+    )
     palette = Palette("default", **entries)
 
     loop = urwid.MainLoop(

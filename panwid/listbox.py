@@ -78,7 +78,6 @@ class ListBoxScrollBar(urwid.WidgetWrap):
         # FIXME: mouse click/drag
         return False
 
-
 class ScrollingListBox(urwid.WidgetWrap):
 
     signals = ["select",
@@ -88,16 +87,19 @@ class ScrollingListBox(urwid.WidgetWrap):
     def __init__(self, body,
                  infinite = False,
                  with_scrollbar=False,
-                 scroll_rows=None,
-                 row_count_fn = None):
+                 row_count_fn = None,
+                 thumb_char=None,
+                 trough_char=None,
+                 thumb_indicator_top=None,
+                 thumb_indicator_bottom=None):
 
         self.infinite = infinite
         self.with_scrollbar = with_scrollbar
-        self.scroll_rows = scroll_rows
         self.row_count_fn = row_count_fn
 
         self._width = None
         self._height = 0
+        self._rows_max = None
 
         self.mouse_state = 0
         self.drag_from = None
@@ -107,25 +109,26 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.page = 0
 
         self.queued_keypress = None
-
-
         w = self.listbox = urwid.ListBox(body)
 
-        # self.columns = urwid.Columns([
-        #     ('weight', 1, ScrollBar(self.listbox))
-        # ])
         if self.with_scrollbar:
-            # self.scroll_bar = ListBoxScrollBar(self)
-            # self.columns.contents.append(
-            #     (self.scroll_bar, self.columns.options("given", 1))
-            # )
-            w = ScrollBar(self.listbox)
+            self.listbox.rows_max = self.rows_max
+            w = ScrollBar(
+                self.listbox,
+                thumb_char=thumb_char,
+                trough_char=trough_char,
+                thumb_indicator_top=thumb_indicator_top,
+                thumb_indicator_bottom=thumb_indicator_bottom,
+                width=1
+            )
         super().__init__(w)
-        # urwid.connect_signal(self.body, "modified", self.on_modified)
 
     # def on_modified(self):
     #     if self.with_scrollbar and len(self.body):
     #         self.scroll_bar.update(self.size)
+
+    def rows_max(self, size, focus=False):
+        return urwid.ListBox.rows_max(self, size, focus)
 
 
     @classmethod

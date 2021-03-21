@@ -323,15 +323,28 @@ class Scrollable(urwid.WidgetDecoration):
         return self._rows_max_cached
 
 
+DEFAULT_THUMB_CHAR = '\u2588'
+DEFAULT_TROUGH_CHAR = " "
+DEFAULT_SIDE = SCROLLBAR_RIGHT
+
 class ScrollBar(urwid.WidgetDecoration):
+
+    _thumb_char = DEFAULT_THUMB_CHAR
+    _trough_char = DEFAULT_TROUGH_CHAR
+    _thumb_indicator_top = None
+    _thumb_indicator_bottom = None
+    _scroll_bar_side = DEFAULT_SIDE
+
     def sizing(self):
         return frozenset((BOX,))
 
     def selectable(self):
         return True
 
-    def __init__(self, widget, thumb_char=u'\u2588', trough_char=' ',
-                 side=SCROLLBAR_RIGHT, width=1):
+    def __init__(self, widget,
+                 thumb_char=None, trough_char=None,
+                 thumb_indicator_top=None, thumb_indicator_bottom=None,
+                 side=DEFAULT_SIDE, width=1):
         """Box widget that adds a scrollbar to `widget`
 
         `widget` must be a box widget with the following methods:
@@ -350,8 +363,15 @@ class ScrollBar(urwid.WidgetDecoration):
         if BOX not in widget.sizing():
             raise ValueError('Not a box widget: %r' % widget)
         self.__super.__init__(widget)
-        self._thumb_char = thumb_char
-        self._trough_char = trough_char
+        if thumb_char is not None:
+            self._thumb_char = thumb_char
+        if trough_char is not None:
+            self._trough_char = trough_char
+        if thumb_indicator_top is not None:
+            self._thumb_indicator_top = thumb_indicator_top
+        if thumb_indicator_bottom is not None:
+            self._thumb_indicator_bottom = thumb_indicator_bottom
+
         self.scrollbar_side = side
         self.scrollbar_width = max(1, width)
         self._original_widget_size = (0, 0)
@@ -398,13 +418,81 @@ class ScrollBar(urwid.WidgetDecoration):
         # fill gaps in shard_tail!" or "cviews overflow gaps in shard_tail!"
         # exceptions. Stacking the same SolidCanvas is a workaround.
         # https://github.com/urwid/urwid/issues/226#issuecomment-437176837
-        top = urwid.SolidCanvas(self._trough_char, sb_width, 1)
-        thumb = urwid.SolidCanvas(self._thumb_char, sb_width, 1)
-        bottom = urwid.SolidCanvas(self._trough_char, sb_width, 1)
+
+        thumb_top = thumb_bottom = None
+        if (self._thumb_indicator_top
+            or self._thumb_indicator_bottom) and hasattr(ow.body, "positions"):
+            if hasattr(ow.body, "focus"):
+                pos = ow.body.focus
+            elif hasattr(ow.body, "get_focus"):
+                pos = ow.body.get_focus()[1]
+
+            try:
+                head = next(iter(ow.body.positions()))
+            except StopIteration:
+                head = None
+            if pos == head:
+                if isinstance(self._thumb_indicator_top, tuple):
+                    attr, char = self._thumb_indicator_top
+                else:
+                    attr, char = None, self._thumb_indicator_top
+
+                if char:
+                    thumb_top = urwid.Text(
+                        (attr, char * sb_width),
+                        wrap="any"
+                    ).render((sb_width,))
+                    if thumb_height:
+                        thumb_height -= 1
+            try:
+                tail = next(iter(ow.body.positions(reverse=True)))
+            except StopIteration:
+                tail = None
+            if pos == tail:
+                if isinstance(self._thumb_indicator_bottom, tuple):
+                    attr, char = self._thumb_indicator_bottom
+                else:
+                    attr, char = None, self._thumb_indicator_bottom
+
+                if char:
+                    thumb_bottom = urwid.Text(
+                        (attr, char * sb_width),
+                        wrap="any"
+                    ).render((sb_width,))
+                    if thumb_height:
+                        thumb_height -= 1
+
+        if isinstance(self._trough_char, tuple):
+            trough_attr, trough_char = self._trough_char
+        else:
+            trough_attr, trough_char = None, self._trough_char
+
+        top = urwid.Text(
+            (trough_attr, trough_char * top_height * sb_width),
+            wrap="any"
+        ).render((sb_width,))
+
+        if isinstance(self._thumb_char, tuple):
+            thumb_attr, thumb_char = self._thumb_char
+        else:
+            thumb_attr, thumb_char = (None, self._thumb_char)
+        thumb = urwid.Text(
+            (thumb_attr, thumb_char * thumb_height * sb_width),
+            wrap="any"
+        ).render((sb_width,))
+
+        bottom = urwid.Text(
+            (trough_attr, trough_char * bottom_height * sb_width),
+            wrap="any"
+        ).render((sb_width,))
+
+
         sb_canv = urwid.CanvasCombine(
-            [(top, None, False)] * top_height +
-            [(thumb, None, False)] * thumb_height +
-            [(bottom, None, False)] * bottom_height,
+            [ (top, None, False)] * (1 if top_height else 0) +
+            [ (thumb_top, None, False)] * (1 if thumb_top else 0) +
+            [ (thumb, None, False)] * (1 if thumb_height else 0) +
+            [ (thumb_bottom, None, False)] * (1 if thumb_bottom else 0) +
+            [ (bottom, None, False)] * (1 if bottom_height else 0)
         )
 
         combinelist = [(ow_canv, None, True, ow_size[0]),
