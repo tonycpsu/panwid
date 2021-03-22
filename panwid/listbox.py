@@ -113,16 +113,20 @@ class ScrollingListBox(urwid.WidgetWrap):
         self.queued_keypress = None
         w = self.listbox = urwid.ListBox(body)
 
+        self.columns = urwid.Columns([
+            ('weight', 1, self.listbox)
+        ])
         if self.with_scrollbar:
-            if isinstance(self.with_scrollbar, type):
-                self.scrollbar_class = self.with_scrollbar
-            self.listbox.rows_max = self.rows_max
-            w = self.scrollbar_class(self.listbox)
-        super().__init__(w)
+            self.scroll_bar = ListBoxScrollBar(self)
+            self.columns.contents.append(
+                (self.scroll_bar, self.columns.options("given", 1))
+            )
+        super(ScrollingListBox, self).__init__(self.columns)
+        urwid.connect_signal(self.body, "modified", self.on_modified)
 
-    # def on_modified(self):
-    #     if self.with_scrollbar and len(self.body):
-    #         self.scroll_bar.update(self.size)
+    def on_modified(self):
+        if self.with_scrollbar and len(self.body):
+            self.scroll_bar.update(self.size)
 
     def rows_max(self, size, focus=False):
         return urwid.ListBox.rows_max(self, size, focus)
@@ -259,8 +263,8 @@ class ScrollingListBox(urwid.WidgetWrap):
             maxrow = size[1]
             modified = self._height == 0
             self._height = maxrow
-            # if modified:
-            #     self.on_modified()
+            if modified:
+                self.on_modified()
         else:
             self._height = 0
 

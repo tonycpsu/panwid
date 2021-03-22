@@ -3,6 +3,7 @@
 import urwid
 from panwid.datatable import *
 from panwid.scroll import ScrollBar
+from panwid.listbox import ScrollingListBox
 from urwid_utils.palette import *
 
 def unhandled_input(key):
@@ -31,6 +32,7 @@ def main():
     )
 
     entries = DataTable.get_palette_entries()
+    entries = ScrollingListBox.get_palette_entries()
     entries["white inverse"] = PaletteEntry(
         mono = "black",
         foreground = "black",
