@@ -17,6 +17,9 @@ class ProgressBar(urwid.WidgetWrap):
         self.update()
         super().__init__(self.placeholder)
 
+    def pack(self, size, focus=False):
+        return (self.width, 1)
+
     @property
     def value_label(self):
         label_text = str(self.value)
