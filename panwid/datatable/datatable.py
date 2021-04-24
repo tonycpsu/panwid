@@ -716,7 +716,14 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
         cls = d.get("_cls")
         if cls:
             if HAVE_PYDANTIC and issubclass(cls, pydantic.main.BaseModel):
-                return cls(**d)
+                # import ipdb; ipdb.set_trace()
+                return cls(
+                    **{
+                        k: v
+                        for k, v in d.items()
+                        if v
+                    }
+                )
             elif hasattr(cls, "__dataclass_fields__"):
                 # Python dataclasses
                 # klass = type(f"DataTableRow_{cls.__name__}", [cls],
@@ -897,7 +904,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.focus_position = self.index_to_position(row_index)
 
     def sort(self, column, key=None):
-        import functools
         logger.debug(column)
         if not key:
             key = lambda x: (x is None, x)
@@ -1347,6 +1353,9 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
 
         self.refresh_calculated_fields()
         self.apply_filters()
+        if not self.query_sort:
+            self.sort_by_column(self.initial_sort)
+
 
         if len(updated):
             for i in updated:
@@ -1387,6 +1396,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             limit = len(self)
         # del self[:]
         self.requery(offset=offset, limit=limit)
+
+            # self.sort_by_column(self.sort_by[0], key=column.sort_key)
         if self._initialized:
             self.pack_columns()
 

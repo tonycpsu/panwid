@@ -89,7 +89,7 @@ class DataTableDataFrame(rc.DataFrame):
             and c != self.index_name
             and c not in self.DATA_TABLE_COLUMNS
         ]
-        data_columns += ["_cls", "_details"]
+        data_columns += ["_cls"]
 
         data = dict(
                     list(zip((data_columns + self.sidecar_columns),
@@ -114,8 +114,9 @@ class DataTableDataFrame(rc.DataFrame):
             return []
 
         data = self.transpose_data(rows, with_sidecar = with_sidecar)
-        data["_details"] = [{"open": False, "disabled": False}] * len(rows)
+        # data["_details"] = [{"open": False, "disabled": False}] * len(rows)
         data["_cls"] = [type(rows[0][0] if with_sidecar else rows[0])] * len(rows) # all rows assumed to have same class
+
         # raise Exception(data["_cls"])
         # if not "_details" in data:
         #     data["_details"] = [{"open": False, "disabled": False}] * len(rows)
@@ -139,10 +140,15 @@ class DataTableDataFrame(rc.DataFrame):
         for c in data.keys():
             # try:
                 # raise Exception(data[self.index_name], c, data[c])
-            self.set(data[self.index_name], c, data[c])
+                self.set(data[self.index_name], c, data[c])
             # except ValueError as e:
             #     logger.error(e)
             #     logger.info(f"update_rows: {self.index}, {data}")
+            #
+        for idx in data[self.index_name]:
+            if not self.get(idx, "_details"):
+                self.set(idx, "_details", {"open": False, "disabled": False})
+
         return data.get(self.index_name, [])
 
     def append_rows(self, rows):

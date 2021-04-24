@@ -276,7 +276,6 @@ class DataTableBodyRow(DataTableRow):
     def details_open(self):
         # logger.info(f"{self['_details']}")
         # raise Exception(self.get([self.index, "_details"], {}))
-
         return self.get("_details", {}).get("open", False)
 
     @details_open.setter
@@ -350,6 +349,9 @@ class DataTableBodyRow(DataTableRow):
     def open_details(self):
 
         if not self.table.detail_fn or not self.details or self.details_open:
+            return
+
+        if len(self.pile.contents) > 1:
             return
 
         if self.table.detail_replace:
