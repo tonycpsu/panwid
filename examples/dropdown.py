@@ -44,6 +44,7 @@ from panwid.listbox import *
 from panwid.keymap import *
 
 class TestDropdown(KeymapMovementMixin, Dropdown):
+
     pass
 
 def main():

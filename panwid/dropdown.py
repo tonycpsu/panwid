@@ -21,12 +21,21 @@ from .autocomplete import AutoCompleteMixin
 
 class DropdownButton(urwid.Button):
 
+    text_attr = "dropdown_text"
+
     left_chars = u""
     right_chars = u""
 
-    def __init__(self, label, left_chars=None, right_chars=None):
+
+    def __init__(
+            self, label,
+            text_attr=None,
+            left_chars=None, right_chars=None
+    ):
 
         self.label_text = label
+        if text_attr:
+            self.text_attr = text_attr
         if left_chars:
             self.left_chars = left_chars
         if right_chars:
@@ -41,7 +50,7 @@ class DropdownButton(urwid.Button):
             ('weight', 1, self._label),
             (len(self.right_chars), self.button_right)
         ], dividechars=0)
-        self.set_label(("dropdown_text", self.label_text))
+        self.set_label((self.text_attr, self.label_text))
         super(urwid.Button, self).__init__(self.cols)
 
     @property
@@ -57,24 +66,40 @@ class DropdownItem(HighlightableTextMixin, urwid.WidgetWrap):
 
     signals = ["click"]
 
+    text_attr = "dropdown_text"
+    highlight_attr = "dropdown_highlight"
+    focused_attr = "dropdown_focused"
+
     def __init__(self, label, value,
-                 margin=0, left_chars=None, right_chars=None):
+                 margin=0,
+                 text_attr=None,
+                 focused_attr=None,
+                 highlight_attr=None,
+                 left_chars=None, right_chars=None):
 
         self.label_text = label
         self.value = value
         self.margin = margin
+        if text_attr:
+            self.text_attr = text_attr
+        if focused_attr:
+            self.focused_attr = focused_attr
+        if highlight_attr:
+            self.highlight_attr = highlight_attr
         self.button = DropdownButton(
             self.label_text,
+            text_attr=self.text_attr,
             left_chars=left_chars, right_chars=right_chars
         )
+
         self.padding = urwid.Padding(self.button, width=("relative", 100),
                                      left=self.margin, right=self.margin)
 
 
-        self.attr = urwid.AttrMap(self.padding, {None: "dropdown_text"})
+        self.attr = urwid.AttrMap(self.padding, {None: self.text_attr})
         self.attr.set_focus_map({
-            None: "dropdown_focused",
-            "dropdown_text": "dropdown_focused"
+            None: self.focused_attr,
+            self.text_attr: self.focused_attr
         })
         super(DropdownItem, self).__init__(self.attr)
         urwid.connect_signal(
@@ -89,11 +114,11 @@ class DropdownItem(HighlightableTextMixin, urwid.WidgetWrap):
 
     @property
     def highlightable_attr_normal(self):
-        return "dropdown_text"
+        return self.text_attr
 
     @property
     def highlightable_attr_highlight(self):
-        return "dropdown_highlight"
+        return self.highlight_attr
 
     def on_highlight(self):
         self.set_text(self.highlight_content)
@@ -130,6 +155,8 @@ class DropdownDialog(AutoCompleteMixin, urwid.WidgetWrap, KeymapMovementMixin):
 
     signals = ["select", "close"]
 
+    text_attr = "dropdown_text"
+
     min_width = 4
 
     label = None
@@ -147,6 +174,9 @@ class DropdownDialog(AutoCompleteMixin, urwid.WidgetWrap, KeymapMovementMixin):
             border=False,
             margin = None,
             scrollbar=None,
+            text_attr=None,
+            focused_attr=None,
+            prompt_attr=None,
             left_chars=None,
             right_chars=None,
             left_chars_top=None,
@@ -155,20 +185,28 @@ class DropdownDialog(AutoCompleteMixin, urwid.WidgetWrap, KeymapMovementMixin):
             keymap = {},
             **kwargs
     ):
+
         self.drop_down = drop_down
         self.items = items
         if label is not None: self.label = label
         if border is not None: self.border = border
         if margin is not None: self.margin = margin
         if scrollbar is not None: self.scrollbar = scrollbar
+        if text_attr:
+            self.text_attr = text_attr
+        if focused_attr:
+            self.focused_attr = focused_attr
+        if prompt_attr:
+            self.prompt_attr = prompt_attr
         if max_height is not None: self.max_height = max_height
-
         self.selected_button = 0
         buttons = []
 
         buttons = [
                 DropdownItem(
                     label=l, value=v, margin=self.margin,
+                    text_attr=self.text_attr,
+                    focused_attr=self.focused_attr,
                     left_chars=left_chars,
                     right_chars=right_chars,
                 )
@@ -281,6 +319,12 @@ class Dropdown(urwid.PopUpLauncher):
 
     signals = ["change"]
 
+    text_attr = "dropdown_text"
+    label_attr = "dropdown_label"
+    focused_attr = "dropdown_focused"
+    highlight_attr = "dropdown_highlight"
+    prompt_attr = "dropdown_prompt"
+
     auto_complete = None
     label = None
     empty_label = u"\N{EMPTY SET}"
@@ -288,15 +332,20 @@ class Dropdown(urwid.PopUpLauncher):
 
     def __init__(
             self,
-            items = None,
-            label = None,
-            default = None,
-            border = False, scrollbar = False,
-            margin = None,
-            left_chars = None, right_chars = None,
-            left_chars_top = None, right_chars_top = None,
-            auto_complete = None,
-            max_height = 10,
+            items=None,
+            label=None,
+            default=None,
+            border=False, scrollbar=False,
+            margin=None,
+            text_attr=None,
+            label_attr=None,
+            focused_attr=None,
+            highlight_attr=None,
+            prompt_attr=None,
+            left_chars=None, right_chars=None,
+            left_chars_top=None, right_chars_top=None,
+            auto_complete=None,
+            max_height=10,
             # keymap = {}
     ):
 
@@ -315,6 +364,17 @@ class Dropdown(urwid.PopUpLauncher):
         if margin:
             self.margin = margin
 
+        if text_attr:
+            self.text_attr = text_attr
+        if label_attr:
+            self.label_attr = label_attr
+        if focused_attr:
+            self.focused_attr = focused_attr
+        if highlight_attr:
+            self.highlight_attr = highlight_attr
+        if prompt_attr:
+            self.prompt_attr = prompt_attr
+
         if isinstance(self.items, list):
             if len(self.items):
                 if isinstance(self.items[0], tuple):
@@ -331,6 +391,9 @@ class Dropdown(urwid.PopUpLauncher):
         self.button = DropdownItem(
             u"", None,
             margin=self.margin,
+            text_attr=self.text_attr,
+            highlight_attr=self.highlight_attr,
+            focused_attr=self.focused_attr,
             left_chars = left_chars_top if left_chars_top else left_chars,
             right_chars = right_chars_top if right_chars_top else right_chars
         )
@@ -339,15 +402,18 @@ class Dropdown(urwid.PopUpLauncher):
             self,
             self._items,
             self.default,
-            label = self.label,
-            border = self.border,
-            margin = self.margin,
-            left_chars = left_chars,
-            right_chars = right_chars,
-            auto_complete = self.auto_complete,
-            scrollbar = scrollbar,
-            max_height = max_height,
-            # keymap = self.KEYMAP
+            label=self.label,
+            border=self.border,
+            margin=self.margin,
+            text_attr=self.text_attr,
+            focused_attr=self.focused_attr,
+            prompt_attr=self.prompt_attr,
+            left_chars=left_chars,
+            right_chars=right_chars,
+            auto_complete=self.auto_complete,
+            scrollbar=scrollbar,
+            max_height=max_height,
+            # keymap=self.KEYMAP
         )
 
         urwid.connect_signal(
@@ -380,13 +446,13 @@ class Dropdown(urwid.PopUpLauncher):
         if len(self):
             self.select(self.selection)
         else:
-            self.button.set_text(("dropdown_text", self.empty_label))
+            self.button.set_text((self.text_attr, self.empty_label))
 
         cols = [ (self.button_width, self.button) ]
 
         if self.label:
             cols[0:0] = [
-                ("pack", urwid.Text([("dropdown_label", "%s: " %(self.label))])),
+                ("pack", urwid.Text([(self.label_attr, "%s: " %(self.label))])),
             ]
         self.columns = urwid.Columns(cols, dividechars=0)
 
@@ -406,30 +472,30 @@ class Dropdown(urwid.PopUpLauncher):
     def get_palette_entries(cls):
         return {
             "dropdown_text": PaletteEntry(
-                foreground = "light gray",
-                background = "dark blue",
-                foreground_high = "light gray",
-                background_high = "#003",
+                foreground="light gray",
+                background="dark blue",
+                foreground_high="light gray",
+                background_high="#003",
             ),
             "dropdown_focused": PaletteEntry(
-                foreground = "white",
-                background = "light blue",
-                foreground_high = "white",
-                background_high = "#009",
+                foreground="white",
+                background="light blue",
+                foreground_high="white",
+                background_high="#009",
             ),
             "dropdown_highlight": PaletteEntry(
-                foreground = "yellow",
-                background = "light blue",
-                foreground_high = "yellow",
-                background_high = "#009",
+                foreground="yellow",
+                background="light blue",
+                foreground_high="yellow",
+                background_high="#009",
             ),
             "dropdown_label": PaletteEntry(
-                foreground = "white",
-                background = "black"
+                foreground="white",
+                background="black"
             ),
             "dropdown_prompt": PaletteEntry(
-                foreground = "light blue",
-                background = "black"
+                foreground="light blue",
+                background="black"
             )
         }
 
@@ -636,7 +702,7 @@ class Dropdown(urwid.PopUpLauncher):
 
     def select(self, button):
         logger.debug("select: %s" %(button))
-        self.button.set_text(("dropdown_text", button.label))
+        self.button.set_text((self.text_attr, button.label))
         self.pop_up.dropdown_buttons.listbox.set_focus_valign("top")
         # if old_pos != pos:
         self._emit("change", self.selected_label, self.selected_value)

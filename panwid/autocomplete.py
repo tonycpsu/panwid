@@ -41,9 +41,12 @@ class AutoCompleteBar(urwid.WidgetWrap):
 
     signals = ["change", "complete_prev", "complete_next", "select", "close"]
 
-    def __init__(self):
+    prompt_attr = "dropdown_prompt"
 
-        self.prompt = urwid.Text(("dropdown_prompt", "> "))
+    def __init__(self, prompt_attr=None):
+
+        self.prompt_attr = prompt_attr or self.prompt_attr
+        self.prompt = urwid.Text((self.prompt_attr, "> "))
         self.text = AutoCompleteEdit("")
         # self.text.selectable = lambda x: False
         self.cols = urwid.Columns([
@@ -61,7 +64,7 @@ class AutoCompleteBar(urwid.WidgetWrap):
 
     def set_prompt(self, text):
 
-        self.prompt.set_text(("dropdown_prompt", text))
+        self.prompt.set_text((self.prompt_attr, text))
 
     def set_text(self, text):
 
@@ -87,10 +90,13 @@ class AutoCompleteBar(urwid.WidgetWrap):
 class AutoCompleteMixin(object):
 
     auto_complete = None
+    prompt_attr = "dropdown_prompt"
 
-    def __init__(self, auto_complete, *args, **kwargs):
+    def __init__(self, auto_complete, prompt_attr=None, *args, **kwargs):
         super().__init__(self.complete_container, *args, **kwargs)
         if auto_complete is not None: self.auto_complete = auto_complete
+        if prompt_attr is not None:
+            self.prompt_attr = prompt_attr
         self.auto_complete_bar = None
         self.completing = False
         self.complete_anywhere = False
@@ -100,7 +106,7 @@ class AutoCompleteMixin(object):
         self.last_filter_text = None
 
         if self.auto_complete:
-            self.auto_complete_bar = AutoCompleteBar()
+            self.auto_complete_bar = AutoCompleteBar(prompt_attr=self.prompt_attr)
 
 
             urwid.connect_signal(
