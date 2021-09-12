@@ -38,10 +38,11 @@ class PopUpOverlay(urwid.Overlay):
         super(PopUpOverlay,self).__init__(*args, **kwargs)
 
     def keypress(self, size, key):
+        key = super().keypress(size, key)
         if key in [ "esc", "q" ]:
             self.parent.close_popup()
         else:
-            return super(PopUpOverlay, self).keypress(size, key)
+            return key
 
 class BasePopUp(urwid.WidgetWrap):
 
@@ -59,7 +60,7 @@ class BaseDialog(BasePopUp):
         self.parent = parent
         if prompt: self.prompt = prompt
         self.text = urwid.Text(
-            self.prompt + "[%s]" %("".join(list(self.choices.keys()))), align="center"
+            self.prompt + " [%s]" %("".join(list(self.choices.keys()))), align="center"
         )
         super(BaseDialog, self).__init__(
             urwid.Filler(urwid.Padding(self.text))
