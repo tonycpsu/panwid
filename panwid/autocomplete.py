@@ -142,12 +142,17 @@ class AutoCompleteMixin(object):
         raise NotImplementedError
 
     @property
+    def complete_container_position(self):
+        raise NotImplementedError
+
+    @property
     def complete_body(self):
         raise NotImplementedError
 
     @property
     def complete_items(self):
         raise NotImplementedError
+
 
     def complete_widget_at_pos(self, pos):
         return self.complete_body[pos]
@@ -268,18 +273,21 @@ class AutoCompleteMixin(object):
         self._emit("close")
 
     def show_bar(self):
-        self.complete_container.contents.append(
-            (self.auto_complete_bar, self.complete_container.options("given", 1))
-        )
+        pos = self.complete_container_pos
+        self.complete_container.contents[pos:pos+1] += [(
+            self.auto_complete_bar,
+            self.complete_container.options("given", 1)
+        )]
         # self.box.height -= 1
-        self.complete_container.focus_position = 1
+        self.complete_container.focus_position = pos
 
     def hide_bar(self):
+        pos = self.complete_container_pos
         widget = self.complete_widget_at_pos(self.complete_body.get_focus()[1])
         if isinstance(widget, HighlightableTextMixin):
             widget.unhighlight()
         self.complete_container.focus_position = 0
-        del self.complete_container.contents[1]
+        del self.complete_container.contents[pos]
         # self.box.height += 1
 
     @property

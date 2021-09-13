@@ -242,6 +242,10 @@ class DropdownDialog(AutoCompleteMixin, urwid.WidgetWrap, KeymapMovementMixin):
         return self.pile
 
     @property
+    def complete_container_pos(self):
+        return 1
+
+    @property
     def complete_body(self):
         return self.body
 
