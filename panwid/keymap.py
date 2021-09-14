@@ -81,7 +81,10 @@ def keymapped():
                 if len(cmd) == 3:
                     (cmd, args, kwargs) = cmd
                 elif len(cmd) == 2:
-                    (cmd, args) = cmd
+                    if isinstance(cmd[1], dict):
+                        (cmd, kwargs) = cmd
+                    else:
+                        (cmd, args) = cmd
                 else:
                     raise Exception
             elif isinstance(cmd, str):
