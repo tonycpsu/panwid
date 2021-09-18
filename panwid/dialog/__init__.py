@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import urwid
 
 class PopUpMixin(object):
@@ -76,6 +79,145 @@ class ChoiceDialog(BasePopUp):
             self._emit("select", key)
         else:
             return key
+
+
+class SquareButton(urwid.Button):
+
+    button_left = urwid.Text("[")
+    button_right = urwid.Text("]")
+
+    def pack(self, size, focus=False):
+        cols = sum(
+            [ w.pack()[0] for w in [
+                self.button_left,
+                self._label,
+                self.button_right
+            ]]) + self._w.dividechars*2
+
+        return ( cols, )
+
+class OKCancelDialog(BasePopUp):
+
+    def __init__(self, parent, *args, **kwargs):
+
+        self.parent = parent
+
+        self.ok_button = SquareButton(("bold", "OK"))
+
+        urwid.connect_signal(
+            self.ok_button, "click",
+            lambda s: self.confirm()
+        )
+
+        self.cancel_button = SquareButton(("bold", "Cancel"))
+
+        urwid.connect_signal(
+            self.cancel_button, "click",
+            lambda s: self.cancel()
+        )
+
+
+        self.body = urwid.Pile([])
+        for name, widget in self.widgets.items():
+            setattr(self, name, widget)
+            self.body.contents.append(
+                (widget, self.body.options("weight", 1))
+            )
+
+        self.pile = urwid.Pile(
+            [
+                (2, urwid.Filler(urwid.Padding(self.body), valign="top")),
+                ("weight", 1, urwid.Padding(
+                    urwid.Columns([
+                        ("weight", 1,
+                         urwid.Padding(
+                             self.ok_button, align="center", width=12)
+                         ),
+                        ("weight", 1,
+                         urwid.Padding(
+                             self.cancel_button, align="center", width=12)
+                         )
+                    ]),
+                    align="center"
+                )),
+            ]
+        )
+        self.body_position = 0
+        if self.title:
+            self.pile.contents.insert(
+                0,
+                (urwid.Filler(
+                    urwid.AttrMap(
+                        urwid.Padding(
+                            urwid.Text(self.title)
+                        ),
+                        "header"
+                    )
+                ), self.pile.options("given", 2))
+            )
+            self.body_position += 1
+
+        self.pile.selectable = lambda: True
+        self.pile.focus_position = self.body_position
+        super(OKCancelDialog, self).__init__(
+            urwid.Filler(self.pile, valign="top")
+        )
+
+    @property
+    def title(self):
+        return None
+
+    @property
+    def widgets(self):
+        raise RuntimeError("must set widgets property")
+
+    def action(self, value):
+        raise RuntimeError("must override action method")
+
+    @property
+    def focus_paths(self):
+        return [
+            [self.body_position, i]
+            for i in range(len(self.body.contents))
+        ] + [
+            [self.body_position+1,0], # OK
+            [self.body_position+1,1] # Cancel
+        ]
+
+    def cycle_focus(self, step):
+        path = self.pile.get_focus_path()
+        logger.info(f"{path}, {self.focus_paths}")
+        self.pile.set_focus_path(
+            self.focus_paths[
+                (self.focus_paths.index(path) + step) % len(self.focus_paths)
+            ]
+        )
+
+    def confirm(self):
+        self.action()
+        self.close()
+
+    def cancel(self):
+        self.close()
+
+    def close(self):
+        self._emit("close_popup")
+
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        if key in ["tab", "shift tab"]:
+            self.cycle_focus(1 if key == "tab" else -1)
+            return
+        else:
+            key = super().keypress(size, key)
+            if key == "enter":
+                self.confirm()
+            else:
+                return key
+
+
 
 class ConfirmDialog(ChoiceDialog):
 
