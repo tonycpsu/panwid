@@ -332,6 +332,7 @@ class Dropdown(urwid.PopUpLauncher):
     auto_complete = None
     label = None
     empty_label = u"\N{EMPTY SET}"
+    expanded = False
     margin = 0
 
     def __init__(
@@ -339,6 +340,7 @@ class Dropdown(urwid.PopUpLauncher):
             items=None,
             label=None,
             default=None,
+            expanded=None,
             border=False, scrollbar=False,
             margin=None,
             text_attr=None,
@@ -357,6 +359,8 @@ class Dropdown(urwid.PopUpLauncher):
             self._items = items
         if label is not None:
             self.label = label
+        if expanded is not None:
+            self.expanded = expanded
         self.default = default
 
         self.border = border
@@ -471,6 +475,8 @@ class Dropdown(urwid.PopUpLauncher):
             'click',
             lambda button: self.open_pop_up()
         )
+        if self.expanded:
+            self.open_pop_up()
 
     @classmethod
     def get_palette_entries(cls):
