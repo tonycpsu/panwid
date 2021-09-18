@@ -1,7 +1,7 @@
 import urwid
 from panwid.dialog import *
 
-class QuitDialog(BaseDialog):
+class QuitDialog(ChoiceDialog):
 
     signals = ["message"]
 

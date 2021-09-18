@@ -51,7 +51,7 @@ class BasePopUp(urwid.WidgetWrap):
     def selectable(self):
         return True
 
-class BaseDialog(BasePopUp):
+class ChoiceDialog(BasePopUp):
 
     choices = []
     signals = ["select"]
@@ -62,12 +62,13 @@ class BaseDialog(BasePopUp):
         self.text = urwid.Text(
             self.prompt + " [%s]" %("".join(list(self.choices.keys()))), align="center"
         )
-        super(BaseDialog, self).__init__(
+        super(ChoiceDialog, self).__init__(
             urwid.Filler(urwid.Padding(self.text))
         )
 
-    # def selectable(self):
-    #     return True
+    @property
+    def choices(self):
+        raise NotImplementedError
 
     def keypress(self, size, key):
         if key in list(self.choices.keys()):
@@ -109,5 +110,5 @@ class BaseView(urwid.WidgetWrap):
 __all__ = [
     "BaseView",
     "BasePopUp",
-    "BaseDialog",
+    "ChoiceDialog",
 ]
