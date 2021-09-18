@@ -700,6 +700,9 @@ class Dropdown(urwid.PopUpLauncher):
     def cycle_prev(self):
         self.cycle(-1)
 
+    def action(self):
+        pass
+
     @keymap_command("cycle")
     def cycle(self, n):
         pos = self.focus_position + n
@@ -715,6 +718,7 @@ class Dropdown(urwid.PopUpLauncher):
         self.button.set_text((self.text_attr, button.label))
         self.pop_up.dropdown_buttons.listbox.set_focus_valign("top")
         # if old_pos != pos:
+        self.action()
         self._emit("change", self.selected_label, self.selected_value)
 
     # def set_items(self, items, selected_value):
