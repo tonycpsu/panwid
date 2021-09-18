@@ -2,6 +2,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import urwid
+import asyncio
 
 class PopUpMixin(object):
 
@@ -171,7 +172,7 @@ class OKCancelDialog(BasePopUp):
     def widgets(self):
         raise RuntimeError("must set widgets property")
 
-    def action(self, value):
+    def action(self):
         raise RuntimeError("must override action method")
 
     @property
@@ -194,7 +195,10 @@ class OKCancelDialog(BasePopUp):
         )
 
     def confirm(self):
-        self.action()
+        rv = self.action()
+        if asyncio.iscoroutine(rv):
+            asyncio.get_event_loop().create_task(rv)
+
         self.close()
 
     def cancel(self):
