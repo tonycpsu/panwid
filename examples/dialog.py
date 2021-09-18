@@ -3,22 +3,15 @@ from panwid.dialog import *
 
 class QuitDialog(ChoiceDialog):
 
-    signals = ["message"]
-
     prompt = "Test Popup"
 
-    def __init__(self, *args, **kwargs):
-
-        def test(n):
-            self._emit("message", n)
-            self.parent.close_popup()
-
-        self.choices = {
-            '1': lambda: test(1),
-            '2': lambda: test(2),
-            '3': lambda: test(3),
+    @property
+    def choices(self):
+        return {
+            '1': lambda: 1,
+            '2': lambda: 2,
+            '3': lambda: 3,
         }
-        super(QuitDialog, self).__init__(*args, **kwargs)
 
 class MainView(BaseView):
 
@@ -37,11 +30,11 @@ class MainView(BaseView):
 
     def open_popup_dialog(self):
         dialog = QuitDialog(self)
-        urwid.connect_signal(dialog, "message", self.on_message)
+        urwid.connect_signal(dialog, "select", self.on_select)
         self.open_popup(dialog, width=20, height=10)
 
-    def on_message(self, source, n):
-        self.text.set_text("You chose %d" %(n))
+    def on_select(self, source, n):
+        self.text.set_text("You chose %s" %(n))
 
     def keypress(self, size, key):
         if key == "o":

@@ -73,8 +73,38 @@ class ChoiceDialog(BasePopUp):
     def keypress(self, size, key):
         if key in list(self.choices.keys()):
             self.choices[key]()
+            self._emit("select", key)
         else:
             return key
+
+class ConfirmDialog(ChoiceDialog):
+
+    def __init__(self, parent, *args, **kwargs):
+        super(ConfirmDialog, self).__init__(parent, *args, **kwargs)
+
+    def action(self, value):
+        raise RuntimeError("must override action method")
+
+    @property
+    def prompt(self):
+        return "Are you sure?"
+
+    def confirm(self):
+        self.action()
+        self.close()
+
+    def cancel(self):
+        self.close()
+
+    def close(self):
+        self.parent.close_popup()
+
+    @property
+    def choices(self):
+        return {
+            "y": self.confirm,
+            "n": self.cancel
+        }
 
 class BaseView(urwid.WidgetWrap):
 
