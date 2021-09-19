@@ -77,30 +77,36 @@ def keymapped():
             logger.debug(f"keymap_command: {cmd}")
             args = []
             kwargs = {}
-            if isinstance(cmd, tuple):
-                if len(cmd) == 3:
-                    (cmd, args, kwargs) = cmd
-                elif len(cmd) == 2:
-                    if isinstance(cmd[1], dict):
-                        (cmd, kwargs) = cmd
+
+            if callable(cmd):
+                f = cmd
+            else:
+                if isinstance(cmd, tuple):
+                    if len(cmd) == 3:
+                        (cmd, args, kwargs) = cmd
+                    elif len(cmd) == 2:
+                        if isinstance(cmd[1], dict):
+                            (cmd, kwargs) = cmd
+                        else:
+                            (cmd, args) = cmd
                     else:
-                        (cmd, args) = cmd
+                        raise Exception
+                elif isinstance(cmd, str):
+                    cmd = cmd.replace(" ", "_")
                 else:
-                    raise Exception
-            elif isinstance(cmd, str):
-                cmd = cmd.replace(" ", "_")
-            else:
-                return None
+                    logger.debug(f"keymap command {cmd} not valid")
+                    return None
 
-            if hasattr(self, cmd):
-                fn_name = cmd
-            else:
-                try:
-                    fn_name = self.KEYMAP_MAPPING[cmd]
-                except KeyError:
-                    raise KeyError(cmd, self.KEYMAP_MAPPING, type(self))
+                if hasattr(self, cmd):
+                    fn_name = cmd
+                else:
+                    try:
+                        fn_name = self.KEYMAP_MAPPING[cmd]
+                    except KeyError:
+                        raise KeyError(cmd, self.KEYMAP_MAPPING, type(self))
 
-            f = getattr(self, fn_name)
+                f = getattr(self, fn_name)
+
             ret = f(*args, **kwargs)
             if asyncio.iscoroutine(ret):
                 asyncio.get_event_loop().create_task(ret)
@@ -108,7 +114,13 @@ def keymapped():
 
         cls._keymap_command = keymap_command
 
+        def keymap_register(self, key, cmd):
+            self.KEYMAP_MERGED[cls.KEYMAP_SCOPE()][key] = cmd
+
+        cls.keymap_register = keymap_register
+
         def keypress_decorator(func):
+
 
             def keypress(self, size, key):
                 logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_MERGED.get(cls.KEYMAP_SCOPE(), {}).keys()}")

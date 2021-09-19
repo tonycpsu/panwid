@@ -143,7 +143,11 @@ class AutoCompleteMixin(object):
 
     @property
     def complete_container_position(self):
-        raise NotImplementedError
+        return 1
+
+    @property
+    def complete_body_position(self):
+        return 0
 
     @property
     def complete_body(self):
@@ -286,7 +290,7 @@ class AutoCompleteMixin(object):
         widget = self.complete_widget_at_pos(self.complete_body.get_focus()[1])
         if isinstance(widget, HighlightableTextMixin):
             widget.unhighlight()
-        self.complete_container.focus_position = 0
+        self.complete_container.focus_position = self.complete_body_position
         del self.complete_container.contents[pos]
         # self.box.height += 1
 
