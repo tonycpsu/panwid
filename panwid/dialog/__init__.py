@@ -176,13 +176,21 @@ class OKCancelDialog(BasePopUp):
         raise RuntimeError("must override action method")
 
     @property
+    def ok_focus_path(self):
+        return [self.body_position+1,0]
+
+    @property
+    def cancel_focus_path(self):
+        return [self.body_position+1,1]
+
+    @property
     def focus_paths(self):
         return [
             [self.body_position, i]
             for i in range(len(self.body.contents))
         ] + [
-            [self.body_position+1,0], # OK
-            [self.body_position+1,1] # Cancel
+            self.ok_focus_path,
+            self.cancel_focus_path
         ]
 
     def cycle_focus(self, step):
