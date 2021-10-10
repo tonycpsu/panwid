@@ -194,7 +194,7 @@ class OKCancelDialog(BasePopUp):
         ]
 
     def cycle_focus(self, step):
-        path = self.pile.get_focus_path()
+        path = self.pile.get_focus_path()[:2]
         logger.info(f"{path}, {self.focus_paths}")
         self.pile.set_focus_path(
             self.focus_paths[
