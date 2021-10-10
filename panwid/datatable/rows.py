@@ -1,5 +1,4 @@
 import functools
-from collections import MutableMapping
 import itertools
 
 import urwid
