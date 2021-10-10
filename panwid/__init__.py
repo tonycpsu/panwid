@@ -19,7 +19,7 @@ from .sparkwidgets import *
 from . import tabview
 from .tabview import *
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 __all__ = (
     autocomplete.__all__
