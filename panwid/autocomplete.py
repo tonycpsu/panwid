@@ -6,9 +6,10 @@ import urwid
 
 from .highlightable import HighlightableTextMixin
 from .keymap import *
+from  urwid_readline import ReadlineEdit
 
 @keymapped()
-class AutoCompleteEdit(urwid.Edit):
+class AutoCompleteEdit(ReadlineEdit):
 
     signals = ["select", "close", "complete_next", "complete_prev"]
 
@@ -43,11 +44,14 @@ class AutoCompleteBar(urwid.WidgetWrap):
 
     prompt_attr = "dropdown_prompt"
 
-    def __init__(self, prompt_attr=None):
+    def __init__(self, prompt_attr=None, complete_fn=None):
 
         self.prompt_attr = prompt_attr or self.prompt_attr
         self.prompt = urwid.Text((self.prompt_attr, "> "))
         self.text = AutoCompleteEdit("")
+        if complete_fn:
+            self.text.enable_autocomplete(complete_fn)
+
         # self.text.selectable = lambda x: False
         self.cols = urwid.Columns([
             (2, self.prompt),
@@ -106,8 +110,10 @@ class AutoCompleteMixin(object):
         self.last_filter_text = None
 
         if self.auto_complete:
-            self.auto_complete_bar = AutoCompleteBar(prompt_attr=self.prompt_attr)
-
+            self.auto_complete_bar = AutoCompleteBar(
+                prompt_attr=self.prompt_attr,
+                complete_fn=self.complete_fn
+            )
 
             urwid.connect_signal(
                 self.auto_complete_bar, "change",
@@ -157,6 +163,15 @@ class AutoCompleteMixin(object):
     def complete_items(self):
         raise NotImplementedError
 
+    def complete_fn(self, text, state):
+        tmp = [
+            c for c in self.complete_items
+            if c and text in c
+        ] if text else self.complete_items
+        try:
+            return str(tmp[state])
+        except (IndexError, TypeError):
+            return None
 
     def complete_widget_at_pos(self, pos):
         return self.complete_body[pos]
@@ -233,7 +248,7 @@ class AutoCompleteMixin(object):
         # if not step and self.filter_text == self.last_filter_text:
         #     return
 
-        logger.info(f"complete: {self.filter_text}")
+        # logger.info(f"complete: {self.filter_text}")
 
         if self.last_complete_pos:
             widget = self.complete_widget_at_pos(self.last_complete_pos)
@@ -245,10 +260,13 @@ class AutoCompleteMixin(object):
             self.complete_body.positions(reverse=(step and step < 0))
         )
         pos = next(positions)
+        # logger.info(pos.get_value())
+        # import ipdb; ipdb.set_trace()
         while pos != self.initial_pos:
-            logger.info(pos)
+            # logger.info(pos.get_value())
             pos = next(positions)
         for i in range(abs(step or 0)):
+            # logger.info(pos.get_value())
             pos = next(positions)
 
         while True:
@@ -264,7 +282,7 @@ class AutoCompleteMixin(object):
             if pos == self.initial_pos:
                 break
 
-        logger.info("done")
+        # logger.info("done")
         self.last_filter_text = self.filter_text
 
     @keymap_command()
