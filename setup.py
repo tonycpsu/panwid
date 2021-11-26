@@ -22,12 +22,13 @@ setup(name=name,
       packages=find_packages(),
       data_files=[('share/doc/%s' % name, ['LICENSE','README.md']),
               ],
-      install_requires = [
+      install_requires=[
           "urwid",
-          "urwid-utils>=0.1.2",
+          "urwid-utils >= 0.1.2",
           "six",
-          "raccoon>=3.0.0",
-          "orderedattrdict"
+          "raccoon >= 3.0.0",
+          "orderedattrdict",
+          "urwid_readline ~= 0.13"
       ],
       test_suite="test",
       # dependency_links=[
