@@ -250,6 +250,9 @@ class DataTableBodyRow(DataTableRow):
     def data_source(self):
         return self.table.get_dataframe_row_object(self.index)
 
+    def __getattr__(self, attr):
+        return object.__getattribute__(self.data_source, attr)
+
     def __getitem__(self, column):
         cls = self.table.df[self.index, "_cls"]
         # row = self.data
@@ -389,6 +392,8 @@ class DataTableBodyRow(DataTableRow):
         else:
             self.open_details()
 
+    def get_attr(self):
+        return self.attrmap.get_attr_map().get(self.ATTR)
 
     def set_attr(self, attr):
         attr_map = self.attrmap.get_attr_map()

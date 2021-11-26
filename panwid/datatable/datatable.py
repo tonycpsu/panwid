@@ -1340,7 +1340,8 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             kwargs["offset"] = offset
             kwargs["limit"] = limit
 
-        kwargs["cursor"] = self.pagination_cursor
+        if offset:
+            kwargs["cursor"] = self.pagination_cursor
 
         rows = list(self.query(**kwargs)) if self.data is None else self.data
 
