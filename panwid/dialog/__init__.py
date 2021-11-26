@@ -99,9 +99,13 @@ class SquareButton(urwid.Button):
 
 class OKCancelDialog(BasePopUp):
 
-    def __init__(self, parent, *args, **kwargs):
+    focus = None
+
+    def __init__(self, parent, focus=None, *args, **kwargs):
 
         self.parent = parent
+        if focus is not None:
+            self.focus = focus
 
         self.ok_button = SquareButton(("bold", "OK"))
 
@@ -127,7 +131,7 @@ class OKCancelDialog(BasePopUp):
 
         self.pile = urwid.Pile(
             [
-                (2, urwid.Filler(urwid.Padding(self.body), valign="top")),
+                (len(self.widgets), urwid.Filler(urwid.Padding(self.body), valign="top")),
                 ("weight", 1, urwid.Padding(
                     urwid.Columns([
                         ("weight", 1,
@@ -160,6 +164,16 @@ class OKCancelDialog(BasePopUp):
 
         self.pile.selectable = lambda: True
         self.pile.focus_position = self.body_position
+        if self.focus:
+            if self.focus == "ok":
+                self.pile.set_focus_path(self.ok_focus_path)
+            elif self.focus == "cancel":
+                self.pile.set_focus_path(self.cancel_focus_path)
+            elif isinstance(self.focus, int):
+                return [self.body_position, self.focus]
+            else:
+                raise NotImplementedError
+
         super(OKCancelDialog, self).__init__(
             urwid.Filler(self.pile, valign="top")
         )
@@ -219,15 +233,17 @@ class OKCancelDialog(BasePopUp):
         return True
 
     def keypress(self, size, key):
+        if key == "meta enter":
+            self.confirm()
+            return
+        key = super().keypress(size, key)
+        if key == "enter":
+            self.confirm()
+            return
         if key in ["tab", "shift tab"]:
             self.cycle_focus(1 if key == "tab" else -1)
-            return
         else:
-            key = super().keypress(size, key)
-            if key == "enter":
-                self.confirm()
-            else:
-                return key
+            return key
 
 
 
