@@ -344,7 +344,8 @@ class ScrollBar(urwid.WidgetDecoration):
     def __init__(self, widget,
                  thumb_char=None, trough_char=None,
                  thumb_indicator_top=None, thumb_indicator_bottom=None,
-                 side=DEFAULT_SIDE, width=1):
+                 side=DEFAULT_SIDE, width=1,
+                 always_visible=False):
         """Box widget that adds a scrollbar to `widget`
 
         `widget` must be a box widget with the following methods:
@@ -359,6 +360,7 @@ class ScrollBar(urwid.WidgetDecoration):
         `trough_char` is used for the space above and below the handle.
         `side` must be 'left' or 'right'.
         `width` specifies the number of columns the scrollbar uses.
+        `always_visible` will always draw the scrollbar, even when unnecessary.
         """
         if BOX not in widget.sizing():
             raise ValueError('Not a box widget: %r' % widget)
@@ -374,6 +376,7 @@ class ScrollBar(urwid.WidgetDecoration):
 
         self.scrollbar_side = side
         self.scrollbar_width = max(1, width)
+        self.always_visible = always_visible
         self._original_widget_size = (0, 0)
 
     def render(self, size, focus=False):
@@ -385,11 +388,12 @@ class ScrollBar(urwid.WidgetDecoration):
 
         ow = self._original_widget
         ow_base = self.scrolling_base_widget
-        ow_rows_max = ow_base.rows_max(size, focus)
-        if ow_rows_max <= maxrow:
-            # Canvas fits without scrolling - no scrollbar needed
-            self._original_widget_size = size
-            return ow.render(size, focus)
+        if not self.always_visible:
+            ow_rows_max = ow_base.rows_max(size, focus)
+            if ow_rows_max <= maxrow:
+                # Canvas fits without scrolling - no scrollbar needed
+                self._original_widget_size = size
+                return ow.render(size, focus)
         ow_rows_max = ow_base.rows_max(ow_size, focus)
 
         ow_canv = ow.render(ow_size, focus)
