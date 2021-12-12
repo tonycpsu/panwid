@@ -131,7 +131,7 @@ class OKCancelDialog(BasePopUp):
 
         self.pile = urwid.Pile(
             [
-                (len(self.widgets), urwid.Filler(urwid.Padding(self.body), valign="top")),
+                ("pack", self.body),
                 ("weight", 1, urwid.Padding(
                     urwid.Columns([
                         ("weight", 1,
@@ -311,4 +311,5 @@ __all__ = [
     "BaseView",
     "BasePopUp",
     "ChoiceDialog",
+    "SquareButton"
 ]
