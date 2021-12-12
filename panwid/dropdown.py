@@ -385,11 +385,10 @@ class Dropdown(urwid.PopUpLauncher):
 
         if isinstance(self.items, list):
             if len(self.items):
-                if isinstance(self.items[0], tuple):
-                    self._items = AttrDict(self.items)
-                else:
-                    logger.debug(self.items)
-                    self._items = AttrDict(( (item, n) for n, item in enumerate(self.items)))
+                self._items = AttrDict(
+                    item if isinstance(item, tuple) else (item, n)
+                    for n, item in enumerate(self.items)
+                )
             else:
                 self._items = AttrDict()
         else:
