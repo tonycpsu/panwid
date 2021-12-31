@@ -996,20 +996,21 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             else:
                 try:
                     column = next(( c for c in self._columns if c.name == column))
-                except IndexError:
-                    raise Exception("column %s not found" %(column))
+                except StopIteration:
+                    raise ValueError("column %s not found" %(column))
+                    # raise Exception("column %s not found" %(column))
 
             if show is None:
                 column.hide = not column.hide
             else:
-                column.hide = show
+                column.hide = not show
         self.invalidate()
 
     def show_columns(self, columns):
         self.toggle_columns(columns, True)
 
     def hide_columns(self, columns):
-        self.show_column(columns, False)
+        self.toggle_columns(columns, False)
 
     def resize_column(self, name, size):
 
@@ -1206,7 +1207,6 @@ class DataTable(urwid.WidgetWrap, urwid.listbox.ListWalker):
             self.header.update()
         if self.with_footer:
             self.footer.update()
-        self.invalidate()
 
         # self._modified()
 
