@@ -76,7 +76,8 @@ class DataTableCell(urwid.WidgetWrap):
     @property
     def value(self):
         if self.column.value_fn:
-            val = self.column.value_fn(self.table, self.row)
+            row = self.table.get_dataframe_row_object(self.row.index)
+            val = self.column.value_fn(self.table, row)
         else:
             val = self.row[self.column.name]
         return val
