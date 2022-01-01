@@ -123,23 +123,23 @@ def keymapped():
 
 
             def keypress(self, size, key):
-                logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_MERGED.get(cls.KEYMAP_SCOPE(), {}).keys()}")
+                # logger.debug(f"{cls} wrapped keypress: {key}, {cls.KEYMAP_SCOPE()}, {self.KEYMAP_MERGED.get(cls.KEYMAP_SCOPE(), {}).keys()}")
 
                 if key and callable(func):
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
+                    # logger.debug(f"{cls} wrapped keypress, key: {key}, calling orig: {func}")
                     key = func(self, size, key)
                 if key:
-                    logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
+                    # logger.debug(f"{cls} wrapped keypress, key: {key}, calling super: {super(cls, self).keypress}")
                     key = super(cls, self).keypress(size, key)
                 keymap_combined = dict(self.KEYMAP_MERGED, **KEYMAP_GLOBAL)
                 if key and keymap_combined.get(cls.KEYMAP_SCOPE(), {}).get(key, None):
                     cmd = keymap_combined[cls.KEYMAP_SCOPE()][key]
                     if isinstance(cmd, str) and cmd.startswith("keypress "):
                         new_key = cmd.replace("keypress ", "").strip()
-                        logger.debug(f"{cls} remap {key} => {new_key}")
+                        # logger.debug(f"{cls} remap {key} => {new_key}")
                         key = new_key
                     else:
-                        logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
+                        # logger.debug(f"{cls} wrapped keypress, key: {key}, calling keymap command")
                         key = self._keymap_command(cmd)
                 return key
 
