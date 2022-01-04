@@ -447,7 +447,7 @@ class Dropdown(urwid.PopUpLauncher):
             except StopIteration:
                 try:
                     self.select_value(self.default)
-                except StopIteration:
+                except ValueError:
                     self.focus_position = 0
 
         if len(self):
@@ -600,23 +600,6 @@ class Dropdown(urwid.PopUpLauncher):
     def selection(self):
         return self.pop_up.selection
 
-    def select_label(self, label, case_sensitive=False):
-
-        old_value = self.value
-
-        f = lambda x: x
-        if not case_sensitive:
-            f = lambda x: x.lower()
-
-        index = next(itertools.dropwhile(
-                lambda x: f(x[1]) != f(label),
-                enumerate((self._items.keys())
-            )
-        ))[0]
-        self.focus_position = index
-
-
-
     @property
     def items(self):
         return self._items
@@ -624,7 +607,6 @@ class Dropdown(urwid.PopUpLauncher):
     @property
     def selection(self):
         return self.pop_up.selection
-
 
     def select_label(self, label, case_sensitive=False):
 
@@ -640,19 +622,21 @@ class Dropdown(urwid.PopUpLauncher):
                     enumerate((self._items.keys())
                 )
             ))[0]
-        except StopIteration:
+        except (StopIteration, IndexError):
             raise ValueError
         self.focus_position = index
 
-
-
     def select_value(self, value):
 
-        index = next(itertools.dropwhile(
-                lambda x: x[1] != value,
-                enumerate((self._items.values())
-            )
-        ))[0]
+        try:
+            index = next(
+                itertools.dropwhile(
+                    lambda x: x[1] != value,
+                enumerate((self._items.values()))
+                )
+            )[0]
+        except (StopIteration, IndexError):
+            raise ValueError
         self.focus_position = index
 
 
