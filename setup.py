@@ -25,7 +25,6 @@ setup(name=name,
       install_requires=[
           "urwid",
           "urwid-utils >= 0.1.2",
-          "six",
           "raccoon >= 3.0.0",
           "orderedattrdict",
           "urwid_readline ~= 0.13"
