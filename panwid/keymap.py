@@ -3,7 +3,6 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import six
 import asyncio
 import urwid
 import re

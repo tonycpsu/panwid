@@ -7,7 +7,6 @@ from functools import wraps
 import re
 import itertools
 
-import six
 import urwid
 from urwid_utils.palette import *
 # import urwid_readline
